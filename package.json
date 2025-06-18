@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npx vite build",  <-- ¡Esta es la línea que Render lee mal! Asegúrate que no tenga nada extra
+    "build": "npx vite build", 
     "lint": "eslint .",
     "preview": "vite preview"
   },
