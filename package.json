@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",  <-- Deja esta línea como estaba
+    "build": "npx vite build",  <-- ¡CAMBIO AQUÍ!
     "lint": "eslint .",
     "preview": "vite preview"
   },
