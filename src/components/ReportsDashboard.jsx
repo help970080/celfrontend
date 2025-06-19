@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import DynamicChart from './charts/DynamicChart';
+// import DynamicChart from './charts/DynamicChart'; // <-- ELIMINADA LA IMPORTACIÓN
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -198,151 +198,10 @@ function ReportsDashboard({ authenticatedFetch }) {
         return <p className="error-message">Error al cargar reportes: {error}</p>;
     }
 
-    // --- Preparación de datos para gráficos ---
-
-    // Gráfico de clientes por estado (Pie Chart)
-    const clientStatusChartData = clientStatusDashboard ? {
-        labels: ['Al Corriente', 'Por Vencer', 'Vencidos', 'Pagados', 'Total Créditos Activos'],
-        datasets: [{
-            label: '# de Clientes',
-            data: [
-                clientStatusDashboard.alCorriente,
-                clientStatusDashboard.porVencer,
-                clientStatusDashboard.vencidos,
-                clientStatusDashboard.pagados,
-                clientStatusDashboard.totalActivos, // Este podría no ir en el Pie, o ser un gráfico aparte
-            ],
-            backgroundColor: [
-                'rgba(40, 167, 69, 0.6)',   // Al Corriente (verde)
-                'rgba(255, 193, 7, 0.6)',   // Por Vencer (amarillo)
-                'rgba(220, 53, 69, 0.6)',   // Vencidos (rojo)
-                'rgba(23, 162, 184, 0.6)',  // Pagados (cian)
-                'rgba(108, 117, 125, 0.6)'  // Total Activos (gris, quizás no en el pie chart)
-            ],
-            borderColor: [
-                'rgba(40, 167, 69, 1)',
-                'rgba(255, 193, 7, 1)',
-                'rgba(220, 53, 69, 1)',
-                'rgba(23, 162, 184, 1)',
-                'rgba(108, 117, 125, 1)'
-            ],
-            borderWidth: 1,
-        }],
-    } : null;
-
-    const clientStatusChartOptions = {
-        responsive: true,
-        plugins: {
-            legend: { position: 'top' },
-            title: { display: true, text: 'Distribución de Clientes por Estado de Cobranza' },
-        },
-    };
-
-
-    // Gráfico de ventas acumuladas (Bar Chart)
-    const accumulatedSalesChartData = accumulatedSales.length > 0 ? {
-        labels: accumulatedSales.map(item => item.periodKey),
-        datasets: [
-            {
-                label: 'Monto Total Vendido ($)',
-                // Asegurar que los datos sean numéricos
-                data: accumulatedSales.map(item => parseFloat(item.totalAmount)),
-                backgroundColor: 'rgba(0, 123, 255, 0.6)', // Azul
-                borderColor: 'rgba(0, 123, 255, 1)',
-                borderWidth: 1,
-                yAxisID: 'y-amount',
-            },
-            {
-                label: '# de Ventas',
-                // Asegurar que los datos sean numéricos
-                data: accumulatedSales.map(item => parseInt(item.count, 10)),
-                backgroundColor: 'rgba(111, 66, 193, 0.6)', // Morado
-                borderColor: 'rgba(111, 66, 193, 1)',
-                borderWidth: 1,
-                yAxisID: 'y-count',
-            }
-        ],
-    } : null;
-
-    const accumulatedSalesChartOptions = {
-        responsive: true,
-        plugins: {
-            legend: { position: 'top' },
-            title: { display: true, text: `Ventas Acumuladas por ${accumulatedPeriod === 'day' ? 'Día' : accumulatedPeriod === 'week' ? 'Semana' : accumulatedPeriod === 'month' ? 'Mes' : 'Año'}` },
-        },
-        scales: {
-            'y-amount': {
-                type: 'linear',
-                position: 'left',
-                title: { display: true, text: 'Monto Total ($)' },
-                beginAtZero: true,
-                // Quitar 'max' si estaba presente para permitir autoescalado
-            },
-            'y-count': {
-                type: 'linear',
-                position: 'right',
-                title: { display: true, text: '# de Ventas' },
-                beginAtZero: true,
-                // Quitar 'max' si estaba presente para permitir autoescalado
-                grid: {
-                    drawOnChartArea: false,
-                },
-            },
-        },
-    };
-
-    // Gráfico de pagos acumulados (Line Chart)
-    const accumulatedPaymentsChartData = accumulatedPayments.length > 0 ? {
-        labels: accumulatedPayments.map(item => item.periodKey),
-        datasets: [
-            {
-                label: 'Monto Total Pagado ($)',
-                // Asegurar que los datos sean numéricos
-                data: accumulatedPayments.map(item => parseFloat(item.totalAmount)),
-                fill: false,
-                backgroundColor: 'rgba(40, 167, 69, 0.6)', // Verde
-                borderColor: 'rgba(40, 167, 69, 1)',
-                borderWidth: 2,
-            },
-            {
-                label: '# de Pagos',
-                // Asegurar que los datos sean numéricos
-                data: accumulatedPayments.map(item => parseInt(item.count, 10)),
-                fill: false,
-                backgroundColor: 'rgba(23, 162, 184, 0.6)', // Cian
-                borderColor: 'rgba(23, 162, 184, 1)',
-                borderWidth: 2,
-                yAxisID: 'y-count-payments',
-            }
-        ],
-    } : null;
-
-    const accumulatedPaymentsChartOptions = {
-        responsive: true,
-        plugins: {
-            legend: { position: 'top' },
-            title: { display: true, text: `Pagos Acumulados por ${accumulatedPeriod === 'day' ? 'Día' : accumulatedPeriod === 'week' ? 'Semana' : accumulatedPeriod === 'month' ? 'Mes' : 'Año'}` },
-        },
-        scales: {
-            y: { // Este es el eje Y para el Monto Total Pagado
-                type: 'linear',
-                position: 'left',
-                title: { display: true, text: 'Monto Total ($)' },
-                beginAtZero: true,
-                // Quitar 'max' si estaba presente para permitir autoescalado
-            },
-            'y-count-payments': { // Este es el eje Y para el # de Pagos
-                type: 'linear',
-                position: 'right',
-                title: { display: true, text: '# de Pagos' },
-                beginAtZero: true,
-                // Quitar 'max' si estaba presente para permitir autoescalado
-                grid: {
-                    drawOnChartArea: false,
-                },
-            },
-        },
-    };
+    // --- ELIMINADAS LAS DEFINICIONES DE DATOS Y OPCIONES PARA GRÁFICOS ---
+    // clientStatusChartData, clientStatusChartOptions, accumulatedSalesChartData,
+    // accumulatedSalesChartOptions, accumulatedPaymentsChartData, accumulatedPaymentsChartOptions
+    // Ya no se necesitan aquí al no renderizar los gráficos.
 
     return (
         <div className="reports-dashboard">
@@ -381,26 +240,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                 <p className="error-message">Error: {errorClientStatus}</p>
             ) : clientStatusDashboard ? (
                 <>
-                    {/* Gráfico de Clientes por Estado */}
-                    {clientStatusChartData && (
-                        <DynamicChart
-                            chartType="pie"
-                            data={{
-                                // Slice para excluir 'Total Créditos Activos' del pie chart
-                                labels: clientStatusChartData.labels.slice(0, 4),
-                                datasets: [{
-                                    label: clientStatusChartData.datasets[0].label,
-                                    // Slice para excluir 'Total Créditos Activos'
-                                    data: clientStatusChartData.datasets[0].data.slice(0, 4),
-                                    backgroundColor: clientStatusChartData.datasets[0].backgroundColor.slice(0, 4),
-                                    borderColor: clientStatusChartData.datasets[0].borderColor.slice(0, 4),
-                                    borderWidth: 1,
-                                }]
-                            }}
-                            options={clientStatusChartOptions}
-                            title="Distribución de Clientes por Estado de Cobranza"
-                        />
-                    )}
+                    {/* ELIMINADA LA RENDERIZACIÓN DEL GRÁFICO DE CLIENTES */}
                     <div className="client-status-cards">
                         <div className="status-card current">
                             <h3>Al Corriente</h3>
@@ -429,7 +269,7 @@ function ReportsDashboard({ authenticatedFetch }) {
             )}
 
 
-            <h2 style={{ marginTop: '40px' }}>Reporte de Transacciones por Rango de Fechas</h2>
+            <h2 style={{ marginTop: '40px' }>Reporte de Transacciones por Rango de Fechas</h2>
             <div className="daily-report-controls">
                 <label htmlFor="startDate">Desde:</label>
                 <input
@@ -562,15 +402,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                 <p className="error-message">Error: {errorAccumulated}</p>
             ) : (
                 <div className="accumulated-reports-content">
-                    {/* Gráfico de Ventas Acumuladas */}
-                    {accumulatedSalesChartData && (
-                        <DynamicChart
-                            chartType="bar"
-                            data={accumulatedSalesChartData}
-                            options={accumulatedSalesChartOptions}
-                            title="Monto y Cantidad de Ventas Acumuladas"
-                        />
-                    )}
+                    {/* ELIMINADA LA RENDERIZACIÓN DEL GRÁFICO DE VENTAS ACUMULADAS */}
                     <h3>Ventas Acumuladas por {accumulatedPeriod === 'day' ? 'Día' : accumulatedPeriod === 'week' ? 'Semana' : accumulatedPeriod === 'month' ? 'Mes' : 'Año'}</h3>
                     {accumulatedSales.length === 0 ? (
                         <p>No hay ventas acumuladas para este período o rango.</p>
@@ -595,15 +427,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                         </table>
                     )}
 
-                    {/* Gráfico de Pagos Acumulados */}
-                    {accumulatedPaymentsChartData && (
-                        <DynamicChart
-                            chartType="line"
-                            data={accumulatedPaymentsChartData}
-                            options={accumulatedPaymentsChartOptions}
-                            title="Monto y Cantidad de Pagos Acumulados"
-                        />
-                    )}
+                    {/* ELIMINADA LA RENDERIZACIÓN DEL GRÁFICO DE PAGOS ACUMULADOS */}
                     <h3 style={{ marginTop: '30px' }}>Pagos Acumulados por {accumulatedPeriod === 'day' ? 'Día' : accumulatedPeriod === 'week' ? 'Semana' : accumulatedPeriod === 'month' ? 'Mes' : 'Año'}</h3>
                     {accumulatedPayments.length === 0 ? (
                         <p>No hay pagos acumulados para este período o rango.</p>
