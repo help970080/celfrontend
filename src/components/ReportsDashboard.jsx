@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import DynamicChart from './charts/DynamicChart'; // <-- IMPORTA TU NUEVO COMPONENTE
+import DynamicChart from './charts/DynamicChart';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -83,7 +83,7 @@ function ReportsDashboard({ authenticatedFetch }) {
             const paymentsResponse = await authenticatedFetch(paymentsUrl);
             if (!paymentsResponse.ok) {
                 const errorData = await paymentsResponse.json();
-                throw new Error(errorData.message || `Error HTTP: ${paymentsResponse.status}`);
+                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
             }
             const paymentsData = await paymentsResponse.json();
             setDailyPayments(paymentsData);
@@ -245,7 +245,8 @@ function ReportsDashboard({ authenticatedFetch }) {
         datasets: [
             {
                 label: 'Monto Total Vendido ($)',
-                data: accumulatedSales.map(item => item.totalAmount),
+                // Asegurar que los datos sean numéricos
+                data: accumulatedSales.map(item => parseFloat(item.totalAmount)),
                 backgroundColor: 'rgba(0, 123, 255, 0.6)', // Azul
                 borderColor: 'rgba(0, 123, 255, 1)',
                 borderWidth: 1,
@@ -253,7 +254,8 @@ function ReportsDashboard({ authenticatedFetch }) {
             },
             {
                 label: '# de Ventas',
-                data: accumulatedSales.map(item => item.count),
+                // Asegurar que los datos sean numéricos
+                data: accumulatedSales.map(item => parseInt(item.count, 10)),
                 backgroundColor: 'rgba(111, 66, 193, 0.6)', // Morado
                 borderColor: 'rgba(111, 66, 193, 1)',
                 borderWidth: 1,
@@ -274,14 +276,16 @@ function ReportsDashboard({ authenticatedFetch }) {
                 position: 'left',
                 title: { display: true, text: 'Monto Total ($)' },
                 beginAtZero: true,
+                // Quitar 'max' si estaba presente para permitir autoescalado
             },
             'y-count': {
                 type: 'linear',
                 position: 'right',
                 title: { display: true, text: '# de Ventas' },
                 beginAtZero: true,
+                // Quitar 'max' si estaba presente para permitir autoescalado
                 grid: {
-                    drawOnChartArea: false, // Solo dibujar las líneas de la cuadrícula para el eje izquierdo
+                    drawOnChartArea: false,
                 },
             },
         },
@@ -293,7 +297,8 @@ function ReportsDashboard({ authenticatedFetch }) {
         datasets: [
             {
                 label: 'Monto Total Pagado ($)',
-                data: accumulatedPayments.map(item => item.totalAmount),
+                // Asegurar que los datos sean numéricos
+                data: accumulatedPayments.map(item => parseFloat(item.totalAmount)),
                 fill: false,
                 backgroundColor: 'rgba(40, 167, 69, 0.6)', // Verde
                 borderColor: 'rgba(40, 167, 69, 1)',
@@ -301,7 +306,8 @@ function ReportsDashboard({ authenticatedFetch }) {
             },
             {
                 label: '# de Pagos',
-                data: accumulatedPayments.map(item => item.count),
+                // Asegurar que los datos sean numéricos
+                data: accumulatedPayments.map(item => parseInt(item.count, 10)),
                 fill: false,
                 backgroundColor: 'rgba(23, 162, 184, 0.6)', // Cian
                 borderColor: 'rgba(23, 162, 184, 1)',
@@ -318,17 +324,19 @@ function ReportsDashboard({ authenticatedFetch }) {
             title: { display: true, text: `Pagos Acumulados por ${accumulatedPeriod === 'day' ? 'Día' : accumulatedPeriod === 'week' ? 'Semana' : accumulatedPeriod === 'month' ? 'Mes' : 'Año'}` },
         },
         scales: {
-            y: {
+            y: { // Este es el eje Y para el Monto Total Pagado
                 type: 'linear',
                 position: 'left',
                 title: { display: true, text: 'Monto Total ($)' },
                 beginAtZero: true,
+                // Quitar 'max' si estaba presente para permitir autoescalado
             },
-            'y-count-payments': {
+            'y-count-payments': { // Este es el eje Y para el # de Pagos
                 type: 'linear',
                 position: 'right',
                 title: { display: true, text: '# de Pagos' },
                 beginAtZero: true,
+                // Quitar 'max' si estaba presente para permitir autoescalado
                 grid: {
                     drawOnChartArea: false,
                 },
@@ -378,9 +386,11 @@ function ReportsDashboard({ authenticatedFetch }) {
                         <DynamicChart
                             chartType="pie"
                             data={{
-                                labels: clientStatusChartData.labels.slice(0, 4), // Excluir 'Total Créditos Activos' del pie chart
+                                // Slice para excluir 'Total Créditos Activos' del pie chart
+                                labels: clientStatusChartData.labels.slice(0, 4),
                                 datasets: [{
                                     label: clientStatusChartData.datasets[0].label,
+                                    // Slice para excluir 'Total Créditos Activos'
                                     data: clientStatusChartData.datasets[0].data.slice(0, 4),
                                     backgroundColor: clientStatusChartData.datasets[0].backgroundColor.slice(0, 4),
                                     borderColor: clientStatusChartData.datasets[0].borderColor.slice(0, 4),
