@@ -269,7 +269,7 @@ function ReportsDashboard({ authenticatedFetch }) {
             )}
 
 
-            <h2 style={{ marginTop: '40px' }>Reporte de Transacciones por Rango de Fechas</h2>
+            <h2 style={{ marginTop: '40px' }}>Reporte de Transacciones por Rango de Fechas</h2>
             <div className="daily-report-controls">
                 <label htmlFor="startDate">Desde:</label>
                 <input
