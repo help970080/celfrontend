@@ -13,7 +13,7 @@ const TIMEZONE = "America/Mexico_City"; // <-- ¡AGREGADO!
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function ClientPayments({ authenticatedFetch, userRole }) { 
+function ClientPayments({ authenticatedFetch, userRole }) {
     const { clientId } = useParams();
     const [client, setClient] = useState(null);
     const [sales, setSales] = useState([]);
@@ -51,7 +51,8 @@ function ClientPayments({ authenticatedFetch, userRole }) {
         setErrorRisk(null);
 
         try {
-            const clientResponse = await authenticatedFetch(`<span class="math-inline">\{API\_BASE\_URL\}/api/clients/</span>{clientId}`);
+            // CORRECCIÓN DE URL: ELIMINADOS <span class="math-inline"> Y ESPACIOS INCORRECTOS
+            const clientResponse = await authenticatedFetch(`${API_BASE_URL}/api/clients/${clientId}`);
             if (!clientResponse.ok) {
                 const errorData = await clientResponse.json();
                 throw new Error(errorData.message || `Error HTTP: ${clientResponse.status}`);
@@ -59,7 +60,8 @@ function ClientPayments({ authenticatedFetch, userRole }) {
             const clientData = await clientResponse.json();
             setClient(clientData);
 
-            const salesResponse = await authenticatedFetch(`<span class="math-inline">\{API\_BASE\_URL\}/api/reports/client\-statement/</span>{clientId}`);
+            // CORRECCIÓN DE URL: ELIMINADOS <span class="math-inline"> Y ESPACIOS INCORRECTOS
+            const salesResponse = await authenticatedFetch(`${API_BASE_URL}/api/reports/client-statement/${clientId}`);
             if (!salesResponse.ok) {
                 const errorData = await salesResponse.json();
                 throw new Error(errorData.message || `Error HTTP: ${salesResponse.status}`);
@@ -68,7 +70,8 @@ function ClientPayments({ authenticatedFetch, userRole }) {
             const creditSales = salesData.sales.filter(sale => sale.isCredit);
             setSales(creditSales);
 
-            const riskResponse = await authenticatedFetch(`<span class="math-inline">\{API\_BASE\_URL\}/api/reports/client\-risk/</span>{clientId}`);
+            // CORRECCIÓN DE URL: ELIMINADOS <span class="math-inline"> Y ESPACIOS INCORRECTOS
+            const riskResponse = await authenticatedFetch(`${API_BASE_URL}/api/reports/client-risk/${clientId}`);
             if (!riskResponse.ok) {
                 const errorData = await riskResponse.json();
                 throw new Error(errorData.message || `Error HTTP: ${riskResponse.status}`);
@@ -116,7 +119,7 @@ function ClientPayments({ authenticatedFetch, userRole }) {
 
     const handleRegisterPayment = useCallback(async (e) => {
         e.preventDefault();
-        
+
         if (!selectedSaleForPayment || !selectedSaleForPayment.id) {
             setErrorPayment('No se ha proporcionado una venta válida para registrar el pago.');
             toast.error('Error: Venta inválida para pago.');
@@ -139,7 +142,8 @@ function ClientPayments({ authenticatedFetch, userRole }) {
         setErrorPayment(null);
 
         try {
-            const response = await authenticatedFetch(`<span class="math-inline">\{API\_BASE\_URL\}/api/sales/</span>{selectedSaleForPayment.id}/payments`, {
+            // CORRECCIÓN DE URL: ELIMINADOS <span class="math-inline"> Y ESPACIOS INCORRECTOS
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/sales/${selectedSaleForPayment.id}/payments`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -229,9 +233,9 @@ function ClientPayments({ authenticatedFetch, userRole }) {
                 <div className="credit-sales-list">
                     {sales.map(sale => (
                         <div key={sale.id} className="credit-sale-card">
-                            <h4>Venta #{sale.id} - {dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY')}</h4> {/* <-- ¡CAMBIADO! */}
+                            <h4>Venta #{sale.id} - {dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY')}</h4>
                             <p><strong>Producto(s):</strong> {sale.saleItems && sale.saleItems.map(item =>
-                                item.product ? `<span class="math-inline">\{item\.product\.name\} \(x</span>{item.quantity})` : `Producto ID <span class="math-inline">\{item\.productId\} \(x</span>{item.quantity})`
+                                item.product ? `${item.product.name} (x${item.quantity})` : `Producto ID ${item.productId} (x${item.quantity})`
                             ).join(', ')}</p>
                             <p><strong>Monto Original:</strong> ${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                             <p><strong>Enganche:</strong> ${sale.downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
@@ -265,7 +269,7 @@ function ClientPayments({ authenticatedFetch, userRole }) {
                     <div className="payment-form-modal-content">
                         <button className="close-button" onClick={handleClosePaymentForm}>×</button>
                         <h3>Registrar Abono para Venta #{selectedSaleForPayment.id}</h3>
-                        
+
                         <div className="payment-summary-info">
                             <p><strong>Saldo Venta Original:</strong> ${selectedSaleForPayment.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                             <p className="highlight-balance"><strong>Saldo Pendiente:</strong> ${selectedSaleForPayment.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
