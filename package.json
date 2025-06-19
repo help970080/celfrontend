@@ -17,8 +17,9 @@
     "react-router-dom": "^7.6.2",
     "react-toastify": "^11.0.5",
     "dayjs": "^1.11.13",
-    "dayjs-plugin-utc": "^0.1.2",
-    "dayjs-plugin-timezone": "^0.5.0"
+    "dayjs-plugin-utc": "^0.1.2"
+    // NOTA: dayjs-plugin-timezone NO se lista aquí. Se importa directamente
+    // de 'dayjs/plugin/timezone' en tu código JavaScript.
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
