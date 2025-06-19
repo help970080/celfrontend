@@ -23,11 +23,11 @@ function ClientStatementViewer({ authenticatedFetch }) {
     const [error, setError] = useState(null);
     const statementRef = useRef(); 
 
-    const appName = "CelExpress Pro";
+    const appName = "CelExpress Pro, Powered by Leonardo Luna";
     const businessInfo = {
-        name: "Tu Tienda de Celulares",
-        address: "Calle Falsa 123, Ciudad de México",
-        phone: "55 1234 5678",
+        name: "Celexpress Tu Tienda de Celulares",
+        address: "Morelos Sn.Col.Centro, Juchitepec,EdoMex",
+        phone: "56 6548 9522",
         email: "contacto@tuempresa.com"
     };
 

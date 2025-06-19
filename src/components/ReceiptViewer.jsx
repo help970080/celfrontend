@@ -16,11 +16,11 @@ const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:
 function ReceiptViewer({ sale, onClose }) {
     const receiptRef = useRef(); 
 
-    const appName = "CelExpress Pro";
+    const appName = "CelExpress Pro Powered by Leonardo Luna";
     const businessInfo = {
-        name: "Tu Tienda de Celulares", 
-        address: "Calle Falsa 123, Ciudad de México", 
-        phone: "55 1234 5678", 
+        name: "Celexpress Tu Tienda de Celulares", 
+        address: "Morelos Sn.col.Centro Juchitepec,EdoMex", 
+        phone: "56 66548 9522", 
         email: "contacto@tuempresa.com" 
     };
 
