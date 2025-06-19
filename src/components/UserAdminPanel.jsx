@@ -4,10 +4,11 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 
+// Extender dayjs con los plugins necesarios
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const TIMEZONE = "America/Mexico_City";
+const TIMEZONE = "America/Mexico_City"; // Asegúrate de que esta constante esté disponible
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -33,7 +34,7 @@ function UserAdminPanel({ authenticatedFetch, userRole }) {
             return roles.includes(userRole);
         }
         return userRole === roles;
-    }, [userRole]); 
+    }, [userRole]);
 
     const fetchUsers = useCallback(async () => {
         setLoading(true);
@@ -52,7 +53,7 @@ function UserAdminPanel({ authenticatedFetch, userRole }) {
         } finally {
             setLoading(false);
         }
-    }, [authenticatedFetch]); 
+    }, [authenticatedFetch]);
 
     useEffect(() => {
         if (hasPermission('super_admin')) {
@@ -61,7 +62,7 @@ function UserAdminPanel({ authenticatedFetch, userRole }) {
             setLoading(false);
             setError("Acceso denegado. Solo super administradores pueden gestionar usuarios.");
         }
-    }, [fetchUsers, hasPermission]); 
+    }, [fetchUsers, hasPermission]);
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
@@ -134,10 +135,10 @@ function UserAdminPanel({ authenticatedFetch, userRole }) {
         setFormSuccess(null);
     };
 
-    const currentLoggedInUserId = parseInt(localStorage.getItem('userId'), 10); 
+    const currentLoggedInUserId = parseInt(localStorage.getItem('userId'), 10);
 
     const handleDeleteUser = async (id, usernameToDelete) => {
-        if (id === currentLoggedInUserId) { 
+        if (id === currentLoggedInUserId) {
              toast.error('No puedes eliminar tu propia cuenta a través de esta interfaz.');
              return;
         }
@@ -261,12 +262,13 @@ function UserAdminPanel({ authenticatedFetch, userRole }) {
                                 <td>{user.id}</td>
                                 <td>{user.username}</td>
                                 <td><span className={`status-badge status-${user.role}`}>{user.role}</span></td>
-                                <td>{moment(user.createdAt).tz("America/Mexico_City").format('DD/MM/YYYY')}</td>
-                                <td>{moment(user.updatedAt).tz("America/Mexico_City").format('DD/MM/YYYY')}</td>
+                                {/* CORRECCIÓN APLICADA AQUÍ: Usar dayjs y TIMEZONE */}
+                                <td>{dayjs(user.createdAt).tz(TIMEZONE).format('DD/MM/YYYY')}</td>
+                                <td>{dayjs(user.updatedAt).tz(TIMEZONE).format('DD/MM/YYYY')}</td>
                                 <td>
                                     <div className="action-buttons">
                                         <button onClick={() => handleEditClick(user)}>Editar</button>
-                                        {user.id !== currentLoggedInUserId && ( 
+                                        {user.id !== currentLoggedInUserId && (
                                             <button className="delete-button" onClick={() => handleDeleteUser(user.id, user.username)}>Eliminar</button>
                                         )}
                                     </div>

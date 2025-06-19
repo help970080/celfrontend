@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npx vite build", 
+    "build": "npx vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -17,7 +17,8 @@
     "react-router-dom": "^7.6.2",
     "react-toastify": "^11.0.5",
     "dayjs": "^1.11.13",
-    "dayjs-plugin-utc": "^0.1.2"
+    "dayjs-plugin-utc": "^0.1.2",
+    "dayjs-plugin-timezone": "^0.5.0" // <--- Línea agregada
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
