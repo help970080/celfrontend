@@ -227,7 +227,7 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
                                             <iframe
                                                 width="100%"
                                                 height="150"
-                                                src={`https://www.youtube.com/embed/${mediaType.id}`} // <-- ERROR CORREGIDO AQUÍ
+                                                src={`https://www.youtube.com/embed/${mediaType.id}`}
                                                 frameBorder="0"
                                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                                 allowFullScreen
@@ -251,16 +251,18 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
 
                                         <h2>{product.name}</h2>
                                         <p>{product.description}</p>
-                                        <p>Precio: <span class="math-inline">\{product\.price ? product\.price\.toLocaleString\('es\-MX', \{ minimumFractionDigits\: 2, maximumFractionDigits\: 2 \}\) \: 'N/A'\}</p\>
-<p\>Stock\: \{product\.stock\}</p\>
-<p\>Categoría\: \{product\.category\}</p\>
-<p\>Marca\: \{product\.brand\}</p\>
-\{product\.price \> 0 && \(
-<div className\="credit\-info"\>
-<p\>Enganche\: <strong\></span>{downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></p>
+                                        <p>Precio: ${product.price ? product.price.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A'}</p>
+                                        <p>Stock: {product.stock}</p>
+                                        <p>Categoría: {product.category}</p>
+                                        <p>Marca: {product.brand}</p>
+                                        
+                                        {product.price > 0 && (
+                                            <div className="credit-info">
+                                                <p>Enganche: <strong>${downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></p>
                                                 <p>Pago Semanal: <strong>${weeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (17 semanas)</strong></p>
                                             </div>
                                         )}
+                                        
                                         <div className="product-actions">
                                             {hasPermission(['super_admin', 'regular_admin', 'inventory_admin']) && (
                                                 <button onClick={() => setProductToEdit(product)}>Editar</button>
