@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import dayjs from 'dayjs'; // <-- ¡CAMBIADO!
-import utc from 'dayjs/plugin/utc'; // <-- ¡AGREGADO!
-import timezone from 'dayjs/plugin/timezone'; // <-- ¡AGREGADO!
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import ReceiptViewer from './ReceiptViewer';
 
-dayjs.extend(utc); // <-- ¡AGREGADO!
-dayjs.extend(timezone); // <-- ¡AGREGADO!
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
-const TIMEZONE = "America/Mexico_City"; // <-- ¡AGREGADO!
+const TIMEZONE = "America/Mexico_City";
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -51,7 +51,8 @@ function ClientPayments({ authenticatedFetch, userRole }) {
         setErrorRisk(null);
 
         try {
-            const clientResponse = await authenticatedFetch(`<span class="math-inline">\{API\_BASE\_URL\}/api/clients/</span>{clientId}`);
+            // --- INICIO DE CORRECCIÓN ---
+            const clientResponse = await authenticatedFetch(`${API_BASE_URL}/api/clients/${clientId}`);
             if (!clientResponse.ok) {
                 const errorData = await clientResponse.json();
                 throw new Error(errorData.message || `Error HTTP: ${clientResponse.status}`);
@@ -59,7 +60,7 @@ function ClientPayments({ authenticatedFetch, userRole }) {
             const clientData = await clientResponse.json();
             setClient(clientData);
 
-            const salesResponse = await authenticatedFetch(`<span class="math-inline">\{API\_BASE\_URL\}/api/reports/client\-statement/</span>{clientId}`);
+            const salesResponse = await authenticatedFetch(`${API_BASE_URL}/api/reports/client-statement/${clientId}`);
             if (!salesResponse.ok) {
                 const errorData = await salesResponse.json();
                 throw new Error(errorData.message || `Error HTTP: ${salesResponse.status}`);
@@ -68,13 +69,14 @@ function ClientPayments({ authenticatedFetch, userRole }) {
             const creditSales = salesData.sales.filter(sale => sale.isCredit);
             setSales(creditSales);
 
-            const riskResponse = await authenticatedFetch(`<span class="math-inline">\{API\_BASE\_URL\}/api/reports/client\-risk/</span>{clientId}`);
+            const riskResponse = await authenticatedFetch(`${API_BASE_URL}/api/reports/client-risk/${clientId}`);
             if (!riskResponse.ok) {
                 const errorData = await riskResponse.json();
                 throw new Error(errorData.message || `Error HTTP: ${riskResponse.status}`);
             }
             const riskData = await riskResponse.json();
             setRiskAnalysis(riskData);
+            // --- FIN DE CORRECCIÓN ---
 
         } catch (err) {
             console.error("Error al cargar datos del cliente o análisis de riesgo:", err);
@@ -139,7 +141,9 @@ function ClientPayments({ authenticatedFetch, userRole }) {
         setErrorPayment(null);
 
         try {
-            const response = await authenticatedFetch(`<span class="math-inline">\{API\_BASE\_URL\}/api/sales/</span>{selectedSaleForPayment.id}/payments`, {
+            // --- INICIO DE CORRECCIÓN ---
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/sales/${selectedSaleForPayment.id}/payments`, {
+            // --- FIN DE CORRECCIÓN ---
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -160,7 +164,7 @@ function ClientPayments({ authenticatedFetch, userRole }) {
             handleClosePaymentForm();
         } catch (err) {
             console.error('Error al registrar pago:', err);
-            setErrorPayment(err.message || 'Error al registrar el pago. Intenta de nuevo.');
+setErrorPayment(err.message || 'Error al registrar el pago. Intenta de nuevo.');
             toast.error('Ocurrió un error al registrar el pago.');
         } finally {
             setLoadingPayment(false);
@@ -229,9 +233,9 @@ function ClientPayments({ authenticatedFetch, userRole }) {
                 <div className="credit-sales-list">
                     {sales.map(sale => (
                         <div key={sale.id} className="credit-sale-card">
-                            <h4>Venta #{sale.id} - {dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY')}</h4> {/* <-- ¡CAMBIADO! */}
+                            <h4>Venta #{sale.id} - {dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY')}</h4>
                             <p><strong>Producto(s):</strong> {sale.saleItems && sale.saleItems.map(item =>
-                                item.product ? `<span class="math-inline">\{item\.product\.name\} \(x</span>{item.quantity})` : `Producto ID <span class="math-inline">\{item\.productId\} \(x</span>{item.quantity})`
+                                item.product ? `${item.product.name} (x${item.quantity})` : `Producto ID ${item.productId} (x${item.quantity})`
                             ).join(', ')}</p>
                             <p><strong>Monto Original:</strong> ${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                             <p><strong>Enganche:</strong> ${sale.downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
