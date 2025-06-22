@@ -1,4 +1,4 @@
-// src/components/SaleAdminPanel.jsx - VERSIÓN AJUSTADA
+// src/components/SaleAdminPanel.jsx - VERSIÓN RESTAURADA Y CORRECTA
 import React, { useState, useEffect, useCallback } from 'react';
 import SaleForm from './SaleForm';
 import SaleList from './SaleList';
@@ -32,17 +32,13 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
                 ...(searchTerm && { search: searchTerm })
             });
             const response = await authenticatedFetch(`${API_BASE_URL}/api/sales?${params.toString()}`);
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
-            }
+            if (!response.ok) throw new Error((await response.json()).message || 'Error al cargar ventas');
             const data = await response.json();
             setSales(data.sales || []);
-            setTotalPages(data.totalPages);
-            setTotalItems(data.totalItems);
+            setTotalPages(data.totalPages || 1);
+            setTotalItems(data.totalItems || 0);
         } catch (err) {
-            console.error("Error al obtener ventas:", err);
-            setErrorSales(err.message || "No se pudieron cargar las ventas.");
+            setErrorSales(err.message);
         } finally {
             setLoadingSales(false);
         }
@@ -69,30 +65,24 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
     return (
         <section className="sales-section">
             <h2>Gestión de Ventas y Cobranza</h2>
+            {/* El formulario para registrar ventas ahora es visible de nuevo */}
             {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
                 <SaleForm
                     onSaleAdded={fetchSales}
                     clients={clients}
                     products={products}
-                    authenticatedFetch={authenticatedFetch} // <-- Prop añadida para consistencia
+                    authenticatedFetch={authenticatedFetch}
                 />
             )}
 
             <div className="admin-controls">
                 <div className="control-group">
                     <label htmlFor="searchSale">Buscar Venta:</label>
-                    <input
-                        type="text"
-                        id="searchSale"
-                        value={searchTerm}
-                        onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                        placeholder="Buscar por ID de venta, cliente o producto..."
-                    />
+                    <input type="text" id="searchSale" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder="Buscar por ID, cliente o producto..." />
                 </div>
                  <div className="control-group">
                     <label htmlFor="itemsPerPage">Ítems por página:</label>
                     <select id="itemsPerPage" value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
-                        <option value="5">5</option>
                         <option value="10">10</option>
                         <option value="20">20</option>
                         <option value="50">50</option>

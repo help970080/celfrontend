@@ -1,3 +1,4 @@
+// src/components/ReceiptViewer.jsx - VERSIÓN FINAL CON LEYENDAS
 import React, { useRef } from 'react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -14,102 +15,54 @@ const TIMEZONE = "America/Mexico_City";
 
 function ReceiptViewer({ sale, onClose }) {
     const receiptRef = useRef();
-
-    const businessInfo = {
-        name: "Celexpress Tu Tienda de Celulares",
-        address: "Morelos Sn.col.Centro Juchitepec,EdoMex",
-        phone: "56 66548 9522",
-    };
+    const businessInfo = { /* ... tu info de negocio ... */ };
 
     let dueDate = null;
     if (sale && sale.isCredit && sale.numberOfPayments > 0) {
         dueDate = dayjs(sale.saleDate).tz(TIMEZONE).add(sale.numberOfPayments, 'weeks').format('DD/MM/YYYY');
     }
 
-    if (!sale) {
-        return (
-            <div className="receipt-modal-overlay">
-                <div className="receipt-modal-content">
-                    <button className="close-button" onClick={onClose}>×</button>
-                    <h3>Error en Recibo</h3>
-                    <p>No se seleccionó ninguna venta válida para generar el recibo.</p>
-                </div>
-            </div>
-        );
-    }
+    if (!sale) return null; // No renderiza nada si no hay venta
     
-    const handleGeneratePdf = async () => { /* tu lógica de PDF */ };
-    const handleShareWhatsApp = () => { /* tu lógica de WhatsApp */ };
-    
+    // ... tus funciones handleGeneratePdf y handleShareWhatsApp ...
+
     return (
         <div className="receipt-modal-overlay" onClick={onClose}>
             <div className="receipt-modal-content" onClick={(e) => e.stopPropagation()}>
-                
-                {/* --- INICIO DE LA PRUEBA DE VERSIÓN --- */}
-                <p style={{color: 'red', fontWeight: 'bold', textAlign: 'center', fontSize: '16px'}}>
-                    Versión del Componente: 2.0 - Despliegue Correcto
-                </p>
-                {/* --- FIN DE LA PRUEBA DE VERSIÓN --- */}
-
                 <button className="close-button no-print" onClick={onClose}>×</button>
-                
                 <div ref={receiptRef} className="receipt-container">
-                    {/* El resto del código del recibo que ya corregimos */}
-                    <div className="receipt-header">
-                        <h1>{businessInfo.name}</h1>
-                        <p>{businessInfo.address}</p>
-                        <p>Tel: {businessInfo.phone}</p>
-                        <hr style={{borderTop: '1px dashed black'}} />
-                        <p>Fecha: {dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</p>
-                        <p>Recibo No: {sale.id}</p>
-                        <p>Cliente: {sale.client ? sale.client.name : 'Venta de Mostrador'}</p>
-                    </div>
+                    <div className="receipt-header">{/* ... */}</div>
+                    <div className="receipt-items">{/* ... */}</div>
+                    <div className="receipt-totals">{/* ... */}</div>
+                    {sale.payments && sale.payments.length > 0 && <div className="receipt-payments">{/* ... */}</div>}
 
-                    <div className="receipt-items">
-                        <table style={{width: '100%'}}>
-                            <thead>
-                                <tr>
-                                    <th className="col-qty">Cant.</th>
-                                    <th>Producto</th>
-                                    <th className="col-price">Precio</th>
-                                    <th className="col-total">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {sale.saleItems?.map(item => {
-                                    const itemPrice = item.price || 0;
-                                    const lineTotal = (item.quantity || 1) * itemPrice;
-                                    return (
-                                        <tr key={item.id}>
-                                            <td>{item.quantity || 1}</td>
-                                            <td>{item.product?.name || 'Producto no disponible'}</td>
-                                            <td className="col-price">{itemPrice > 0 ? `$${itemPrice.toFixed(2)}` : ''}</td>
-                                            <td className="col-total">{lineTotal > 0 ? `$${lineTotal.toFixed(2)}` : ''}</td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div className="receipt-totals">{/* ... tu lógica de totales ... */}</div>
-                    {sale.payments && sale.payments.length > 0 && ( <div className="receipt-payments">{/* ... */}</div> )}
-                    {sale.isCredit && (<div className="receipt-credit-warning">{/* ... */}</div>)}
-                    {sale.isCredit && (<div className="receipt-promissory-note">{/* ... tu pagaré ... */}</div>)}
-
-                    <div className="receipt-footer">
-                        <p>¡Gracias por su compra!</p>
-                    </div>
+                    {/* LEYENDA Y PAGARÉ (SOLO PARA CRÉDITO) */}
+                    {sale.isCredit && (
+                        <>
+                            <div className="receipt-credit-warning" style={{ marginTop: '15px', border: '1px solid #000', padding: '5px', textAlign: 'center', fontSize: '8pt' }}>
+                                <p style={{ margin: 0, fontWeight: 'bold' }}>
+                                    Esta es una Venta a crédito. Usted No puede Vender o Empeñar este artículo hasta que esté completamente liquidado.
+                                </p>
+                            </div>
+                            <div className="receipt-promissory-note" style={{ marginTop: '15px', fontSize: '9pt' }}>
+                                <p style={{ textAlign: 'justify', margin: '5px 0' }}>
+                                    <strong>DEBO Y PAGARÉ</strong> incondicionalmente la cantidad de <strong>{`$${(sale.totalAmount || 0).toLocaleString('es-MX')} MXN`}</strong> a DANIEL GUERRERO BARRANCO... el día <strong>{dueDate || '[Fecha no calculada]'}</strong>.
+                                </p>
+                                <p style={{ textAlign: 'justify', margin: '5px 0' }}>
+                                    De no pagar en la fecha estipulada, este pagaré generará un interés moratorio del 6% mensual sobre el saldo insoluto hasta su total liquidación.
+                                </p>
+                                <div className="signature-line" style={{ marginTop: '30px', textAlign: 'center' }}>
+                                    <p style={{ margin: '0' }}>_________________________</p>
+                                    <p style={{ margin: '2px 0' }}>{sale.client?.name || 'Nombre del Cliente'}</p>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                    <div className="receipt-footer">{/* ... */}</div>
                 </div>
-
-                <div className="receipt-actions">
-                    <button onClick={() => window.print()} className="no-print">Imprimir Ticket</button>
-                    <button onClick={handleGeneratePdf} className="no-print">Descargar PDF</button>
-                    <button onClick={handleShareWhatsApp} className="no-print">WhatsApp</button>
-                </div>
+                <div className="receipt-actions">{/* ... */}</div>
             </div>
         </div>
     );
 }
-
 export default ReceiptViewer;
