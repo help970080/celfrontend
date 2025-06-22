@@ -1,80 +1,146 @@
-// src/components/SaleAdminPanel.jsx - VERSIÓN DE DIAGNÓSTICO FINAL
 import React, { useState, useEffect, useCallback } from 'react';
 import SaleForm from './SaleForm';
 import SaleList from './SaleList';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
+function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) { 
     const [sales, setSales] = useState([]);
     const [clients, setClients] = useState([]);
     const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [loadingSales, setLoadingSales] = useState(true);
+    const [errorSales, setErrorSales] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const [salesRes, clientsRes, productsRes] = await Promise.all([
-                authenticatedFetch(`${API_BASE_URL}/api/sales?limit=100`),
-                authenticatedFetch(`${API_BASE_URL}/api/clients?limit=999`),
-                authenticatedFetch(`${API_BASE_URL}/api/products?limit=999`)
-            ]);
-
-            if (!salesRes.ok) throw new Error(`Error al cargar ventas: ${salesRes.statusText}`);
-            if (!clientsRes.ok) throw new Error('Error al cargar clientes');
-            if (!productsRes.ok) throw new Error('Error al cargar productos');
-
-            const salesData = await salesRes.json();
-            const clientsData = await clientsRes.json();
-            const productsData = await productsRes.json();
-            
-            // --- LÍNEA DE DIAGNÓSTICO ---
-            // Esto nos mostrará en la consola del navegador los datos exactos que llegan del backend.
-            console.log("DATOS CRUDOS DE VENTAS RECIBIDOS DEL BACKEND:", salesData.sales);
-            // --- FIN DE LA LÍNEA DE DIAGNÓSTICO ---
-
-            setSales(salesData.sales || []);
-            setClients(clientsData.clients || []);
-            setProducts(productsData.products || []);
-            setError(null);
-
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [authenticatedFetch]);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
 
     const hasPermission = (roles) => {
         if (!userRole) return false;
-        return Array.isArray(roles) ? roles.includes(userRole) : userRole === roles;
+        if (Array.isArray(roles)) {
+            return roles.includes(userRole);
+        }
+        return userRole === roles;
     };
+
+
+    const fetchSales = useCallback(async () => {
+        setLoadingSales(true);
+        setErrorSales(null);
+        try {
+            let url = `${API_BASE_URL}/api/sales`;
+            if (searchTerm) {
+                url += `?search=${encodeURIComponent(searchTerm)}`;
+            }
+            url += `${searchTerm ? '&' : '?'}page=${currentPage}&limit=${itemsPerPage}`;
+
+            const response = await authenticatedFetch(url);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+            }
+            const data = await response.json();
+            setSales(data.sales || []);
+            setTotalPages(data.totalPages);
+            setTotalItems(data.totalItems);
+        } catch (err) {
+            console.error("Error al obtener ventas:", err);
+            setErrorSales(err.message || "No se pudieron cargar las ventas.");
+            setSales([]);
+        } finally {
+            setLoadingSales(false);
+        }
+    }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage]);
+
+    const fetchClients = useCallback(async () => {
+        try {
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/clients?limit=9999`); 
+            if (response.ok) {
+                const data = await response.json();
+                setClients(data.clients || []);
+            }
+        } catch (err) { console.error("Error al cargar clientes para ventas:", err); }
+    }, [authenticatedFetch]);
+
+    const fetchProducts = useCallback(async () => {
+        try {
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/products?limit=9999`); 
+            if (response.ok) {
+                const data = await response.json();
+                setProducts(data.products || []);
+            }
+        } catch (err) { console.error("Error al cargar productos para ventas:", err); }
+    }, [authenticatedFetch]);
+
+    useEffect(() => {
+        fetchSales();
+        fetchClients();
+        fetchProducts();
+    }, [fetchSales, fetchClients, fetchProducts]);
 
     return (
         <section className="sales-section">
             <h2>Gestión de Ventas y Cobranza</h2>
             {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
-                <div className="form-wrapper">
-                    <SaleForm
-                        onSaleAdded={fetchData}
-                        clients={clients}
-                        products={products}
-                        authenticatedFetch={authenticatedFetch}
+                <SaleForm
+                    onSaleAdded={fetchSales}
+                    clients={clients}
+                    products={products}
+                />
+            )}
+
+            <div className="admin-controls">
+                <div className="control-group">
+                    <label htmlFor="searchSale">Buscar Venta:</label>
+                    <input
+                        type="text"
+                        id="searchSale"
+                        value={searchTerm}
+                        onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                        placeholder="Buscar por ID de venta, cliente o producto..."
                     />
                 </div>
-            )}
-            <hr/>
-            {loading ? <p>Cargando ventas...</p> : error ? <p className="error-message">Error: {error}</p> : (
-                <SaleList
-                    sales={sales}
-                    onDeleteSale={onDeleteSale}
-                    userRole={userRole}
-                />
+                 <div className="control-group">
+                    <label htmlFor="itemsPerPage">Ítems por página:</label>
+                    <select id="itemsPerPage" value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+            </div>
+
+            {loadingSales ? (
+                <p>Cargando ventas...</p>
+            ) : errorSales ? (
+                <p style={{ color: 'red', fontWeight: 'bold' }}>Error: {errorSales}</p>
+            ) : (
+                <>
+                    <SaleList
+                        sales={sales}
+                        clients={clients}
+                        products={products}
+                        onSaleUpdated={fetchSales}
+                        onPaymentAdded={fetchSales}
+                        onDeleteSale={onDeleteSale}
+                        authenticatedFetch={authenticatedFetch}
+                        userRole={userRole} 
+                    />
+                    {totalPages > 1 && (
+                        <div className="pagination-controls">
+                            <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
+                                Anterior
+                            </button>
+                            <span>Página {currentPage} de {totalPages} ({totalItems} ítems)</span>
+                            <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>
+                                Siguiente
+                            </button>
+                        </div>
+                    )}
+                </>
             )}
         </section>
     );

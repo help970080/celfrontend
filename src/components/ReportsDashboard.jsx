@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-// import DynamicChart from './charts/DynamicChart'; // <-- ELIMINADA LA IMPORTACIÓN
+import dayjs from 'dayjs'; // <-- ¡CAMBIADO!
+import utc from 'dayjs/plugin/utc'; // <-- ¡AGREGADO!
+import timezone from 'dayjs/plugin/timezone'; // <-- ¡AGREGADO!
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
+dayjs.extend(utc); // <-- ¡AGREGADO!
+dayjs.extend(timezone); // <-- ¡AGREGADO!
 
-const TIMEZONE = "America/Mexico_City";
+const TIMEZONE = "America/Mexico_City"; // <-- ¡AGREGADO!
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -83,7 +82,7 @@ function ReportsDashboard({ authenticatedFetch }) {
             const paymentsResponse = await authenticatedFetch(paymentsUrl);
             if (!paymentsResponse.ok) {
                 const errorData = await paymentsResponse.json();
-                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+                throw new Error(errorData.message || `Error HTTP: ${paymentsResponse.status}`);
             }
             const paymentsData = await paymentsResponse.json();
             setDailyPayments(paymentsData);
@@ -198,11 +197,6 @@ function ReportsDashboard({ authenticatedFetch }) {
         return <p className="error-message">Error al cargar reportes: {error}</p>;
     }
 
-    // --- ELIMINADAS LAS DEFINICIONES DE DATOS Y OPCIONES PARA GRÁFICOS ---
-    // clientStatusChartData, clientStatusChartOptions, accumulatedSalesChartData,
-    // accumulatedSalesChartOptions, accumulatedPaymentsChartData, accumulatedPaymentsChartOptions
-    // Ya no se necesitan aquí al no renderizar los gráficos.
-
     return (
         <div className="reports-dashboard">
             <h2>Resumen Financiero</h2>
@@ -239,31 +233,28 @@ function ReportsDashboard({ authenticatedFetch }) {
             ) : errorClientStatus ? (
                 <p className="error-message">Error: {errorClientStatus}</p>
             ) : clientStatusDashboard ? (
-                <>
-                    {/* ELIMINADA LA RENDERIZACIÓN DEL GRÁFICO DE CLIENTES */}
-                    <div className="client-status-cards">
-                        <div className="status-card current">
-                            <h3>Al Corriente</h3>
-                            <p>{clientStatusDashboard.alCorriente}</p>
-                        </div>
-                        <div className="status-card due-soon">
-                            <h3>Por Vencer</h3>
-                            <p>{clientStatusDashboard.porVencer}</p>
-                        </div>
-                        <div className="status-card overdue">
-                            <h3>Vencidos</h3>
-                            <p>{clientStatusDashboard.vencidos}</p>
-                        </div>
-                        <div className="status-card paid-off">
-                            <h3>Pagados</h3>
-                            <p>{clientStatusDashboard.pagados}</p>
-                        </div>
-                         <div className="status-card active-total">
-                            <h3>Total Créditos Activos</h3>
-                            <p>{clientStatusDashboard.totalActivos}</p>
-                        </div>
+                <div className="client-status-cards">
+                    <div className="status-card current">
+                        <h3>Al Corriente</h3>
+                        <p>{clientStatusDashboard.alCorriente}</p>
                     </div>
-                </>
+                    <div className="status-card due-soon">
+                        <h3>Por Vencer</h3>
+                        <p>{clientStatusDashboard.porVencer}</p>
+                    </div>
+                    <div className="status-card overdue">
+                        <h3>Vencidos</h3>
+                        <p>{clientStatusDashboard.vencidos}</p>
+                    </div>
+                    <div className="status-card paid-off">
+                        <h3>Pagados</h3>
+                        <p>{clientStatusDashboard.pagados}</p>
+                    </div>
+                     <div className="status-card active-total">
+                        <h3>Total Créditos Activos</h3>
+                        <p>{clientStatusDashboard.totalActivos}</p>
+                    </div>
+                </div>
             ) : (
                 <p>No hay datos de estado de clientes disponibles.</p>
             )}
@@ -277,7 +268,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                     id="startDate"
                     value={startDate}
                     onChange={(e) => handleRangeDateChange(e, 'start')}
-                    max={dayjs().tz(TIMEZONE).format('YYYY-MM-DD')}
+                    max={dayjs().tz(TIMEZONE).format('YYYY-MM-DD')} 
                 />
                 <label htmlFor="endDate">Hasta:</label>
                 <input
@@ -285,7 +276,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                     id="endDate"
                     value={endDate}
                     onChange={(e) => handleRangeDateChange(e, 'end')}
-                    max={dayjs().tz(TIMEZONE).format('YYYY-MM-DD')}
+                    max={dayjs().tz(TIMEZONE).format('YYYY-MM-DD')} 
                 />
                 <button onClick={fetchDailyReports} className="refresh-button">Actualizar Rango</button>
             </div>
@@ -305,7 +296,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                                 <tr>
                                     <th>ID Venta</th>
                                     <th>Cliente</th>
-                                    <th>Producto(s)</th>
+                                    <th>Productos Vendidos</th>
                                     <th>Monto</th>
                                     <th>Tipo</th>
                                     <th>Fecha Venta</th>
@@ -326,7 +317,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                                             <td>{soldProductsDisplay}</td>
                                             <td>${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                                             <td>{sale.isCredit ? 'Crédito' : 'Contado'}</td>
-                                            <td>{dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</td>
+                                            <td>{dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</td> 
                                         </tr>
                                     );
                                 })}
@@ -360,7 +351,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                                             <td>${payment.amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                                             <td>{payment.paymentMethod || 'N/A'}</td>
                                             <td>{payment.notes || 'N/A'}</td>
-                                            <td>{dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</td>
+                                            <td>{dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</td> 
                                         </tr>
                                     );
                                 })}
@@ -402,7 +393,6 @@ function ReportsDashboard({ authenticatedFetch }) {
                 <p className="error-message">Error: {errorAccumulated}</p>
             ) : (
                 <div className="accumulated-reports-content">
-                    {/* ELIMINADA LA RENDERIZACIÓN DEL GRÁFICO DE VENTAS ACUMULADAS */}
                     <h3>Ventas Acumuladas por {accumulatedPeriod === 'day' ? 'Día' : accumulatedPeriod === 'week' ? 'Semana' : accumulatedPeriod === 'month' ? 'Mes' : 'Año'}</h3>
                     {accumulatedSales.length === 0 ? (
                         <p>No hay ventas acumuladas para este período o rango.</p>
@@ -427,7 +417,6 @@ function ReportsDashboard({ authenticatedFetch }) {
                         </table>
                     )}
 
-                    {/* ELIMINADA LA RENDERIZACIÓN DEL GRÁFICO DE PAGOS ACUMULADOS */}
                     <h3 style={{ marginTop: '30px' }}>Pagos Acumulados por {accumulatedPeriod === 'day' ? 'Día' : accumulatedPeriod === 'week' ? 'Semana' : accumulatedPeriod === 'month' ? 'Mes' : 'Año'}</h3>
                     {accumulatedPayments.length === 0 ? (
                         <p>No hay pagos acumulados para este período o rango.</p>

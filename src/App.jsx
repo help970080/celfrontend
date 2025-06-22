@@ -1,22 +1,18 @@
-// App.jsx
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react'; // <-- AÑADIDO: lazy y Suspense
+import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Ya no importamos estos directamente aquí al inicio:
-// import ProductAdminPanel from './components/ProductAdminPanel';
-// import ClientAdminPanel from './components/ClientAdminPanel';
-// import SaleAdminPanel from './components/SaleAdminPanel';
-// import ReportsAdminPanel from './components/ReportsAdminPanel';
-// import ReceiptViewer from './components/ReceiptViewer';
-// import ClientStatementViewer from './components/ClientStatementViewer';
-// import ClientPayments from './components/ClientPayments';
-// import UserAdminPanel from './components/UserAdminPanel';
-
-// Sigue importando Auth y PublicCatalog de forma estática si son parte de la carga inicial
+import ProductAdminPanel from './components/ProductAdminPanel';
+import ClientAdminPanel from './components/ClientAdminPanel';
+import SaleAdminPanel from './components/SaleAdminPanel';
+import ReportsAdminPanel from './components/ReportsAdminPanel';
 import Auth from './components/Auth';
 import PublicCatalog from './components/PublicCatalog';
+import ReceiptViewer from './components/ReceiptViewer';
+import ClientStatementViewer from './components/ClientStatementViewer';
+import ClientPayments from './components/ClientPayments';
+import UserAdminPanel from './components/UserAdminPanel';
 
 import './App.css';
 
@@ -25,17 +21,6 @@ const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:
 const PrivateRoute = ({ children, isAuthenticated }) => {
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
-
-// --- CAMBIOS AQUÍ: Importaciones dinámicas con lazy ---
-const ProductAdminPanel = lazy(() => import('./components/ProductAdminPanel'));
-const ClientAdminPanel = lazy(() => import('./components/ClientAdminPanel'));
-const SaleAdminPanel = lazy(() => import('./components/SaleAdminPanel'));
-const ReportsAdminPanel = lazy(() => import('./components/ReportsAdminPanel'));
-const UserAdminPanel = lazy(() => import('./components/UserAdminPanel'));
-const ReceiptViewer = lazy(() => import('./components/ReceiptViewer')); // Este también podría ser dinámico
-const ClientStatementViewer = lazy(() => import('./components/ClientStatementViewer')); // Este también
-const ClientPayments = lazy(() => import('./components/ClientPayments')); // Y este
-// --- FIN CAMBIOS ---
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem('token') || null);
@@ -179,86 +164,79 @@ function App() {
         </header>
 
         <main className="app-main-content">
-          {/* --- CAMBIO AQUÍ: Envuelve las rutas dinámicas con Suspense --- */}
-          <Suspense fallback={
-            <div style={{ textAlign: 'center', padding: '50px', fontSize: '1.5em', color: '#007bff' }}>
-              Cargando sección...
-            </div>
-          }>
-            <Routes>
-              <Route path="/" element={<PublicCatalog />} />
-              <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
+          <Routes>
+            <Route path="/" element={<PublicCatalog />} />
+            <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
 
-              {/* Rutas Protegidas del Panel de Administración (ahora cargadas dinámicamente) */}
+            {/* Rutas Protegidas del Panel de Administración */}
+            <Route
+              path="/admin/products"
+              element={
+                <PrivateRoute isAuthenticated={!!token}>
+                  <ProductAdminPanel authenticatedFetch={authenticatedFetch} onDeleteProduct={handleDeleteProduct} userRole={userRole} />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/admin/clients"
+              element={
+                <PrivateRoute isAuthenticated={!!token}>
+                  <ClientAdminPanel authenticatedFetch={authenticatedFetch} onDeleteClient={handleDeleteClient} userRole={userRole} />
+                </PrivateRoute>
+              }
+            />
+             <Route
+              path="/admin/sales"
+              element={
+                <PrivateRoute isAuthenticated={!!token}>
+                  <SaleAdminPanel authenticatedFetch={authenticatedFetch} onDeleteSale={handleDeleteSale} userRole={userRole} />
+                </PrivateRoute>
+              }
+            />
               <Route
-                path="/admin/products"
-                element={
-                  <PrivateRoute isAuthenticated={!!token}>
-                    <ProductAdminPanel authenticatedFetch={authenticatedFetch} onDeleteProduct={handleDeleteProduct} userRole={userRole} />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/admin/clients"
-                element={
-                  <PrivateRoute isAuthenticated={!!token}>
-                    <ClientAdminPanel authenticatedFetch={authenticatedFetch} onDeleteClient={handleDeleteClient} userRole={userRole} />
-                  </PrivateRoute>
-                }
-              />
-               <Route
-                path="/admin/sales"
-                element={
-                  <PrivateRoute isAuthenticated={!!token}>
-                    <SaleAdminPanel authenticatedFetch={authenticatedFetch} onDeleteSale={handleDeleteSale} userRole={userRole} />
-                  </PrivateRoute>
-                }
-              />
-                <Route
-                path="/admin/reports"
-                element={
-                  <PrivateRoute isAuthenticated={!!token}>
-                    <ReportsAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/admin/sales/receipt/:saleId"
-                element={
-                  <PrivateRoute isAuthenticated={!!token}>
-                    <ReceiptViewer />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/admin/clients/statement/:clientId"
-                element={
-                  <PrivateRoute isAuthenticated={!!token}>
-                    <ClientStatementViewer authenticatedFetch={authenticatedFetch} userRole={userRole} />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/admin/clients/payments/:clientId"
-                element={
-                  <PrivateRoute isAuthenticated={!!token}>
-                    <ClientPayments authenticatedFetch={authenticatedFetch} userRole={userRole} />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/admin/users"
-                element={
-                  <PrivateRoute isAuthenticated={!!token}>
-                    <UserAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
-                  </PrivateRoute>
-                }
-              />
+              path="/admin/reports"
+              element={
+                <PrivateRoute isAuthenticated={!!token}>
+                  <ReportsAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/admin/sales/receipt/:saleId"
+              element={
+                <PrivateRoute isAuthenticated={!!token}>
+                  <ReceiptViewer />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/admin/clients/statement/:clientId"
+              element={
+                <PrivateRoute isAuthenticated={!!token}>
+                  <ClientStatementViewer authenticatedFetch={authenticatedFetch} userRole={userRole} />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/admin/clients/payments/:clientId"
+              element={
+                <PrivateRoute isAuthenticated={!!token}>
+                  <ClientPayments authenticatedFetch={authenticatedFetch} userRole={userRole} />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <PrivateRoute isAuthenticated={!!token}>
+                  <UserAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
+                </PrivateRoute>
+              }
+            />
 
-              {token && <Route path="/admin" element={<Navigate to="/admin/products" />} />}
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </Suspense> {/* --- FIN CAMBIO: Cierra Suspense --- */}
+            {token && <Route path="/admin" element={<Navigate to="/admin/products" />} />}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
         </main>
       </div>
     </Router>
