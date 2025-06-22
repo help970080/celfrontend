@@ -1667,3 +1667,8 @@ h2 {
         width: 95%;
     }
 }
+/* Solución para que los botones del recibo siempre sean clickeables */
+.receipt-actions {
+  position: relative;
+  z-index: 2;
+}
