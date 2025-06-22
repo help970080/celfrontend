@@ -5,7 +5,7 @@ import timezone from 'dayjs/plugin/timezone';
 import { toast } from 'react-toastify';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import './thermal-print.css'; // <-- 1. ASEGÚRATE DE IMPORTAR TU ARCHIVO CSS
+import './thermal-print.css';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -13,10 +13,8 @@ dayjs.extend(timezone);
 const TIMEZONE = "America/Mexico_City";
 
 function ReceiptViewer({ sale, onClose }) {
-    // El ref ahora apuntará al nuevo contenedor del ticket
     const receiptRef = useRef();
 
-    // La información de tu negocio se mantiene igual
     const businessInfo = {
         name: "Celexpress Tu Tienda de Celulares",
         address: "Morelos Sn.col.Centro Juchitepec,EdoMex",
@@ -24,7 +22,6 @@ function ReceiptViewer({ sale, onClose }) {
     };
 
     if (!sale) {
-        // El manejo de error se mantiene igual
         return (
             <div className="receipt-modal-overlay">
                 <div className="receipt-modal-content">
@@ -36,15 +33,14 @@ function ReceiptViewer({ sale, onClose }) {
         );
     }
     
-    // Las funciones para PDF y compartir se mantienen, solo les añadiremos la clase 'no-print' a los botones
     const handleGeneratePdf = async () => {
         if (!receiptRef.current) return toast.error("Error al capturar contenido del recibo.");
         toast.info("Generando PDF...");
         try {
             const canvas = await html2canvas(receiptRef.current, { scale: 2 });
             const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', [80, 297]); // Ancho de 80mm
-            const imgWidth = 74; // Ancho de la imagen en el PDF (80mm - 3mm margen izq - 3mm margen der)
+            const pdf = new jsPDF('p', 'mm', [80, 297]);
+            const imgWidth = 74;
             const pageHeight = 297;
             const imgHeight = canvas.height * imgWidth / canvas.width;
             let heightLeft = imgHeight;
@@ -73,17 +69,11 @@ function ReceiptViewer({ sale, onClose }) {
         window.open(`https://wa.me/${clientPhone}?text=${encodeURIComponent(message)}`, '_blank');
     };
     
-    // La función de SMS se mantiene igual
-    const handleShareSMS = () => {
-        // ... tu lógica de SMS aquí ...
-    };
-
     return (
         <div className="receipt-modal-overlay" onClick={onClose}>
             <div className="receipt-modal-content" onClick={(e) => e.stopPropagation()}>
-                <button className="close-button no-print" onClick={onClose}>×</button> {/* <-- Se añade no-print */}
+                <button className="close-button no-print" onClick={onClose}>×</button>
                 
-                {/* 2. ESTRUCTURA HTML ADAPTADA AL CSS TÉRMICO */}
                 <div ref={receiptRef} className="receipt-container">
                     <div className="receipt-header">
                         <h1>{businessInfo.name}</h1>
@@ -108,10 +98,12 @@ function ReceiptViewer({ sale, onClose }) {
                             <tbody>
                                 {sale.saleItems?.map(item => (
                                     <tr key={item.id}>
-                                        <td>{item.quantity}</td>
-                                        <td>{item.product.name}</td>
-                                        <td className="col-price">${item.price.toFixed(2)}</td>
-                                        <td className="col-total">${(item.quantity * item.price).toFixed(2)}</td>
+                                        <td>{item.quantity || 1}</td>
+                                        <td>{item.product?.name || 'Producto no disponible'}</td>
+                                        {/* --- INICIO DE LA CORRECCIÓN --- */}
+                                        <td className="col-price">${(item.price || 0).toFixed(2)}</td>
+                                        <td className="col-total">${(item.quantity * (item.price || 0)).toFixed(2)}</td>
+                                        {/* --- FIN DE LA CORRECCIÓN --- */}
                                     </tr>
                                 ))}
                             </tbody>
@@ -121,17 +113,17 @@ function ReceiptViewer({ sale, onClose }) {
                     <div className="receipt-totals">
                         <div>
                             <span>Total:</span>
-                            <strong>${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong>
+                            <strong>${(sale.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong>
                         </div>
                         {sale.isCredit && (
                             <>
                                 <div>
                                     <span>Enganche:</span>
-                                    <span>${sale.downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                                    <span>${(sale.downPayment || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                                 </div>
                                 <div>
                                     <span>Saldo Pendiente:</span>
-                                    <span>${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                                    <span>${(sale.balanceDue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                                 </div>
                             </>
                         )}
@@ -142,19 +134,18 @@ function ReceiptViewer({ sale, onClose }) {
                             <h4 style={{textAlign: 'center', margin: '5px 0'}}>Pagos Realizados</h4>
                              {sale.payments.map(payment => (
                                  <div key={payment.id} style={{fontSize: '9pt'}}>
-                                     {dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YY HH:mm')} - ${payment.amount.toLocaleString('es-MX')} ({payment.paymentMethod})
+                                     {dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YY HH:mm')} - ${(payment.amount || 0).toLocaleString('es-MX')} ({payment.paymentMethod})
                                  </div>
                              ))}
                          </div>
                     )}
 
                     <div className="receipt-footer">
-                        <p>¡Gracias por tu compra!</p>
+                        <p>¡Gracias por su compra!</p>
                     </div>
                 </div>
 
                 <div className="receipt-actions">
-                    {/* 3. AÑADIMOS EL NUEVO BOTÓN PARA IMPRESORA TÉRMICA */}
                     <button onClick={() => window.print()} className="no-print">Imprimir Ticket</button>
                     <button onClick={handleGeneratePdf} className="no-print">Descargar PDF</button>
                     <button onClick={handleShareWhatsApp} className="no-print">WhatsApp</button>
