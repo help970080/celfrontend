@@ -21,14 +21,10 @@ function ReceiptViewer({ sale, onClose }) {
         phone: "56 66548 9522",
     };
 
-    // --- INICIO CÁLCULO DE FECHA DE VENCIMIENTO ---
-    // Calculamos la fecha de vencimiento para usarla en el pagaré.
     let dueDate = null;
     if (sale && sale.isCredit && sale.numberOfPayments > 0) {
-        // Asumiendo que los pagos son semanales
         dueDate = dayjs(sale.saleDate).tz(TIMEZONE).add(sale.numberOfPayments, 'weeks').format('DD/MM/YYYY');
     }
-    // --- FIN CÁLCULO ---
 
     if (!sale) {
         return (
@@ -42,7 +38,6 @@ function ReceiptViewer({ sale, onClose }) {
         );
     }
     
-    // Las funciones para PDF y WhatsApp se mantienen igual
     const handleGeneratePdf = async () => { /* ... tu lógica de PDF ... */ };
     const handleShareWhatsApp = () => { /* ... tu lógica de WhatsApp ... */ };
     
@@ -52,7 +47,6 @@ function ReceiptViewer({ sale, onClose }) {
                 <button className="close-button no-print" onClick={onClose}>×</button>
                 
                 <div ref={receiptRef} className="receipt-container">
-                    {/* ... (Sección de header e items del recibo se mantienen igual) ... */}
                     <div className="receipt-header">
                         <h1>{businessInfo.name}</h1>
                         <p>{businessInfo.address}</p>
@@ -74,14 +68,26 @@ function ReceiptViewer({ sale, onClose }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {sale.saleItems?.map(item => (
-                                    <tr key={item.id}>
-                                        <td>{item.quantity || 1}</td>
-                                        <td>{item.product?.name || 'Producto no disponible'}</td>
-                                        <td className="col-price">{(item.price || 0) > 0 ? `$${(item.price).toFixed(2)}` : ''}</td>
-                                        <td className="col-total">{(item.price || 0) > 0 ? `$${(item.quantity * item.price).toFixed(2)}` : ''}</td>
-                                    </tr>
-                                ))}
+                                {sale.saleItems?.map(item => {
+                                    // --- INICIO DE LA CORRECCIÓN ---
+                                    // Hacemos el cálculo más robusto y legible aquí
+                                    const itemPrice = item.price || 0;
+                                    const lineTotal = (item.quantity || 1) * itemPrice;
+
+                                    return (
+                                        <tr key={item.id}>
+                                            <td>{item.quantity || 1}</td>
+                                            <td>{item.product?.name || 'Producto no disponible'}</td>
+                                            <td className="col-price">
+                                                {itemPrice > 0 ? `$${itemPrice.toFixed(2)}` : ''}
+                                            </td>
+                                            <td className="col-total">
+                                                {lineTotal > 0 ? `$${lineTotal.toFixed(2)}` : ''}
+                                            </td>
+                                        </tr>
+                                    );
+                                    // --- FIN DE LA CORRECCIÓN ---
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -105,9 +111,17 @@ function ReceiptViewer({ sale, onClose }) {
                         )}
                     </div>
                     
-                    {sale.payments && sale.payments.length > 0 && ( /* ... tu lógica de pagos realizados ... */ )}
+                    {sale.payments && sale.payments.length > 0 && (
+                         <div className="receipt-payments">
+                            <h4 style={{textAlign: 'center', margin: '5px 0'}}>Pagos Realizados</h4>
+                             {sale.payments.map(payment => (
+                                 <div key={payment.id} style={{fontSize: '9pt'}}>
+                                     {dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YY HH:mm')} - ${(payment.amount || 0).toLocaleString('es-MX')} ({payment.paymentMethod})
+                                 </div>
+                             ))}
+                         </div>
+                    )}
 
-                    {/* Leyenda de advertencia que ya habíamos añadido */}
                     {sale.isCredit && (
                         <div className="receipt-credit-warning" style={{ marginTop: '15px', border: '1px solid #000', padding: '5px', textAlign: 'center', fontSize: '8pt' }}>
                             <p style={{ margin: 0, fontWeight: 'bold' }}>
@@ -116,8 +130,6 @@ function ReceiptViewer({ sale, onClose }) {
                         </div>
                     )}
 
-                    {/* --- INICIO DEL NUEVO PAGARÉ --- */}
-                    {/* Este bloque solo aparecerá si la venta es a crédito */}
                     {sale.isCredit && (
                         <div className="receipt-promissory-note" style={{ marginTop: '15px', fontSize: '9pt' }}>
                             <p style={{ textAlign: 'justify', margin: '5px 0' }}>
@@ -132,7 +144,6 @@ function ReceiptViewer({ sale, onClose }) {
                             </div>
                         </div>
                     )}
-                    {/* --- FIN DEL NUEVO PAGARÉ --- */}
 
                     <div className="receipt-footer">
                         <p>¡Gracias por su compra!</p>
