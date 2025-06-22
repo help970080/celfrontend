@@ -1,4 +1,4 @@
-// src/components/SaleAdminPanel.jsx - VERSIÓN RESTAURADA Y CORRECTA
+// src/components/SaleAdminPanel.jsx - VERSIÓN CORREGIDA CON FORMULARIO RESTAURADO
 import React, { useState, useEffect, useCallback } from 'react';
 import SaleForm from './SaleForm';
 import SaleList from './SaleList';
@@ -9,104 +9,73 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
     const [sales, setSales] = useState([]);
     const [clients, setClients] = useState([]);
     const [products, setProducts] = useState([]);
-    const [loadingSales, setLoadingSales] = useState(true);
-    const [errorSales, setErrorSales] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
-    const [totalPages, setTotalPages] = useState(1);
-    const [totalItems, setTotalItems] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
+    // Lógica para obtener todos los datos necesarios
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const [salesRes, clientsRes, productsRes] = await Promise.all([
+                authenticatedFetch(`${API_BASE_URL}/api/sales?limit=999`), // Ajusta según necesites paginación
+                authenticatedFetch(`${API_BASE_URL}/api/clients?limit=999`),
+                authenticatedFetch(`${API_BASE_URL}/api/products?limit=999`)
+            ]);
+
+            if (!salesRes.ok) throw new Error('Error al cargar ventas');
+            if (!clientsRes.ok) throw new Error('Error al cargar clientes');
+            if (!productsRes.ok) throw new Error('Error al cargar productos');
+
+            const salesData = await salesRes.json();
+            const clientsData = await clientsRes.json();
+            const productsData = await productsRes.json();
+
+            setSales(salesData.sales || []);
+            setClients(clientsData.clients || []);
+            setProducts(productsData.products || []);
+
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [authenticatedFetch]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+    
+    // Función para saber si el usuario tiene permiso
     const hasPermission = (roles) => {
         if (!userRole) return false;
         return Array.isArray(roles) ? roles.includes(userRole) : userRole === roles;
     };
 
-    const fetchSales = useCallback(async () => {
-        setLoadingSales(true);
-        setErrorSales(null);
-        try {
-            const params = new URLSearchParams({
-                page: currentPage,
-                limit: itemsPerPage,
-                ...(searchTerm && { search: searchTerm })
-            });
-            const response = await authenticatedFetch(`${API_BASE_URL}/api/sales?${params.toString()}`);
-            if (!response.ok) throw new Error((await response.json()).message || 'Error al cargar ventas');
-            const data = await response.json();
-            setSales(data.sales || []);
-            setTotalPages(data.totalPages || 1);
-            setTotalItems(data.totalItems || 0);
-        } catch (err) {
-            setErrorSales(err.message);
-        } finally {
-            setLoadingSales(false);
-        }
-    }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage]);
-
-    const fetchClientsAndProducts = useCallback(async () => {
-        try {
-            const [clientResponse, productResponse] = await Promise.all([
-                authenticatedFetch(`${API_BASE_URL}/api/clients?limit=9999`),
-                authenticatedFetch(`${API_BASE_URL}/api/products?limit=9999`)
-            ]);
-            if (clientResponse.ok) setClients((await clientResponse.json()).clients || []);
-            if (productResponse.ok) setProducts((await productResponse.json()).products || []);
-        } catch (err) {
-            console.error("Error al cargar clientes y productos:", err);
-        }
-    }, [authenticatedFetch]);
-
-    useEffect(() => {
-        fetchSales();
-        fetchClientsAndProducts();
-    }, [fetchSales, fetchClientsAndProducts]);
-
     return (
         <section className="sales-section">
             <h2>Gestión de Ventas y Cobranza</h2>
-            {/* El formulario para registrar ventas ahora es visible de nuevo */}
+            
+            {/* 1. EL FORMULARIO DE CAPTURA VUELVE A ESTAR AQUÍ */}
             {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
-                <SaleForm
-                    onSaleAdded={fetchSales}
-                    clients={clients}
-                    products={products}
-                    authenticatedFetch={authenticatedFetch}
-                />
+                <div className="form-wrapper">
+                    <SaleForm
+                        onSaleAdded={fetchData} // Llama a fetchData para recargar todo
+                        clients={clients}
+                        products={products}
+                        authenticatedFetch={authenticatedFetch}
+                    />
+                </div>
             )}
 
-            <div className="admin-controls">
-                <div className="control-group">
-                    <label htmlFor="searchSale">Buscar Venta:</label>
-                    <input type="text" id="searchSale" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder="Buscar por ID, cliente o producto..." />
-                </div>
-                 <div className="control-group">
-                    <label htmlFor="itemsPerPage">Ítems por página:</label>
-                    <select id="itemsPerPage" value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
-                        <option value="10">10</option>
-                        <option value="20">20</option>
-                        <option value="50">50</option>
-                    </select>
-                </div>
-            </div>
-
-            {loadingSales ? (<p>Cargando ventas...</p>) : errorSales ? (<p className="error-message">Error: {errorSales}</p>) : (
-                <>
-                    <SaleList
-                        sales={sales}
-                        onDeleteSale={onDeleteSale}
-                        userRole={userRole} 
-                    />
-                    {totalPages > 1 && (
-                        <div className="pagination-controls">
-                            <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>Anterior</button>
-                            <span>Página {currentPage} de {totalPages} ({totalItems} ítems)</span>
-                            <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>Siguiente</button>
-                        </div>
-                    )}
-                </>
+            {loading ? (<p>Cargando...</p>) : error ? (<p className="error-message">Error: {error}</p>) : (
+                <SaleList
+                    sales={sales}
+                    onDeleteSale={onDeleteSale}
+                    userRole={userRole}
+                />
             )}
         </section>
     );
 }
+
 export default SaleAdminPanel;
