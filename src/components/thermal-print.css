@@ -1,0 +1,107 @@
+/* Estilos para la vista en pantalla (opcional, para centrar el recibo) */
+.receipt-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    background-color: #f4f4f4;
+}
+
+.receipt-container {
+    width: 302px; /* Ancho típico de un ticket de 80mm */
+    padding: 15px;
+    background: #ffffff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    font-family: 'Courier New', Courier, monospace; /* Fuente de estilo clásico */
+}
+
+/* --- ESTILOS QUE SE APLICAN SOLO AL IMPRIMIR --- */
+@media print {
+    /* Oculta todo en la página excepto el contenedor del recibo */
+    body * {
+        visibility: hidden;
+    }
+
+    .receipt-container, .receipt-container * {
+        visibility: visible;
+    }
+
+    /* Posiciona el recibo en la esquina superior izquierda de la página de impresión */
+    .receipt-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%; /* El ancho se ajustará al tamaño del papel definido abajo */
+        padding: 0;
+        border: none;
+        box-shadow: none;
+        margin: 0;
+    }
+    
+    /* Define el tamaño del papel de la impresora térmica (80mm o 58mm son comunes) */
+    @page {
+        size: 80mm auto; /* 'auto' para la altura, se ajustará al contenido */
+        margin: 3mm; /* Un pequeño margen alrededor */
+    }
+
+    /* Oculta el botón de imprimir para que no aparezca en el ticket */
+    .no-print {
+        display: none;
+    }
+    
+    /* Estilos para el texto del recibo */
+    .receipt-container {
+        font-size: 10pt;
+        color: #000;
+    }
+
+    .receipt-header h1 {
+        font-size: 14pt;
+        text-align: center;
+        margin: 5px 0;
+    }
+
+    .receipt-header p {
+        text-align: center;
+        margin: 2px 0;
+        font-size: 9pt;
+    }
+
+    .receipt-items table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .receipt-items th, .receipt-items td {
+        text-align: left;
+        padding: 2px 0;
+    }
+    
+    .receipt-items .col-qty {
+        width: 15%;
+    }
+    .receipt-items .col-price, .receipt-items .col-total {
+        width: 25%;
+        text-align: right;
+    }
+    
+    .receipt-totals {
+        margin-top: 10px;
+        border-top: 1px dashed #000;
+        padding-top: 5px;
+    }
+    
+    .receipt-totals div {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11pt;
+        margin: 2px 0;
+    }
+    
+    .receipt-footer {
+        margin-top: 10px;
+        text-align: center;
+        font-size: 9pt;
+        border-top: 1px dashed #000;
+        padding-top: 5px;
+    }
+}
