@@ -1,3 +1,5 @@
+/* public/thermal-print.css */
+
 /* Estilos para la vista en pantalla (opcional, para centrar el recibo) */
 .receipt-wrapper {
     display: flex;
@@ -11,44 +13,54 @@
     padding: 15px;
     background: #ffffff;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    font-family: 'Courier New', Courier, monospace; /* Fuente de estilo clásico */
+    font-family: 'Courier New', Courier, monospace;
 }
 
 /* --- ESTILOS QUE SE APLICAN SOLO AL IMPRIMIR --- */
 @media print {
-    /* Oculta todo en la página excepto el contenedor del recibo */
     body * {
         visibility: hidden;
     }
 
-    .receipt-container, .receipt-container * {
+    /* --- CORRECCIÓN CLAVE AQUÍ --- */
+    /* Hacemos visible el modal completo y su contenido, no solo el recibo */
+    .receipt-modal-overlay, .receipt-modal-content, .receipt-container, .receipt-container * {
         visibility: visible;
     }
+    
+    .receipt-modal-overlay {
+        position: static;
+        background: none;
+    }
+    
+    .receipt-modal-content {
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+        max-width: 100%;
+        border-radius: 0;
+    }
 
-    /* Posiciona el recibo en la esquina superior izquierda de la página de impresión */
     .receipt-container {
         position: absolute;
         left: 0;
         top: 0;
-        width: 100%; /* El ancho se ajustará al tamaño del papel definido abajo */
+        width: 100%;
         padding: 0;
         border: none;
         box-shadow: none;
         margin: 0;
     }
     
-    /* Define el tamaño del papel de la impresora térmica (80mm o 58mm son comunes) */
     @page {
-        size: 80mm auto; /* 'auto' para la altura, se ajustará al contenido */
-        margin: 3mm; /* Un pequeño margen alrededor */
+        size: 80mm auto;
+        margin: 3mm;
     }
 
-    /* Oculta el botón de imprimir y otros elementos no deseados para que no aparezcan en el ticket */
     .no-print {
         display: none;
     }
     
-    /* Estilos para el texto del recibo */
     .receipt-container {
         font-size: 10pt;
         color: #000;
@@ -76,30 +88,5 @@
         list-style-type: none;
         padding: 0;
         margin: 5px 0;
-    }
-
-    .receipt-product-list li {
-        margin-bottom: 3px;
-    }
-
-    .receipt-totals {
-        margin-top: 10px;
-        border-top: 1px dashed #000;
-        padding-top: 5px;
-    }
-    
-    .receipt-totals div {
-        display: flex;
-        justify-content: space-between;
-        font-size: 11pt;
-        margin: 2px 0;
-    }
-    
-    .receipt-footer-text {
-        margin-top: 10px;
-        text-align: center;
-        font-size: 9pt;
-        border-top: 1px dashed #000;
-        padding-top: 5px;
     }
 }

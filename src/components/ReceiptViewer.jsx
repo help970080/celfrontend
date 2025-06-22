@@ -11,12 +11,9 @@ dayjs.extend(timezone);
 
 const TIMEZONE = "America/Mexico_City";
 
-// Este es el componente que pasaremos a App.jsx para que tenga el token
 const authenticatedFetch = async (url, options = {}) => {
     const token = localStorage.getItem('token');
-    if (!token) {
-        return Promise.reject(new Error('No hay token de autenticación.'));
-    }
+    if (!token) return Promise.reject(new Error('No hay token de autenticación.'));
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
@@ -29,7 +26,6 @@ const authenticatedFetch = async (url, options = {}) => {
     }
     return response;
 };
-
 
 function ReceiptViewer({ saleId, onClose }) {
     const [sale, setSale] = useState(null);
@@ -65,26 +61,48 @@ function ReceiptViewer({ saleId, onClose }) {
         fetchSaleData();
     }, [fetchSaleData]);
 
-
     const handleGeneratePdf = async () => {
-        if (!receiptRef.current) return toast.error("Error al capturar contenido del recibo.");
+        const elementToCapture = receiptRef.current;
+        if (!elementToCapture) return toast.error("Error al capturar contenido del recibo.");
         toast.info("Generando PDF...");
         try {
-            const canvas = await html2canvas(receiptRef.current, { scale: 2 });
+            // --- INICIO CORRECCIÓN PDF ---
+            // Opciones mejoradas para html2canvas para capturar todo el contenido, incluso si hay scroll
+            const canvas = await html2canvas(elementToCapture, {
+                scale: 2,
+                scrollY: -window.scrollY,
+                useCORS: true,
+                windowWidth: elementToCapture.scrollWidth,
+                windowHeight: elementToCapture.scrollHeight
+            });
+            // --- FIN CORRECCIÓN PDF ---
+
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const imgProps= pdf.getImageProperties(imgData);
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            
+            let heightLeft = pdfHeight;
+            let position = 0;
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+            heightLeft -= pdf.internal.pageSize.getHeight();
+
+            while (heightLeft >= 0) {
+              position = heightLeft - pdfHeight;
+              pdf.addPage();
+              pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+              heightLeft -= pdf.internal.pageSize.getHeight();
+            }
+
             pdf.save(`recibo_venta_${sale.id}.pdf`);
             toast.success("Recibo PDF generado!");
         } catch (error) {
+            console.error(error);
             toast.error("Error al generar PDF.");
         }
     };
     
-    // Funciones de compartir (WhatsApp, SMS) y de imprimir ticket no cambian...
     const handleShareWhatsApp = () => {
         if (!sale?.client?.phone) return toast.error("Cliente sin teléfono registrado.");
         const message = `¡Hola ${sale.client.name}! Tu recibo de venta #${sale.id} de ${appName}. Monto Total: $${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}. Saldo Pendiente: $${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}.`;
@@ -137,6 +155,13 @@ function ReceiptViewer({ saleId, onClose }) {
                                 <p><strong>Enganche:</strong> ${sale.downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                                 <p><strong>Saldo Pendiente:</strong> ${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                                 <p><strong>Pago Semanal:</strong> ${sale.weeklyPaymentAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
+                                
+                                {/* --- INICIO CORRECCIÓN TASA DE INTERÉS --- */}
+                                {sale.interestRate > 0 && (
+                                    <p><strong>Tasa Interés Anual:</strong> {sale.interestRate * 100}%</p>
+                                )}
+                                {/* --- FIN CORRECCIÓN TASA DE INTERÉS --- */}
+
                             </>
                         ) : <p><strong>Tipo:</strong> Contado</p>}
                         <hr />
@@ -145,7 +170,7 @@ function ReceiptViewer({ saleId, onClose }) {
                                 <h5>Pagos Realizados:</h5>
                                 <ul>
                                     {sale.payments.map(p => (
-                                        <li key={p.id}>{dayjs(p.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY')} - ${p.amount.toLocaleString('es-MX')} ({p.paymentMethod})</li>
+                                        <li key={p.id}>{dayjs(p.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')} - ${p.amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} ({p.paymentMethod})</li>
                                     ))}
                                 </ul>
                                 <hr />
