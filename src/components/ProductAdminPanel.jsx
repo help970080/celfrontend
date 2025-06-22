@@ -105,7 +105,14 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
+                let errorData;
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.indexOf('application/json') !== -1) {
+                    errorData = await response.json();
+                } else {
+                    const textError = await response.text();
+                    errorData = { message: `El servidor devolvió un error inesperado: ${textError.substring(0, 150)}...` };
+                }
                 throw new Error(errorData.message || `Error HTTP: ${response.status}`);
             }
 
