@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -11,7 +11,30 @@ dayjs.extend(timezone);
 
 const TIMEZONE = "America/Mexico_City";
 
-function ReceiptViewer({ sale, onClose }) {
+// Este es el componente que pasaremos a App.jsx para que tenga el token
+const authenticatedFetch = async (url, options = {}) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        return Promise.reject(new Error('No hay token de autenticación.'));
+    }
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options.headers,
+    };
+    const response = await fetch(url, { ...options, headers });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error en la petición');
+    }
+    return response;
+};
+
+
+function ReceiptViewer({ saleId, onClose }) {
+    const [sale, setSale] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const receiptRef = useRef();
 
     const appName = "CelExpress Pro Powered by Leonardo Luna";
@@ -21,94 +44,72 @@ function ReceiptViewer({ sale, onClose }) {
         phone: "56 66548 9522",
         email: "contacto@tuempresa.com"
     };
+    
+    const fetchSaleData = useCallback(async () => {
+        if (!saleId) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await authenticatedFetch(`${import.meta.env.VITE_APP_API_BASE_URL}/api/sales/${saleId}`);
+            const data = await response.json();
+            setSale(data);
+        } catch (err) {
+            setError(err.message || 'No se pudo cargar el recibo.');
+            toast.error('Error al cargar datos del recibo.');
+        } finally {
+            setLoading(false);
+        }
+    }, [saleId]);
 
-    if (!sale) {
-        return (
-            <div className="receipt-modal-overlay">
-                <div className="receipt-modal-content">
-                    <button className="close-button" onClick={onClose}>×</button>
-                    <h3>Error en Recibo</h3>
-                    <p>No se seleccionó ninguna venta válida para generar el recibo.</p>
-                </div>
-            </div>
-        );
-    }
+    useEffect(() => {
+        fetchSaleData();
+    }, [fetchSaleData]);
+
 
     const handleGeneratePdf = async () => {
-        if (!receiptRef.current) {
-            toast.error("No se pudo capturar el contenido del recibo.");
-            return;
-        }
-        toast.info("Generando PDF del recibo...");
+        if (!receiptRef.current) return toast.error("Error al capturar contenido del recibo.");
+        toast.info("Generando PDF...");
         try {
             const canvas = await html2canvas(receiptRef.current, { scale: 2 });
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgWidth = 210;
-            const pageHeight = 297;
-            const imgHeight = canvas.height * imgWidth / canvas.width;
-            let heightLeft = imgHeight;
-            let position = 0;
-
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-
-            while (heightLeft >= 0) {
-                position = heightLeft - imgHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
-            }
-
+            const imgProps= pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
             pdf.save(`recibo_venta_${sale.id}.pdf`);
-            toast.success("Recibo PDF generado con éxito!");
+            toast.success("Recibo PDF generado!");
         } catch (error) {
-            console.error("Error al generar PDF:", error);
-            toast.error("Error al generar el recibo PDF.");
+            toast.error("Error al generar PDF.");
         }
     };
-
+    
+    // Funciones de compartir (WhatsApp, SMS) y de imprimir ticket no cambian...
     const handleShareWhatsApp = () => {
-        const clientName = sale.client ? sale.client.name : 'Estimado Cliente';
-        const clientPhone = sale.client ? sale.client.phone : '';
-
-        if (!clientPhone) {
-            toast.error("El cliente no tiene un número de teléfono registrado.");
-            return;
-        }
-        const message = `¡Hola ${clientName}! Aquí está tu recibo de venta #${sale.id} de ${appName}. Monto Total: $${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}. Saldo Pendiente: $${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}. ¡Gracias por tu compra!`;
-
-        window.open(`https://wa.me/${clientPhone}?text=${encodeURIComponent(message)}`, '_blank');
-        toast.info("Se abrió WhatsApp con el mensaje. Envía el mensaje manualmente si es necesario.");
+        if (!sale?.client?.phone) return toast.error("Cliente sin teléfono registrado.");
+        const message = `¡Hola ${sale.client.name}! Tu recibo de venta #${sale.id} de ${appName}. Monto Total: $${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}. Saldo Pendiente: $${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}.`;
+        window.open(`https://wa.me/${sale.client.phone}?text=${encodeURIComponent(message)}`, '_blank');
     };
 
     const handleShareSMS = () => {
-        const clientPhone = sale.client ? sale.client.phone : '';
-        if (!clientPhone) {
-            toast.error("El cliente no tiene un número de teléfono registrado.");
-            return;
-        }
+         if (!sale?.client?.phone) return toast.error("Cliente sin teléfono registrado.");
         const message = `Recibo venta #${sale.id} ${appName}. Total: $${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}. Saldo: $${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}.`;
-
-        window.open(`sms:${clientPhone}?body=${encodeURIComponent(message)}`, '_blank');
-        toast.info("Se abrió la aplicación de SMS. Envía el mensaje manualmente si es necesario.");
+        window.open(`sms:${sale.client.phone}?body=${encodeURIComponent(message)}`, '_blank');
     };
 
-    // --- FUNCIÓN PARA IMPRESIÓN TÉRMICA ---
     const handlePrintThermal = () => {
-        toast.info("Preparando para imprimir en formato de ticket...");
-        // El navegador usará los estilos de @media print de thermal-print.css
+        toast.info("Preparando para imprimir...");
         window.print();
     };
 
-    return (
-        <div className="receipt-modal-overlay no-print"> {/* no-print para ocultar el overlay al imprimir */}
-            <div className="receipt-modal-content">
-                <button className="close-button" onClick={onClose}>×</button>
-                <h3>Recibo de Venta #{sale.id}</h3>
+    const renderContent = () => {
+        if (loading) return <p>Cargando recibo...</p>;
+        if (error) return <p className="error-message">{error}</p>;
+        if (!sale) return <p>No se encontraron datos para este recibo.</p>;
 
-                {/* --- CONTENEDOR DEL RECIBO QUE SE IMPRIMIRÁ --- */}
-                <div ref={receiptRef} className="receipt-container"> {/* Clase para ser visible en la impresión */}
+        return (
+            <>
+                <div ref={receiptRef} className="receipt-container">
                     <div className="receipt-header">
                         <h2>{businessInfo.name}</h2>
                         <p>{businessInfo.address}</p>
@@ -122,13 +123,11 @@ function ReceiptViewer({ sale, onClose }) {
                         <hr />
                         <p><strong>Producto(s):</strong></p>
                         <ul className="receipt-product-list">
-                            {sale.saleItems && sale.saleItems.length > 0
-                                ? sale.saleItems.map((item, index) => (
-                                    <li key={item.id || index}>
-                                        {item.product ? `${item.product.name} (x${item.quantity})` : `Producto ID ${item.productId} (x${item.quantity})`}
-                                    </li>
-                                ))
-                                : <li>N/A</li>}
+                            {sale.saleItems?.map((item, index) => (
+                                <li key={item.id || index}>
+                                    {item.product ? `${item.product.name} (x${item.quantity})` : `ID ${item.productId} (x${item.quantity})`}
+                                </li>
+                            ))}
                         </ul>
                         <hr />
                         <p><strong>Monto Total:</strong> <h2>${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h2></p>
@@ -139,21 +138,38 @@ function ReceiptViewer({ sale, onClose }) {
                                 <p><strong>Saldo Pendiente:</strong> ${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                                 <p><strong>Pago Semanal:</strong> ${sale.weeklyPaymentAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                             </>
-                        ) : (
-                            <p><strong>Tipo:</strong> Contado</p>
-                        )}
+                        ) : <p><strong>Tipo:</strong> Contado</p>}
                         <hr />
+                        {sale.payments && sale.payments.length > 0 && (
+                            <div className="payments-detail">
+                                <h5>Pagos Realizados:</h5>
+                                <ul>
+                                    {sale.payments.map(p => (
+                                        <li key={p.id}>{dayjs(p.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY')} - ${p.amount.toLocaleString('es-MX')} ({p.paymentMethod})</li>
+                                    ))}
+                                </ul>
+                                <hr />
+                            </div>
+                        )}
                         <p className="receipt-footer-text">¡Gracias por tu compra!</p>
                     </div>
                 </div>
-
-                <div className="receipt-actions">
+                <div className="receipt-actions no-print">
                     <button onClick={handleGeneratePdf}>Descargar PDF</button>
-                    {/* --- BOTÓN AÑADIDO --- */}
                     <button onClick={handlePrintThermal}>Imprimir Ticket</button>
-                    <button onClick={handleShareWhatsApp}>Compartir por WhatsApp</button>
-                    <button onClick={handleShareSMS}>Enviar por SMS</button>
+                    <button onClick={handleShareWhatsApp}>Compartir WhatsApp</button>
+                    <button onClick={handleShareSMS}>Compartir SMS</button>
                 </div>
+            </>
+        );
+    };
+
+    return (
+        <div className="receipt-modal-overlay no-print">
+            <div className="receipt-modal-content">
+                <button className="close-button" onClick={onClose}>&times;</button>
+                <h3>Recibo de Venta #{saleId}</h3>
+                {renderContent()}
             </div>
         </div>
     );
