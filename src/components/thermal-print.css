@@ -43,7 +43,7 @@
         margin: 3mm; /* Un pequeño margen alrededor */
     }
 
-    /* Oculta el botón de imprimir para que no aparezca en el ticket */
+    /* Oculta el botón de imprimir y otros elementos no deseados para que no aparezcan en el ticket */
     .no-print {
         display: none;
     }
@@ -54,7 +54,7 @@
         color: #000;
     }
 
-    .receipt-header h1 {
+    .receipt-header h1, .receipt-header h2 {
         font-size: 14pt;
         text-align: center;
         margin: 5px 0;
@@ -66,24 +66,22 @@
         font-size: 9pt;
     }
 
-    .receipt-items table {
-        width: 100%;
-        border-collapse: collapse;
+    .receipt-details hr {
+        border: 0;
+        border-top: 1px dashed #000;
+        margin: 5px 0;
     }
 
-    .receipt-items th, .receipt-items td {
-        text-align: left;
-        padding: 2px 0;
+    .receipt-product-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 5px 0;
     }
-    
-    .receipt-items .col-qty {
-        width: 15%;
+
+    .receipt-product-list li {
+        margin-bottom: 3px;
     }
-    .receipt-items .col-price, .receipt-items .col-total {
-        width: 25%;
-        text-align: right;
-    }
-    
+
     .receipt-totals {
         margin-top: 10px;
         border-top: 1px dashed #000;
@@ -97,7 +95,7 @@
         margin: 2px 0;
     }
     
-    .receipt-footer {
+    .receipt-footer-text {
         margin-top: 10px;
         text-align: center;
         font-size: 9pt;
