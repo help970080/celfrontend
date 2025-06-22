@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { toast } from 'react-toastify';
 import ReceiptViewer from './ReceiptViewer';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -10,33 +9,37 @@ dayjs.extend(timezone);
 
 const TIMEZONE = "America/Mexico_City";
 
-const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
-
-function SaleList({ sales, clients, products, onSaleUpdated, onDeleteSale, authenticatedFetch, userRole }) { 
+// NOTA: El componente ahora es más interactivo. Muestra una tabla y un panel de detalles.
+function SaleList({ sales, onDeleteSale, userRole }) {
     
+    // Estado para manejar qué venta está seleccionada para la vista previa
+    const [selectedSale, setSelectedSale] = useState(null); 
+    
+    // Estado para el modal del recibo imprimible (tu lógica original)
     const [showReceiptModal, setShowReceiptModal] = useState(false);
-    const [selectedSaleForReceipt, setSelectedSaleForReceipt] = useState(null);
 
     const hasPermission = (roles) => {
         if (!userRole) return false;
-        if (Array.isArray(roles)) {
-            return roles.includes(userRole);
-        }
-        return userRole === roles;
+        return Array.isArray(roles) ? roles.includes(userRole) : userRole === roles;
     };
 
     const handleOpenReceiptModal = (sale) => {
-        setSelectedSaleForReceipt(sale);
+        setSelectedSale(sale); // Usamos el mismo estado para saber qué recibo abrir
         setShowReceiptModal(true);
     };
 
     const handleCloseReceiptModal = () => {
-        setSelectedSaleForReceipt(null);
         setShowReceiptModal(false);
     };
+    
+    // --- Lógica para calcular la fecha de vencimiento del pagaré ---
+    let dueDate = null;
+    if (selectedSale && selectedSale.isCredit && selectedSale.numberOfPayments > 0) {
+        dueDate = dayjs(selectedSale.saleDate).tz(TIMEZONE).add(selectedSale.numberOfPayments, 'weeks').format('DD/MM/YYYY');
+    }
 
-    if (sales.length === 0) {
-        return <p>No hay ventas registradas.</p>;
+    if (!sales || sales.length === 0) {
+        return <p>No hay ventas que coincidan con los criterios actuales.</p>;
     }
 
     return (
@@ -45,58 +48,80 @@ function SaleList({ sales, clients, products, onSaleUpdated, onDeleteSale, authe
             <table className="sale-table">
                 <thead>
                     <tr>
-                        <th>ID Venta</th>
+                        <th>ID</th>
                         <th>Cliente</th>
-                        <th>Producto(s)</th>
-                        <th>Monto Total</th>
+                        <th>Fecha</th>
                         <th>Tipo</th>
-                        <th>Enganche</th>
-                        <th>Saldo Pendiente</th>
-                        <th>Pago Semanal</th>
-                        <th>Pagos Restantes</th>
-                        <th>Estado</th>
+                        <th>Total</th>
+                        <th>Saldo</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {sales.map(sale => {
-                        const clientName = sale.client ? `${sale.client.name} ${sale.client.lastName}` : 'N/A';
-                        const productListText = sale.saleItems && sale.saleItems.length > 0
-                            ? sale.saleItems.map(item => `${item.quantity}x ${item.product ? item.product.name : 'N/A'}`).join(', ')
-                            : 'N/A';
-                        const paymentsMade = sale.payments ? sale.payments.length : 0;
-                        const remainingPayments = sale.isCredit && sale.numberOfPayments ? sale.numberOfPayments - paymentsMade : 0;
-
-                        return (
-                            <tr key={sale.id}>
-                                <td>{sale.id}</td>
-                                <td>{clientName}</td>
-                                <td>{productListText}</td>
-                                <td>${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                                <td>{sale.isCredit ? 'Crédito' : 'Contado'}</td>
-                                <td>${sale.downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                                <td className={sale.balanceDue > 0 ? 'highlight-balance' : ''}>
-                                    ${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                </td>
-                                <td>{sale.isCredit ? `$${sale.weeklyPaymentAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : 'N/A'}</td>
-                                <td>{sale.isCredit ? remainingPayments : 'N/A'}</td>
-                                <td><span className={`status-badge status-${sale.status}`}>{sale.status.replace('_', ' ')}</span></td>
-                                <td>
-                                    <div className="action-buttons">
-                                        <button onClick={() => handleOpenReceiptModal(sale)}>Ver Recibo</button>
-                                        {hasPermission('super_admin') && (
-                                            <button className="delete-button" onClick={() => onDeleteSale(sale.id)}>Eliminar</button>
-                                        )}
-                                    </div>
-                                </td>
-                            </tr>
-                        );
-                    })}
+                    {sales.map(sale => (
+                        // Al hacer clic en una fila, se selecciona la venta para ver sus detalles
+                        <tr key={sale.id} onClick={() => setSelectedSale(sale)} className={selectedSale?.id === sale.id ? 'selected' : ''}>
+                            <td>{sale.id}</td>
+                            <td>{sale.client ? `${sale.client.name} ${sale.client.lastName}` : 'N/A'}</td>
+                            <td>{dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY')}</td>
+                            <td>{sale.isCredit ? 'Crédito' : 'Contado'}</td>
+                            <td>${(sale.totalAmount || 0).toLocaleString('es-MX')}</td>
+                            <td className={sale.balanceDue > 0 ? 'highlight-balance' : ''}>
+                                {sale.isCredit ? `$${(sale.balanceDue || 0).toLocaleString('es-MX')}` : '---'}
+                            </td>
+                            <td>
+                                <div className="action-buttons">
+                                    {/* Detenemos la propagación para no seleccionar la fila al hacer clic en el botón */}
+                                    <button onClick={(e) => { e.stopPropagation(); handleOpenReceiptModal(sale); }}>Ver Recibo</button>
+                                    {hasPermission('super_admin') && (
+                                        <button className="delete-button" onClick={(e) => { e.stopPropagation(); onDeleteSale(sale.id); }}>Eliminar</button>
+                                    )}
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
                 </tbody>
             </table>
 
+            {/* --- INICIO DE LA NUEVA SECCIÓN: PANEL DE DETALLES --- */}
+            {/* Este bloque solo aparece si hay una venta seleccionada */}
+            {selectedSale && (
+                <div className="sale-details-preview-card">
+                    <h4>Detalle de Venta #{selectedSale.id}</h4>
+                    <ul>
+                        {selectedSale.saleItems?.map(item => (
+                            <li key={item.id}>{item.quantity}x - {item.product?.name || 'Producto no encontrado'}</li>
+                        ))}
+                    </ul>
+
+                    {/* Si la venta es a crédito, se muestran las leyendas y el pagaré */}
+                    {selectedSale.isCredit && (
+                        <div className="credit-info-details">
+                            <div className="receipt-credit-warning">
+                                <p><strong>Esta es una Venta a crédito. Usted No puede Vender o Empeñar este artículo hasta que esté completamente liquidado.</strong></p>
+                            </div>
+
+                            <div className="receipt-promissory-note">
+                                <p>
+                                    <strong>DEBO Y PAGARÉ</strong> incondicionalmente la cantidad de <strong>{`$${(selectedSale.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`}</strong> a DANIEL GUERRERO BARRANCO en la ciudad de JUCHITEPEC DE MARIANO RIVAPALACIOS, ESTADO DE MÉXICO, el día <strong>{dueDate || '[Fecha no calculada]'}</strong>.
+                                </p>
+                                <p>
+                                    De no pagar en la fecha estipulada, este pagaré generará un interés moratorio del 6% mensual sobre el saldo insoluto hasta su total liquidación.
+                                </p>
+                                <div className="signature-line">
+                                    <p>_________________________</p>
+                                    <p>{selectedSale.client?.name || 'Nombre del Cliente'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+            {/* --- FIN DEL PANEL DE DETALLES --- */}
+
+            {/* El modal para el recibo imprimible sigue funcionando igual */}
             {showReceiptModal && (
-                <ReceiptViewer sale={selectedSaleForReceipt} onClose={handleCloseReceiptModal} />
+                <ReceiptViewer sale={selectedSale} onClose={handleCloseReceiptModal} />
             )}
         </div>
     );

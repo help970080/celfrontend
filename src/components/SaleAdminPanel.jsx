@@ -1,17 +1,17 @@
+// src/components/SaleAdminPanel.jsx - VERSIÓN AJUSTADA
 import React, { useState, useEffect, useCallback } from 'react';
 import SaleForm from './SaleForm';
 import SaleList from './SaleList';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) { 
+function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
     const [sales, setSales] = useState([]);
     const [clients, setClients] = useState([]);
     const [products, setProducts] = useState([]);
     const [loadingSales, setLoadingSales] = useState(true);
     const [errorSales, setErrorSales] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [totalPages, setTotalPages] = useState(1);
@@ -19,24 +19,19 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
 
     const hasPermission = (roles) => {
         if (!userRole) return false;
-        if (Array.isArray(roles)) {
-            return roles.includes(userRole);
-        }
-        return userRole === roles;
+        return Array.isArray(roles) ? roles.includes(userRole) : userRole === roles;
     };
-
 
     const fetchSales = useCallback(async () => {
         setLoadingSales(true);
         setErrorSales(null);
         try {
-            let url = `${API_BASE_URL}/api/sales`;
-            if (searchTerm) {
-                url += `?search=${encodeURIComponent(searchTerm)}`;
-            }
-            url += `${searchTerm ? '&' : '?'}page=${currentPage}&limit=${itemsPerPage}`;
-
-            const response = await authenticatedFetch(url);
+            const params = new URLSearchParams({
+                page: currentPage,
+                limit: itemsPerPage,
+                ...(searchTerm && { search: searchTerm })
+            });
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/sales?${params.toString()}`);
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `Error HTTP: ${response.status}`);
@@ -48,37 +43,28 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
         } catch (err) {
             console.error("Error al obtener ventas:", err);
             setErrorSales(err.message || "No se pudieron cargar las ventas.");
-            setSales([]);
         } finally {
             setLoadingSales(false);
         }
     }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage]);
 
-    const fetchClients = useCallback(async () => {
+    const fetchClientsAndProducts = useCallback(async () => {
         try {
-            const response = await authenticatedFetch(`${API_BASE_URL}/api/clients?limit=9999`); 
-            if (response.ok) {
-                const data = await response.json();
-                setClients(data.clients || []);
-            }
-        } catch (err) { console.error("Error al cargar clientes para ventas:", err); }
-    }, [authenticatedFetch]);
-
-    const fetchProducts = useCallback(async () => {
-        try {
-            const response = await authenticatedFetch(`${API_BASE_URL}/api/products?limit=9999`); 
-            if (response.ok) {
-                const data = await response.json();
-                setProducts(data.products || []);
-            }
-        } catch (err) { console.error("Error al cargar productos para ventas:", err); }
+            const [clientResponse, productResponse] = await Promise.all([
+                authenticatedFetch(`${API_BASE_URL}/api/clients?limit=9999`),
+                authenticatedFetch(`${API_BASE_URL}/api/products?limit=9999`)
+            ]);
+            if (clientResponse.ok) setClients((await clientResponse.json()).clients || []);
+            if (productResponse.ok) setProducts((await productResponse.json()).products || []);
+        } catch (err) {
+            console.error("Error al cargar clientes y productos:", err);
+        }
     }, [authenticatedFetch]);
 
     useEffect(() => {
         fetchSales();
-        fetchClients();
-        fetchProducts();
-    }, [fetchSales, fetchClients, fetchProducts]);
+        fetchClientsAndProducts();
+    }, [fetchSales, fetchClientsAndProducts]);
 
     return (
         <section className="sales-section">
@@ -88,6 +74,7 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
                     onSaleAdded={fetchSales}
                     clients={clients}
                     products={products}
+                    authenticatedFetch={authenticatedFetch} // <-- Prop añadida para consistencia
                 />
             )}
 
@@ -113,31 +100,18 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
                 </div>
             </div>
 
-            {loadingSales ? (
-                <p>Cargando ventas...</p>
-            ) : errorSales ? (
-                <p style={{ color: 'red', fontWeight: 'bold' }}>Error: {errorSales}</p>
-            ) : (
+            {loadingSales ? (<p>Cargando ventas...</p>) : errorSales ? (<p className="error-message">Error: {errorSales}</p>) : (
                 <>
                     <SaleList
                         sales={sales}
-                        clients={clients}
-                        products={products}
-                        onSaleUpdated={fetchSales}
-                        onPaymentAdded={fetchSales}
                         onDeleteSale={onDeleteSale}
-                        authenticatedFetch={authenticatedFetch}
                         userRole={userRole} 
                     />
                     {totalPages > 1 && (
                         <div className="pagination-controls">
-                            <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
-                                Anterior
-                            </button>
+                            <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>Anterior</button>
                             <span>Página {currentPage} de {totalPages} ({totalItems} ítems)</span>
-                            <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>
-                                Siguiente
-                            </button>
+                            <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>Siguiente</button>
                         </div>
                     )}
                 </>
