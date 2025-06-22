@@ -1,5 +1,5 @@
-// VERSIÓN FINAL Y FUNCIONAL: Incluye todas las correcciones de sintaxis y manejo de errores.
-import React, { useState, useEffect, useCallback } from 'react';
+// VERSIÓN FINAL Y FUNCIONAL: Incluye la importación de useMemo que faltaba.
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ProductForm from './ProductForm';
 import { toast } from 'react-toastify';
 
