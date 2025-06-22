@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import ProductForm from './ProductForm';
+import { toast } from 'react-toastify'; // <-- Asegúrate de que toast esté importado
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) { 
+function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
     const [products, setProducts] = useState([]);
     const [loadingProducts, setLoadingProducts] = useState(true);
     const [errorProducts, setErrorProducts] = useState(null);
@@ -75,11 +76,44 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
         fetchProducts();
     }, [fetchProducts]);
 
+    // <-- NUEVO: Función para manejar la exportación a Excel
+    const handleExportExcel = async () => {
+        // Esta validación es una buena práctica aunque el botón esté oculto
+        if (!hasPermission(['super_admin', 'regular_admin', 'inventory_admin'])) {
+            toast.error('No tienes permisos para exportar el inventario.');
+            return;
+        }
+
+        try {
+            toast.info('Generando reporte de inventario en Excel...');
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/products/export-excel`);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Reporte_Inventario.xlsx'; // Nombre del archivo que se descargará
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success('Reporte de inventario exportado con éxito!');
+
+        } catch (err) {
+            console.error("Error al exportar inventario a Excel:", err);
+            toast.error(`Error al exportar: ${err.message || "Error desconocido."}`);
+        }
+    };
+
     const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
 
     const getMediaType = (url) => {
         if (!url) return 'none';
-        // Ajuste en la URL de YouTube para que la interpolación sea correcta
         if (url.includes('youtube.com/watch?v=') || url.includes('youtu.be/')) {
             const videoId = url.split('v=')[1] || url.split('/').pop();
             return { type: 'youtube', id: videoId.split('&')[0] };
@@ -147,6 +181,14 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
                         <option value="50">50</option>
                     </select>
                 </div>
+                {/* <-- NUEVO: Botón para exportar a Excel --> */}
+                {hasPermission(['super_admin', 'regular_admin', 'inventory_admin']) && (
+                    <div className="control-group">
+                        <button onClick={handleExportExcel} className="action-button primary-button">
+                            Exportar a Excel
+                        </button>
+                    </div>
+                )}
             </div>
 
             {loadingProducts ? (
@@ -169,7 +211,6 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
                                 return (
                                     <div key={product.id} className="product-card">
                                         {mediaType.type === 'youtube' ? (
-                                            // URL de incrustación de YouTube corregida
                                             <iframe
                                                 width="100%"
                                                 height="150"

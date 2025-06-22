@@ -1,27 +1,25 @@
-import React, { useRef } from 'react'; 
-import dayjs from 'dayjs'; // <-- ¡CAMBIADO!
-import utc from 'dayjs/plugin/utc'; // <-- ¡AGREGADO!
-import timezone from 'dayjs/plugin/timezone'; // <-- ¡AGREGADO!
-import { toast } from 'react-toastify'; 
-import html2canvas from 'html2canvas'; 
-import jsPDF from 'jspdf'; 
+import React, { useRef } from 'react';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import { toast } from 'react-toastify';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
-dayjs.extend(utc); // <-- ¡AGREGADO!
-dayjs.extend(timezone); // <-- ¡AGREGADO!
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
-const TIMEZONE = "America/Mexico_City"; // <-- ¡AGREGADO!
-
-const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
+const TIMEZONE = "America/Mexico_City";
 
 function ReceiptViewer({ sale, onClose }) {
-    const receiptRef = useRef(); 
+    const receiptRef = useRef();
 
     const appName = "CelExpress Pro Powered by Leonardo Luna";
     const businessInfo = {
-        name: "Celexpress Tu Tienda de Celulares", 
-        address: "Morelos Sn.col.Centro Juchitepec,EdoMex", 
-        phone: "56 66548 9522", 
-        email: "contacto@tuempresa.com" 
+        name: "Celexpress Tu Tienda de Celulares",
+        address: "Morelos Sn.col.Centro Juchitepec,EdoMex",
+        phone: "56 66548 9522",
+        email: "contacto@tuempresa.com"
     };
 
     if (!sale) {
@@ -96,23 +94,31 @@ function ReceiptViewer({ sale, onClose }) {
         toast.info("Se abrió la aplicación de SMS. Envía el mensaje manualmente si es necesario.");
     };
 
+    // --- FUNCIÓN PARA IMPRESIÓN TÉRMICA ---
+    const handlePrintThermal = () => {
+        toast.info("Preparando para imprimir en formato de ticket...");
+        // El navegador usará los estilos de @media print de thermal-print.css
+        window.print();
+    };
+
     return (
-        <div className="receipt-modal-overlay">
+        <div className="receipt-modal-overlay no-print"> {/* no-print para ocultar el overlay al imprimir */}
             <div className="receipt-modal-content">
                 <button className="close-button" onClick={onClose}>×</button>
                 <h3>Recibo de Venta #{sale.id}</h3>
 
-                <div ref={receiptRef} className="receipt-body"> 
+                {/* --- CONTENEDOR DEL RECIBO QUE SE IMPRIMIRÁ --- */}
+                <div ref={receiptRef} className="receipt-container"> {/* Clase para ser visible en la impresión */}
                     <div className="receipt-header">
                         <h2>{businessInfo.name}</h2>
                         <p>{businessInfo.address}</p>
-                        <p>Tel: {businessInfo.phone} | Email: {businessInfo.email}</p>
+                        <p>Tel: {businessInfo.phone}</p>
                         <hr />
                     </div>
                     <div className="receipt-details">
-                        <p><strong>Fecha:</strong> {dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</p> {/* <-- ¡CAMBIADO! */}
+                        <p><strong>Fecha:</strong> {dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</p>
                         <p><strong>Venta ID:</strong> {sale.id}</p>
-                        <p><strong>Atendido por:</strong> Administrador</p>
+                        <p><strong>Cliente:</strong> {sale.client ? `${sale.client.name} ${sale.client.lastName}` : 'N/A'}</p>
                         <hr />
                         <p><strong>Producto(s):</strong></p>
                         <ul className="receipt-product-list">
@@ -125,40 +131,28 @@ function ReceiptViewer({ sale, onClose }) {
                                 : <li>N/A</li>}
                         </ul>
                         <hr />
-                        <p><strong>Monto Total de Venta:</strong> <h2>${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h2></p>
+                        <p><strong>Monto Total:</strong> <h2>${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h2></p>
                         {sale.isCredit ? (
                             <>
-                                <p><strong>Tipo de Venta:</strong> Crédito</p>
+                                <p><strong>Tipo:</strong> Crédito</p>
                                 <p><strong>Enganche:</strong> ${sale.downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                                 <p><strong>Saldo Pendiente:</strong> ${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
-                                <p><strong>Pago Semanal:</strong> ${sale.weeklyPaymentAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} ({sale.numberOfPayments} pagos)</p>
-                                <p><strong>Tasa Interés Anual:</strong> {sale.interestRate * 100}%</p>
-                                {sale.payments && sale.payments.length > 0 && (
-                                    <>
-                                        <h4>Pagos Realizados:</h4>
-                                        <ul>
-                                            {sale.payments.map(payment => (
-                                                <li key={payment.id}>
-                                                    {dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')} - ${payment.amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} ({payment.paymentMethod}) {/* <-- ¡CAMBIADO! */}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </>
-                                )}
+                                <p><strong>Pago Semanal:</strong> ${sale.weeklyPaymentAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                             </>
                         ) : (
-                            <p><strong>Tipo de Venta:</strong> Contado</p>
+                            <p><strong>Tipo:</strong> Contado</p>
                         )}
                         <hr />
                         <p className="receipt-footer-text">¡Gracias por tu compra!</p>
-                        <p className="receipt-footer-text">Ponte en contacto para cualquier duda.</p>
                     </div>
                 </div>
 
                 <div className="receipt-actions">
-                    <button onClick={handleGeneratePdf}>Descargar Recibo (PDF)</button> 
+                    <button onClick={handleGeneratePdf}>Descargar PDF</button>
+                    {/* --- BOTÓN AÑADIDO --- */}
+                    <button onClick={handlePrintThermal}>Imprimir Ticket</button>
                     <button onClick={handleShareWhatsApp}>Compartir por WhatsApp</button>
-                    <button onClick={handleShareSMS}>Compartir por SMS</button>
+                    <button onClick={handleShareSMS}>Enviar por SMS</button>
                 </div>
             </div>
         </div>
