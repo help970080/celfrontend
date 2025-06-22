@@ -80,7 +80,7 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
 
     const getMediaType = (url) => {
         if (!url) return 'none';
-        if (url.includes('youtube.com/watch?v=') || url.includes('youtu.be/')) {
+        if (url.includes('youtube.com/') || url.includes('youtu.be/')) {
             const videoId = url.split('v=')[1] || url.split('/').pop();
             return { type: 'youtube', id: videoId.split('&')[0] };
         }
@@ -91,7 +91,6 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
         return { type: 'image' };
     };
 
-    // NUEVA FUNCIÓN: Manejar la exportación a Excel
     const handleExportExcel = async () => {
         if (!hasPermission(['super_admin', 'regular_admin', 'inventory_admin'])) {
             toast.error('No tienes permisos para exportar el inventario.');
@@ -100,10 +99,8 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
 
         try {
             toast.info('Generando archivo Excel de inventario...');
-            // La URL ahora es /api/products/export-excel
             const response = await authenticatedFetch(`${API_BASE_URL}/api/products/export-excel`, {
                 method: 'GET',
-                // No es necesario Content-Type: application/json para GET de archivo
                 headers: {},
             });
 
@@ -112,9 +109,8 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
                 throw new Error(errorData.message || `Error HTTP: ${response.status}`);
             }
 
-            // Extraer el nombre del archivo de la cabecera Content-Disposition
             const contentDisposition = response.headers.get('Content-Disposition');
-            let filename = 'inventario_productos.xlsx'; // Nombre de archivo por defecto
+            let filename = 'inventario_productos.xlsx';
             if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
                 const filenameRegex = /filename\*?=(?:UTF-8''|\w*')?((['"]).*?\2|[^;\n]*)/;
                 const matches = filenameRegex.exec(contentDisposition);
@@ -127,16 +123,15 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
                 }
             }
 
-            // Crear un Blob desde la respuesta y generar un URL de descarga
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = filename; // Establece el nombre del archivo para la descarga
+            a.download = filename;
             document.body.appendChild(a);
-            a.click(); // Simula el clic para iniciar la descarga
-            a.remove(); // Limpia el elemento 'a' del DOM
-            window.URL.revokeObjectURL(url); // Libera el URL del objeto
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
             toast.success('Archivo Excel exportado con éxito!');
 
         } catch (err) {
@@ -144,7 +139,6 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
             toast.error(`Error al exportar inventario: ${err.message || "Error desconocido."}`);
         }
     };
-
 
     return (
         <section className="products-section">
@@ -202,7 +196,6 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
                     </select>
                 </div>
 
-                {/* NUEVO BOTÓN: Exportar a Excel */}
                 {hasPermission(['super_admin', 'regular_admin', 'inventory_admin']) && (
                     <div className="control-group">
                         <button onClick={handleExportExcel} className="action-button primary-button">
@@ -223,11 +216,9 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
                             <p>No hay productos que coincidan con los criterios de búsqueda o filtro.</p>
                         ) : (
                             products.map(product => {
-                                // Asegurarse de que imageUrls es un array y filtrar vacíos
                                 const imageUrls = Array.isArray(product.imageUrls) ? product.imageUrls : (typeof product.imageUrls === 'string' && product.imageUrls ? product.imageUrls.split(/[\n,]/).map(url => url.trim()).filter(Boolean) : []);
                                 const firstMedia = imageUrls.length > 0 ? imageUrls[0] : 'https://via.placeholder.com/150';
                                 const mediaType = getMediaType(firstMedia);
-
                                 const { downPayment, weeklyPayment } = calculateCreditDetails(product.price);
 
                                 return (
@@ -236,12 +227,12 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
                                             <iframe
                                                 width="100%"
                                                 height="150"
-                                                src={`https://www.youtube.com/embed/${mediaType.id}`} // URL de incrustación de YouTube CORREGIDA y segura
+                                                src={`https://www.youtube.com/embed/${mediaType.id}`} // <-- ERROR CORREGIDO AQUÍ
                                                 frameBorder="0"
                                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                                 allowFullScreen
                                                 title={product.name}
-                                                loading="lazy" // Añadido lazy loading para mejorar rendimiento
+                                                loading="lazy"
                                             ></iframe>
                                         ) : mediaType.type === 'vimeo' ? (
                                             <iframe
@@ -252,21 +243,21 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
                                                 allow="autoplay; fullscreen; picture-in-picture"
                                                 allowFullScreen
                                                 title={product.name}
-                                                loading="lazy" // Añadido lazy loading para mejorar rendimiento
+                                                loading="lazy"
                                             ></iframe>
                                         ) : (
-                                            <img src={firstMedia} alt={product.name} loading="lazy" /> {/* Añadido lazy loading para mejorar rendimiento */}
+                                            <img src={firstMedia} alt={product.name} loading="lazy" />
                                         )}
 
                                         <h2>{product.name}</h2>
                                         <p>{product.description}</p>
-                                        <p>Precio: ${product.price ? product.price.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A'}</p>
-                                        <p>Stock: {product.stock}</p>
-                                        <p>Categoría: {product.category}</p>
-                                        <p>Marca: {product.brand}</p>
-                                        {product.price > 0 && (
-                                            <div className="credit-info">
-                                                <p>Enganche: <strong>${downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></p>
+                                        <p>Precio: <span class="math-inline">\{product\.price ? product\.price\.toLocaleString\('es\-MX', \{ minimumFractionDigits\: 2, maximumFractionDigits\: 2 \}\) \: 'N/A'\}</p\>
+<p\>Stock\: \{product\.stock\}</p\>
+<p\>Categoría\: \{product\.category\}</p\>
+<p\>Marca\: \{product\.brand\}</p\>
+\{product\.price \> 0 && \(
+<div className\="credit\-info"\>
+<p\>Enganche\: <strong\></span>{downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></p>
                                                 <p>Pago Semanal: <strong>${weeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (17 semanas)</strong></p>
                                             </div>
                                         )}
@@ -299,4 +290,5 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
         </section>
     );
 }
+
 export default ProductAdminPanel;
