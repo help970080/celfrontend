@@ -40,7 +40,6 @@ function SaleList({ sales, onDeleteSale, userRole }) {
         <div className="sale-list-container">
             <h2>Ventas Registradas</h2>
             <table className="sale-table">
-                {/* --- INICIO: CÓDIGO RESTAURADO --- */}
                 <thead>
                     <tr>
                         <th>ID Venta</th>
@@ -58,28 +57,42 @@ function SaleList({ sales, onDeleteSale, userRole }) {
                 </thead>
                 <tbody>
                     {sales.map(sale => {
-                        const clientName = sale.client ? `${sale.client.name} ${sale.client.lastName}` : 'N/A';
-                        const productListText = sale.saleItems && sale.saleItems.length > 0
-                            ? sale.saleItems.map(item => `${item.quantity}x ${item.product ? item.product.name : 'N/A'}`).join(', ')
+                        // --- INICIO DE LA LÓGICA ROBUSTA CORREGIDA ---
+                        // Se asegura que el cliente exista y tenga nombre antes de mostrarlo.
+                        const clientName = (sale && sale.client && sale.client.name) 
+                            ? `${sale.client.name} ${sale.client.lastName}` 
                             : 'N/A';
-                        const paymentsMade = sale.payments ? sale.payments.length : 0;
-                        const remainingPayments = sale.isCredit && sale.numberOfPayments ? sale.numberOfPayments - paymentsMade : 0;
+
+                        // Se asegura que los productos existan y tengan nombre.
+                        const productListText = (sale && Array.isArray(sale.saleItems) && sale.saleItems.length > 0)
+                            ? sale.saleItems.map(item => {
+                                const productName = (item && item.product && item.product.name) ? item.product.name : 'Producto no encontrado';
+                                const quantity = (item && typeof item.quantity === 'number') ? item.quantity : '?';
+                                return `${quantity}x ${productName}`;
+                              }).join(', ')
+                            : 'N/A';
+                        
+                        const paymentsMade = (sale && Array.isArray(sale.payments)) ? sale.payments.length : 0;
+                        
+                        const remainingPayments = (sale && sale.isCredit && typeof sale.numberOfPayments === 'number') 
+                            ? sale.numberOfPayments - paymentsMade 
+                            : 0;
+                        // --- FIN DE LA LÓGICA ROBUSTA CORREGIDA ---
 
                         return (
                             <tr key={sale.id}>
-                                <td>{sale.id}</td>
+                                <td>{sale.id || 'N/A'}</td>
                                 <td>{clientName}</td>
                                 <td>{productListText}</td>
-                                <td>${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                <td>${(sale.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                                 <td>{sale.isCredit ? 'Crédito' : 'Contado'}</td>
-                                <td>${sale.downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                <td>${(sale.downPayment || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                                 <td className={sale.balanceDue > 0 ? 'highlight-balance' : ''}>
-                                    ${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                    ${(sale.balanceDue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                 </td>
-                                <td>{sale.isCredit ? `$${sale.weeklyPaymentAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : 'N/A'}</td>
+                                <td>{sale.isCredit ? `$${(sale.weeklyPaymentAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : 'N/A'}</td>
                                 <td>{sale.isCredit ? (remainingPayments >= 0 ? remainingPayments : 'N/A') : 'N/A'}</td>
-                                <td><span className={`status-badge status-${sale.status}`}>{sale.status.replace('_', ' ')}</span></td>
-                                {/* --- FIN: CÓDIGO RESTAURADO --- */}
+                                <td><span className={`status-badge status-${sale.status || 'unknown'}`}>{`${sale.status || 'Desconocido'}`.replace('_', ' ')}</span></td>
                                 <td>
                                     <div className="action-buttons">
                                         <button onClick={() => handleOpenReceiptModal(sale.id)}>Ver Recibo</button>
