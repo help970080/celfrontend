@@ -57,27 +57,28 @@ function SaleList({ sales, onDeleteSale, userRole }) {
                 </thead>
                 <tbody>
                     {sales.map(sale => {
-                        // --- INICIO DE LA LÓGICA ROBUSTA CORREGIDA ---
-                        // Se asegura que el cliente exista y tenga nombre antes de mostrarlo.
-                        const clientName = (sale && sale.client && sale.client.name) 
-                            ? `${sale.client.name} ${sale.client.lastName}` 
+                        // --- INICIO DE LA LÓGICA DEFENSIVA Y CORREGIDA ---
+                        
+                        // VERIFICACIÓN 1: Se asegura de que el cliente exista y tenga nombre.
+                        const clientName = (sale && sale.client && typeof sale.client.name === 'string') 
+                            ? `${sale.client.name} ${sale.client.lastName || ''}`.trim()
                             : 'N/A';
 
-                        // Se asegura que los productos existan y tengan nombre.
+                        // VERIFICACIÓN 2: Se asegura de que los productos existan y tengan nombre.
                         const productListText = (sale && Array.isArray(sale.saleItems) && sale.saleItems.length > 0)
                             ? sale.saleItems.map(item => {
-                                const productName = (item && item.product && item.product.name) ? item.product.name : 'Producto no encontrado';
+                                const productName = (item && item.product && typeof item.product.name === 'string') ? item.product.name : 'Producto Eliminado';
                                 const quantity = (item && typeof item.quantity === 'number') ? item.quantity : '?';
                                 return `${quantity}x ${productName}`;
                               }).join(', ')
-                            : 'N/A';
+                            : 'Sin Productos';
                         
                         const paymentsMade = (sale && Array.isArray(sale.payments)) ? sale.payments.length : 0;
                         
                         const remainingPayments = (sale && sale.isCredit && typeof sale.numberOfPayments === 'number') 
                             ? sale.numberOfPayments - paymentsMade 
                             : 0;
-                        // --- FIN DE LA LÓGICA ROBUSTA CORREGIDA ---
+                        // --- FIN DE LA LÓGICA DEFENSIVA Y CORREGIDA ---
 
                         return (
                             <tr key={sale.id}>
@@ -87,7 +88,7 @@ function SaleList({ sales, onDeleteSale, userRole }) {
                                 <td>${(sale.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                                 <td>{sale.isCredit ? 'Crédito' : 'Contado'}</td>
                                 <td>${(sale.downPayment || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                                <td className={sale.balanceDue > 0 ? 'highlight-balance' : ''}>
+                                <td className={(sale.balanceDue || 0) > 0 ? 'highlight-balance' : ''}>
                                     ${(sale.balanceDue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                 </td>
                                 <td>{sale.isCredit ? `$${(sale.weeklyPaymentAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : 'N/A'}</td>
