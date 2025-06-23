@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import ReactDOM from 'react-dom'; // <-- ¡IMPORTANTE! Añadir esta importación
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -66,8 +67,6 @@ function ReceiptViewer({ saleId, onClose }) {
         if (!elementToCapture) return toast.error("Error al capturar contenido del recibo.");
         toast.info("Generando PDF...");
         try {
-            // --- INICIO CORRECCIÓN PDF ---
-            // Opciones mejoradas para html2canvas para capturar todo el contenido, incluso si hay scroll
             const canvas = await html2canvas(elementToCapture, {
                 scale: 2,
                 scrollY: -window.scrollY,
@@ -75,8 +74,6 @@ function ReceiptViewer({ saleId, onClose }) {
                 windowWidth: elementToCapture.scrollWidth,
                 windowHeight: elementToCapture.scrollHeight
             });
-            // --- FIN CORRECCIÓN PDF ---
-
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const imgProps= pdf.getImageProperties(imgData);
@@ -116,7 +113,7 @@ function ReceiptViewer({ saleId, onClose }) {
     };
 
     const handlePrintThermal = () => {
-        toast.info("Preparando para imprimir...");
+        // Esta función ahora es mucho más simple gracias al CSS
         window.print();
     };
 
@@ -155,13 +152,9 @@ function ReceiptViewer({ saleId, onClose }) {
                                 <p><strong>Enganche:</strong> ${sale.downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                                 <p><strong>Saldo Pendiente:</strong> ${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                                 <p><strong>Pago Semanal:</strong> ${sale.weeklyPaymentAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
-                                
-                                {/* --- INICIO CORRECCIÓN TASA DE INTERÉS --- */}
                                 {sale.interestRate > 0 && (
                                     <p><strong>Tasa Interés Anual:</strong> {sale.interestRate * 100}%</p>
                                 )}
-                                {/* --- FIN CORRECCIÓN TASA DE INTERÉS --- */}
-
                             </>
                         ) : <p><strong>Tipo:</strong> Contado</p>}
                         <hr />
@@ -189,14 +182,15 @@ function ReceiptViewer({ saleId, onClose }) {
         );
     };
 
-    return (
-        <div className="receipt-modal-overlay no-print">
+    return ReactDOM.createPortal(
+        <div className="receipt-modal-overlay">
             <div className="receipt-modal-content">
-                <button className="close-button" onClick={onClose}>&times;</button>
+                <button className="close-button no-print" onClick={onClose}>&times;</button>
                 <h3>Recibo de Venta #{saleId}</h3>
                 {renderContent()}
             </div>
-        </div>
+        </div>,
+        document.getElementById('modal-root')
     );
 }
 export default ReceiptViewer;
