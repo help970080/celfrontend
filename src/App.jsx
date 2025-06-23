@@ -131,113 +131,114 @@ function App() {
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
 
       <div className="App">
-        <header className="app-header">
-          <nav className="main-nav">
-            <Link to="/" className="nav-button">Catálogo Público</Link>
-            {token ? (
-              <>
-                {/* Control de visibilidad de navegación por rol */}
-                {hasRole(['super_admin', 'regular_admin', 'inventory_admin']) && (
-                    <Link to="/admin/products" className="nav-button">Gestión Productos</Link>
-                )}
-                {hasRole(['super_admin', 'regular_admin', 'sales_admin']) && (
-                    <Link to="/admin/clients" className="nav-button">Gestión Clientes</Link>
-                )}
-                {hasRole(['super_admin', 'regular_admin', 'sales_admin']) && (
-                    <Link to="/admin/sales" className="nav-button">Gestión Ventas</Link>
-                )}
-                {hasRole(['super_admin', 'regular_admin', 'sales_admin', 'viewer_reports']) && (
-                    <Link to="/admin/reports" className="nav-button">Reportes</Link>
-                )}
-                {hasRole('super_admin') && (
-                    <Link to="/admin/users" className="nav-button">Gestión Usuarios</Link>
-                )}
+        {/* --- INICIO DE LA MODIFICACIÓN --- */}
+        <div className="no-print">
+          <header className="app-header">
+            <nav className="main-nav">
+              <Link to="/" className="nav-button">Catálogo Público</Link>
+              {token ? (
+                <>
+                  {hasRole(['super_admin', 'regular_admin', 'inventory_admin']) && (
+                      <Link to="/admin/products" className="nav-button">Gestión Productos</Link>
+                  )}
+                  {hasRole(['super_admin', 'regular_admin', 'sales_admin']) && (
+                      <Link to="/admin/clients" className="nav-button">Gestión Clientes</Link>
+                  )}
+                  {hasRole(['super_admin', 'regular_admin', 'sales_admin']) && (
+                      <Link to="/admin/sales" className="nav-button">Gestión Ventas</Link>
+                  )}
+                  {hasRole(['super_admin', 'regular_admin', 'sales_admin', 'viewer_reports']) && (
+                      <Link to="/admin/reports" className="nav-button">Reportes</Link>
+                  )}
+                  {hasRole('super_admin') && (
+                      <Link to="/admin/users" className="nav-button">Gestión Usuarios</Link>
+                  )}
 
+                  <span className="user-info">Bienvenido, {username} ({userRole})</span>
+                  <button onClick={handleLogout} className="logout-button nav-button">Cerrar Sesión</button>
+                </>
+              ) : (
+                <Link to="/login" className="nav-button">Iniciar Sesión Admin</Link>
+              )}
+            </nav>
+          </header>
 
-                <span className="user-info">Bienvenido, {username} ({userRole})</span>
-                <button onClick={handleLogout} className="logout-button nav-button">Cerrar Sesión</button>
-              </>
-            ) : (
-              <Link to="/login" className="nav-button">Iniciar Sesión Admin</Link>
-            )}
-          </nav>
-        </header>
+          <main className="app-main-content">
+            <Routes>
+              <Route path="/" element={<PublicCatalog />} />
+              <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
 
-        <main className="app-main-content">
-          <Routes>
-            <Route path="/" element={<PublicCatalog />} />
-            <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
-
-            {/* Rutas Protegidas del Panel de Administración */}
-            <Route
-              path="/admin/products"
-              element={
-                <PrivateRoute isAuthenticated={!!token}>
-                  <ProductAdminPanel authenticatedFetch={authenticatedFetch} onDeleteProduct={handleDeleteProduct} userRole={userRole} />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/admin/clients"
-              element={
-                <PrivateRoute isAuthenticated={!!token}>
-                  <ClientAdminPanel authenticatedFetch={authenticatedFetch} onDeleteClient={handleDeleteClient} userRole={userRole} />
-                </PrivateRoute>
-              }
-            />
-             <Route
-              path="/admin/sales"
-              element={
-                <PrivateRoute isAuthenticated={!!token}>
-                  <SaleAdminPanel authenticatedFetch={authenticatedFetch} onDeleteSale={handleDeleteSale} userRole={userRole} />
-                </PrivateRoute>
-              }
-            />
               <Route
-              path="/admin/reports"
-              element={
-                <PrivateRoute isAuthenticated={!!token}>
-                  <ReportsAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/admin/sales/receipt/:saleId"
-              element={
-                <PrivateRoute isAuthenticated={!!token}>
-                  <ReceiptViewer />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/admin/clients/statement/:clientId"
-              element={
-                <PrivateRoute isAuthenticated={!!token}>
-                  <ClientStatementViewer authenticatedFetch={authenticatedFetch} userRole={userRole} />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/admin/clients/payments/:clientId"
-              element={
-                <PrivateRoute isAuthenticated={!!token}>
-                  <ClientPayments authenticatedFetch={authenticatedFetch} userRole={userRole} />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <PrivateRoute isAuthenticated={!!token}>
-                  <UserAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
-                </PrivateRoute>
-              }
-            />
+                path="/admin/products"
+                element={
+                  <PrivateRoute isAuthenticated={!!token}>
+                    <ProductAdminPanel authenticatedFetch={authenticatedFetch} onDeleteProduct={handleDeleteProduct} userRole={userRole} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/clients"
+                element={
+                  <PrivateRoute isAuthenticated={!!token}>
+                    <ClientAdminPanel authenticatedFetch={authenticatedFetch} onDeleteClient={handleDeleteClient} userRole={userRole} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/sales"
+                element={
+                  <PrivateRoute isAuthenticated={!!token}>
+                    <SaleAdminPanel authenticatedFetch={authenticatedFetch} onDeleteSale={handleDeleteSale} userRole={userRole} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/reports"
+                element={
+                  <PrivateRoute isAuthenticated={!!token}>
+                    <ReportsAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/sales/receipt/:saleId"
+                element={
+                  <PrivateRoute isAuthenticated={!!token}>
+                    <ReceiptViewer />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/clients/statement/:clientId"
+                element={
+                  <PrivateRoute isAuthenticated={!!token}>
+                    <ClientStatementViewer authenticatedFetch={authenticatedFetch} userRole={userRole} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/clients/payments/:clientId"
+                element={
+                  <PrivateRoute isAuthenticated={!!token}>
+                    <ClientPayments authenticatedFetch={authenticatedFetch} userRole={userRole} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <PrivateRoute isAuthenticated={!!token}>
+                    <UserAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
+                  </PrivateRoute>
+                }
+              />
 
-            {token && <Route path="/admin" element={<Navigate to="/admin/products" />} />}
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </main>
+              {token && <Route path="/admin" element={<Navigate to="/admin/products" />} />}
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </main>
+        </div>
+        {/* --- FIN DE LA MODIFICACIÓN --- */}
       </div>
     </Router>
   );

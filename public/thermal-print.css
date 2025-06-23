@@ -1,44 +1,17 @@
 /* public/thermal-print.css */
 
-/* Estilos para la vista en pantalla (opcional, para centrar el recibo) */
-.receipt-wrapper {
-    display: flex;
-    justify-content: center;
-    padding: 20px;
-    background-color: #f4f4f4;
-}
-
-.receipt-container {
-    width: 302px; /* Ancho típico de un ticket de 80mm */
-    padding: 15px;
-    background: #ffffff;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    font-family: 'Courier New', Courier, monospace;
-}
-
 /* --- ESTILOS QUE SE APLICAN SOLO AL IMPRIMIR --- */
 @media print {
-    body * {
-        visibility: hidden;
+    /* Oculta los elementos que marcamos para no imprimir */
+    .no-print {
+        display: none !important;
     }
 
-    /* --- CORRECCIÓN CLAVE AQUÍ --- */
-    /* Hacemos visible el modal completo y su contenido, no solo el recibo */
-    .receipt-modal-overlay, .receipt-modal-content, .receipt-container, .receipt-container * {
-        visibility: visible;
-    }
-    
-    .receipt-modal-overlay {
-        position: static;
-        background: none;
-    }
-    
-    .receipt-modal-content {
-        box-shadow: none;
-        padding: 0;
+    /* Nos aseguramos de que el cuerpo y el contenedor del recibo ocupen todo */
+    body, html {
         margin: 0;
-        max-width: 100%;
-        border-radius: 0;
+        padding: 0;
+        width: 100%;
     }
 
     .receipt-container {
@@ -50,22 +23,18 @@
         border: none;
         box-shadow: none;
         margin: 0;
-    }
-    
-    @page {
-        size: 80mm auto;
-        margin: 3mm;
-    }
-
-    .no-print {
-        display: none;
-    }
-    
-    .receipt-container {
+        font-family: 'Courier New', Courier, monospace;
         font-size: 10pt;
         color: #000;
     }
+    
+    /* Define el tamaño del papel de la impresora térmica */
+    @page {
+        size: 80mm auto; /* 'auto' para la altura */
+        margin: 3mm;
+    }
 
+    /* Estilos específicos para el contenido del ticket */
     .receipt-header h1, .receipt-header h2 {
         font-size: 14pt;
         text-align: center;
@@ -89,4 +58,13 @@
         padding: 0;
         margin: 5px 0;
     }
+}
+
+/* --- ESTILOS PARA LA VISTA EN PANTALLA (No se aplican al imprimir) --- */
+.receipt-container {
+    width: 302px;
+    padding: 15px;
+    background: #ffffff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    font-family: 'Courier New', Courier, monospace;
 }
