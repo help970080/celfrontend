@@ -53,14 +53,16 @@ function App() {
   }, []);
 
   const authenticatedFetch = useCallback(async (url, options = {}) => {
-    if (!token) {
+    const currentToken = localStorage.getItem('token'); // Leer el token más reciente
+    if (!currentToken) {
+      handleLogout();
       return Promise.reject(new Error('No hay token de autenticación. Por favor, inicia sesión.'));
     }
 
     const headers = {
       ...options.headers,
       'Content-Type': options.headers && options.headers['Content-Type'] ? options.headers['Content-Type'] : 'application/json',
-      'Authorization': `Bearer ${token}`,
+      'Authorization': `Bearer ${currentToken}`,
     };
 
     const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
@@ -69,54 +71,16 @@ function App() {
     if (response.status === 401) {
       toast.error('Sesión expirada o token inválido. Por favor, inicia sesión de nuevo.');
       handleLogout();
-      return Promise.reject(new Error('Sesión expirada o token inválido. Por favor, inicia sesión de nuevo.'));
+      return Promise.reject(new Error('Sesión expirada o token inválido.'));
     } else if (response.status === 403) {
         const errorData = await response.json();
-        toast.error(`Acceso denegado: ${errorData.message || 'No tienes los permisos para esta acción.'}`);
-        return Promise.reject(new Error(`Acceso denegado: ${errorData.message}`));
+        const errorMessage = errorData.message || 'No tienes los permisos para esta acción.';
+        toast.error(`Acceso denegado: ${errorMessage}`);
+        return Promise.reject(new Error(`Acceso denegado: ${errorMessage}`));
     }
 
     return response;
-  }, [token, handleLogout]);
-
-  const handleDeleteProduct = useCallback(async (id) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este producto?')) { return; }
-    try {
-      await authenticatedFetch(`${API_BASE_URL}/api/products/${id}`, { method: 'DELETE' });
-      toast.success('Producto eliminado con éxito!');
-    } catch (err) {
-      console.error("Error al eliminar producto:", err);
-      if (!err.message.includes('Acceso denegado')) {
-          toast.error(`Error al eliminar el producto: ${err.message}`);
-      }
-    }
-  }, [authenticatedFetch]);
-
-  const handleDeleteClient = useCallback(async (id) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este cliente? Esto también eliminará sus ventas y pagos.')) { return; }
-    try {
-      await authenticatedFetch(`${API_BASE_URL}/api/clients/${id}`, { method: 'DELETE' });
-      toast.success('Cliente eliminado con éxito!');
-    }  catch (err) {
-      console.error("Error al eliminar cliente:", err);
-      if (!err.message.includes('Acceso denegado')) {
-          toast.error(`Error al eliminar el cliente: ${err.message}`);
-      }
-    }
-  }, [authenticatedFetch]);
-
-  const handleDeleteSale = useCallback(async (id) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar esta venta? Esto también eliminará sus pagos asociados.')) { return; }
-    try {
-      await authenticatedFetch(`${API_BASE_URL}/api/sales/${id}`, { method: 'DELETE' });
-      toast.success('Venta eliminada con éxito!');
-    } catch (err) {
-      console.error("Error al eliminar venta:", err);
-      if (!err.message.includes('Acceso denegado')) {
-          toast.error(`Error al eliminar la venta: ${err.message}`);
-      }
-    }
-  }, [authenticatedFetch]);
+  }, [handleLogout]);
 
   const hasRole = (roles) => {
     if (!userRole) return false;
@@ -131,7 +95,6 @@ function App() {
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
 
       <div className="App">
-        {/* --- INICIO DE LA MODIFICACIÓN --- */}
         <div className="no-print">
           <header className="app-header">
             <nav className="main-nav">
@@ -168,11 +131,12 @@ function App() {
               <Route path="/" element={<PublicCatalog />} />
               <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
 
+              {/* --- RUTAS MODIFICADAS SIN PROPS DE ELIMINACIÓN --- */}
               <Route
                 path="/admin/products"
                 element={
                   <PrivateRoute isAuthenticated={!!token}>
-                    <ProductAdminPanel authenticatedFetch={authenticatedFetch} onDeleteProduct={handleDeleteProduct} userRole={userRole} />
+                    <ProductAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
                   </PrivateRoute>
                 }
               />
@@ -180,7 +144,7 @@ function App() {
                 path="/admin/clients"
                 element={
                   <PrivateRoute isAuthenticated={!!token}>
-                    <ClientAdminPanel authenticatedFetch={authenticatedFetch} onDeleteClient={handleDeleteClient} userRole={userRole} />
+                    <ClientAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
                   </PrivateRoute>
                 }
               />
@@ -188,15 +152,17 @@ function App() {
                 path="/admin/sales"
                 element={
                   <PrivateRoute isAuthenticated={!!token}>
-                    <SaleAdminPanel authenticatedFetch={authenticatedFetch} onDeleteSale={handleDeleteSale} userRole={userRole} />
+                    <SaleAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
                   </PrivateRoute>
                 }
               />
+              {/* --- FIN DE RUTAS MODIFICADAS --- */}
+              
               <Route
                 path="/admin/reports"
                 element={
                   <PrivateRoute isAuthenticated={!!token}>
-                    <ReportsAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
+                    <ReportsAdminPanel authenticatedFetch={authenticatedFetch} />
                   </PrivateRoute>
                 }
               />
@@ -212,7 +178,7 @@ function App() {
                 path="/admin/clients/statement/:clientId"
                 element={
                   <PrivateRoute isAuthenticated={!!token}>
-                    <ClientStatementViewer authenticatedFetch={authenticatedFetch} userRole={userRole} />
+                    <ClientStatementViewer authenticatedFetch={authenticatedFetch} />
                   </PrivateRoute>
                 }
               />
@@ -233,12 +199,11 @@ function App() {
                 }
               />
 
-              {token && <Route path="/admin" element={<Navigate to="/admin/products" />} />}
+              {token && <Route path="/admin" element={<Navigate to="/admin/reports" />} />}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </main>
         </div>
-        {/* --- FIN DE LA MODIFICACIÓN --- */}
       </div>
     </Router>
   );
