@@ -1,16 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import SaleForm from './SaleForm';
 import SaleList from './SaleList';
+import { toast } from 'react-toastify'; // Asegúrate de que toast esté importado si no lo estaba
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) { 
+function SaleAdminPanel({ authenticatedFetch, userRole }) { 
     const [sales, setSales] = useState([]);
     const [clients, setClients] = useState([]);
     const [products, setProducts] = useState([]);
     const [loadingSales, setLoadingSales] = useState(true);
     const [errorSales, setErrorSales] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+
+    // --- INICIO DE NUEVOS ESTADOS Y FUNCIONES ---
+    const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+    
+    const handleSaleAdded = (newSale) => {
+        toast.success('Venta registrada con éxito!');
+        setIsFormModalOpen(false); // Cierra el modal
+        fetchSales(); // Recarga la lista de ventas
+    };
+    // --- FIN DE NUEVOS ESTADOS Y FUNCIONES ---
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -26,51 +37,15 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
     };
 
     const fetchSales = useCallback(async () => {
-        setLoadingSales(true);
-        setErrorSales(null);
-        try {
-            let url = `${API_BASE_URL}/api/sales`;
-            if (searchTerm) {
-                url += `?search=${encodeURIComponent(searchTerm)}`;
-            }
-            url += `${searchTerm ? '&' : '?'}page=${currentPage}&limit=${itemsPerPage}`;
-
-            const response = await authenticatedFetch(url);
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
-            }
-            const data = await response.json();
-            setSales(data.sales || []);
-            setTotalPages(data.totalPages);
-            setTotalItems(data.totalItems);
-        } catch (err) {
-            console.error("Error al obtener ventas:", err);
-            setErrorSales(err.message || "No se pudieron cargar las ventas.");
-            setSales([]);
-        } finally {
-            setLoadingSales(false);
-        }
+        // ... tu código existente para fetchSales está bien ...
     }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage]);
 
     const fetchClients = useCallback(async () => {
-        try {
-            const response = await authenticatedFetch(`${API_BASE_URL}/api/clients?limit=9999`); 
-            if (response.ok) {
-                const data = await response.json();
-                setClients(data.clients || []);
-            }
-        } catch (err) { console.error("Error al cargar clientes para ventas:", err); }
+        // ... tu código existente para fetchClients está bien ...
     }, [authenticatedFetch]);
 
     const fetchProducts = useCallback(async () => {
-        try {
-            const response = await authenticatedFetch(`${API_BASE_URL}/api/products?limit=9999`); 
-            if (response.ok) {
-                const data = await response.json();
-                setProducts(data.products || []);
-            }
-        } catch (err) { console.error("Error al cargar productos para ventas:", err); }
+        // ... tu código existente para fetchProducts está bien ...
     }, [authenticatedFetch]);
 
     useEffect(() => {
@@ -82,34 +57,36 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
     return (
         <section className="sales-section">
             <h2>Gestión de Ventas y Cobranza</h2>
+
+            {/* --- INICIO: BOTÓN PARA ABRIR EL MODAL --- */}
             {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
-                <SaleForm
-                    onSaleAdded={fetchSales}
-                    clients={clients}
-                    products={products}
-                />
+                <div className="panel-actions">
+                    <button onClick={() => setIsFormModalOpen(true)} className="action-button primary-button">
+                        + Registrar Nueva Venta
+                    </button>
+                </div>
             )}
+            {/* --- FIN: BOTÓN PARA ABRIR EL MODAL --- */}
+
+
+            {/* --- INICIO: LÓGICA DEL MODAL --- */}
+            {isFormModalOpen && (
+                <div className="form-modal-overlay">
+                    <div className="form-modal-content">
+                        <button onClick={() => setIsFormModalOpen(false)} className="close-button">&times;</button>
+                        <SaleForm
+                            onSaleAdded={handleSaleAdded} // Usamos la nueva función
+                            clients={clients}
+                            products={products}
+                        />
+                    </div>
+                </div>
+            )}
+            {/* --- FIN: LÓGICA DEL MODAL --- */}
+            
 
             <div className="admin-controls">
-                <div className="control-group">
-                    <label htmlFor="searchSale">Buscar Venta:</label>
-                    <input
-                        type="text"
-                        id="searchSale"
-                        value={searchTerm}
-                        onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                        placeholder="Buscar por ID de venta, cliente o producto..."
-                    />
-                </div>
-                 <div className="control-group">
-                    <label htmlFor="itemsPerPage">Ítems por página:</label>
-                    <select id="itemsPerPage" value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
-                        <option value="5">5</option>
-                        <option value="10">10</option>
-                        <option value="20">20</option>
-                        <option value="50">50</option>
-                    </select>
-                </div>
+                {/* ... tus controles de búsqueda y paginación ... */}
             </div>
 
             {loadingSales ? (
@@ -120,25 +97,11 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
                 <>
                     <SaleList
                         sales={sales}
-                        clients={clients}
-                        products={products}
-                        onSaleUpdated={fetchSales}
-                        onPaymentAdded={fetchSales}
-                        onDeleteSale={onDeleteSale}
-                        authenticatedFetch={authenticatedFetch}
+                        // La prop onDeleteSale debería venir de App.jsx en la versión restaurada
+                        // Si moviste la lógica aquí, asegúrate de que esté definida
                         userRole={userRole} 
                     />
-                    {totalPages > 1 && (
-                        <div className="pagination-controls">
-                            <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
-                                Anterior
-                            </button>
-                            <span>Página {currentPage} de {totalPages} ({totalItems} ítems)</span>
-                            <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>
-                                Siguiente
-                            </button>
-                        </div>
-                    )}
+                    {/* ... tus controles de paginación ... */}
                 </>
             )}
         </section>
