@@ -131,6 +131,7 @@ function App() {
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
 
       <div className="App">
+        {/* --- INICIO DE LA MODIFICACIÓN --- */}
         <div className="no-print">
           <header className="app-header">
             <nav className="main-nav">
@@ -237,6 +238,7 @@ function App() {
             </Routes>
           </main>
         </div>
+        {/* --- FIN DE LA MODIFICACIÓN --- */}
       </div>
     </Router>
   );
