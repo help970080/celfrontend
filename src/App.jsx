@@ -53,31 +53,30 @@ function App() {
   }, []);
 
   const authenticatedFetch = useCallback(async (url, options = {}) => {
-    if (!token) {
+    const currentToken = localStorage.getItem('token');
+    if (!currentToken) {
+      handleLogout();
       return Promise.reject(new Error('No hay token de autenticación. Por favor, inicia sesión.'));
     }
-
     const headers = {
       ...options.headers,
       'Content-Type': options.headers && options.headers['Content-Type'] ? options.headers['Content-Type'] : 'application/json',
-      'Authorization': `Bearer ${token}`,
+      'Authorization': `Bearer ${currentToken}`,
     };
-
     const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
     const response = await fetch(fullUrl, { ...options, headers });
-
     if (response.status === 401) {
       toast.error('Sesión expirada o token inválido. Por favor, inicia sesión de nuevo.');
       handleLogout();
-      return Promise.reject(new Error('Sesión expirada o token inválido. Por favor, inicia sesión de nuevo.'));
+      return Promise.reject(new Error('Sesión expirada o token inválido.'));
     } else if (response.status === 403) {
         const errorData = await response.json();
-        toast.error(`Acceso denegado: ${errorData.message || 'No tienes los permisos para esta acción.'}`);
-        return Promise.reject(new Error(`Acceso denegado: ${errorData.message}`));
+        const errorMessage = errorData.message || 'No tienes los permisos para esta acción.';
+        toast.error(`Acceso denegado: ${errorMessage}`);
+        return Promise.reject(new Error(`Acceso denegado: ${errorMessage}`));
     }
-
     return response;
-  }, [token, handleLogout]);
+  }, [handleLogout]);
 
   const handleDeleteProduct = useCallback(async (id) => {
     if (!window.confirm('¿Estás seguro de que quieres eliminar este producto?')) { return; }
@@ -129,9 +128,7 @@ function App() {
   return (
     <Router>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-
       <div className="App">
-        {/* --- INICIO DE LA MODIFICACIÓN --- */}
         <div className="no-print">
           <header className="app-header">
             <nav className="main-nav">
@@ -153,7 +150,6 @@ function App() {
                   {hasRole('super_admin') && (
                       <Link to="/admin/users" className="nav-button">Gestión Usuarios</Link>
                   )}
-
                   <span className="user-info">Bienvenido, {username} ({userRole})</span>
                   <button onClick={handleLogout} className="logout-button nav-button">Cerrar Sesión</button>
                 </>
@@ -162,83 +158,63 @@ function App() {
               )}
             </nav>
           </header>
-
           <main className="app-main-content">
             <Routes>
               <Route path="/" element={<PublicCatalog />} />
               <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
-
-              <Route
-                path="/admin/products"
-                element={
+              <Route path="/admin/products" element={
                   <PrivateRoute isAuthenticated={!!token}>
                     <ProductAdminPanel authenticatedFetch={authenticatedFetch} onDeleteProduct={handleDeleteProduct} userRole={userRole} />
                   </PrivateRoute>
                 }
               />
-              <Route
-                path="/admin/clients"
-                element={
+              <Route path="/admin/clients" element={
                   <PrivateRoute isAuthenticated={!!token}>
                     <ClientAdminPanel authenticatedFetch={authenticatedFetch} onDeleteClient={handleDeleteClient} userRole={userRole} />
                   </PrivateRoute>
                 }
               />
-              <Route
-                path="/admin/sales"
-                element={
+              <Route path="/admin/sales" element={
                   <PrivateRoute isAuthenticated={!!token}>
                     <SaleAdminPanel authenticatedFetch={authenticatedFetch} onDeleteSale={handleDeleteSale} userRole={userRole} />
                   </PrivateRoute>
                 }
               />
-              <Route
-                path="/admin/reports"
-                element={
+              <Route path="/admin/reports" element={
                   <PrivateRoute isAuthenticated={!!token}>
-                    <ReportsAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
+                    <ReportsAdminPanel authenticatedFetch={authenticatedFetch} />
                   </PrivateRoute>
                 }
               />
-              <Route
-                path="/admin/sales/receipt/:saleId"
-                element={
+              <Route path="/admin/sales/receipt/:saleId" element={
                   <PrivateRoute isAuthenticated={!!token}>
                     <ReceiptViewer />
                   </PrivateRoute>
                 }
               />
-              <Route
-                path="/admin/clients/statement/:clientId"
-                element={
+              <Route path="/admin/clients/statement/:clientId" element={
                   <PrivateRoute isAuthenticated={!!token}>
-                    <ClientStatementViewer authenticatedFetch={authenticatedFetch} userRole={userRole} />
+                    <ClientStatementViewer authenticatedFetch={authenticatedFetch} />
                   </PrivateRoute>
                 }
               />
-              <Route
-                path="/admin/clients/payments/:clientId"
-                element={
+              <Route path="/admin/clients/payments/:clientId" element={
                   <PrivateRoute isAuthenticated={!!token}>
                     <ClientPayments authenticatedFetch={authenticatedFetch} userRole={userRole} />
                   </PrivateRoute>
                 }
               />
-              <Route
-                path="/admin/users"
-                element={
+              <Route path="/admin/users" element={
                   <PrivateRoute isAuthenticated={!!token}>
                     <UserAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
                   </PrivateRoute>
                 }
               />
-
-              {token && <Route path="/admin" element={<Navigate to="/admin/products" />} />}
+              {token && <Route path="/admin" element={<Navigate to="/admin/reports" />} />}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </main>
         </div>
-        {/* --- FIN DE LA MODIFICACIÓN --- */}
       </div>
     </Router>
   );

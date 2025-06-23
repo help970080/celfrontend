@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import SaleForm from './SaleForm';
 import SaleList from './SaleList';
-import { toast } from 'react-toastify'; // <-- IMPORTANTE: Añadir toast
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function SaleAdminPanel({ authenticatedFetch, userRole }) { 
+function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) { 
     const [sales, setSales] = useState([]);
     const [clients, setClients] = useState([]);
     const [products, setProducts] = useState([]);
@@ -54,23 +53,6 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         }
     }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage]);
 
-    // --- INICIO DEL CÓDIGO A AGREGAR ---
-    const handleDeleteSale = useCallback(async (id) => {
-        if (!window.confirm('¿Estás seguro de que quieres eliminar esta venta? Esto también eliminará sus pagos asociados y restaurará el stock del producto.')) { 
-            return; 
-        }
-        try {
-            await authenticatedFetch(`${API_BASE_URL}/api/sales/${id}`, { method: 'DELETE' });
-            toast.success('Venta eliminada con éxito!');
-            fetchSales(); // <-- ¡ESTA ES LA LÍNEA CLAVE QUE REFRESCA LA TABLA!
-        } catch (err) {
-            console.error("Error al eliminar venta:", err);
-            toast.error(`Error al eliminar la venta: ${err.message}`);
-        }
-    }, [authenticatedFetch, fetchSales]);
-    // --- FIN DEL CÓDIGO A AGREGAR ---
-
-
     const fetchClients = useCallback(async () => {
         try {
             const response = await authenticatedFetch(`${API_BASE_URL}/api/clients?limit=9999`); 
@@ -109,7 +91,25 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
             )}
 
             <div className="admin-controls">
-                {/* ... tus controles de búsqueda y paginación ... */}
+                <div className="control-group">
+                    <label htmlFor="searchSale">Buscar Venta:</label>
+                    <input
+                        type="text"
+                        id="searchSale"
+                        value={searchTerm}
+                        onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                        placeholder="Buscar por ID de venta, cliente o producto..."
+                    />
+                </div>
+                 <div className="control-group">
+                    <label htmlFor="itemsPerPage">Ítems por página:</label>
+                    <select id="itemsPerPage" value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
             </div>
 
             {loadingSales ? (
@@ -118,15 +118,26 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
                 <p style={{ color: 'red', fontWeight: 'bold' }}>Error: {errorSales}</p>
             ) : (
                 <>
-                    {/* --- MODIFICACIÓN AQUÍ --- */}
                     <SaleList
                         sales={sales}
-                        onDeleteSale={handleDeleteSale} // <-- Usamos la nueva función local
+                        clients={clients}
+                        products={products}
+                        onSaleUpdated={fetchSales}
+                        onPaymentAdded={fetchSales}
+                        onDeleteSale={onDeleteSale}
+                        authenticatedFetch={authenticatedFetch}
                         userRole={userRole} 
                     />
-                    {/* --- FIN DE LA MODIFICACIÓN --- */}
                     {totalPages > 1 && (
-                       {/* ... tus controles de paginación ... */}
+                        <div className="pagination-controls">
+                            <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
+                                Anterior
+                            </button>
+                            <span>Página {currentPage} de {totalPages} ({totalItems} ítems)</span>
+                            <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>
+                                Siguiente
+                            </button>
+                        </div>
                     )}
                 </>
             )}

@@ -75,17 +75,49 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
     useEffect(() => {
         fetchProducts();
     }, [fetchProducts]);
-    
-    // Aquí no está la función handleDeleteProduct
 
     const handleExportExcel = async () => {
-        // ...código de exportación...
+        if (!hasPermission(['super_admin', 'regular_admin', 'inventory_admin'])) {
+            toast.error('No tienes permisos para exportar el inventario.');
+            return;
+        }
+        try {
+            toast.info('Generando reporte de inventario en Excel...');
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/products/export-excel`);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Reporte_Inventario.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success('Reporte de inventario exportado con éxito!');
+        } catch (err) {
+            console.error("Error al exportar inventario a Excel:", err);
+            toast.error(`Error al exportar: ${err.message || "Error desconocido."}`);
+        }
     };
 
     const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
 
     const getMediaType = (url) => {
-        // ...código para obtener tipo de media...
+        if (!url) return 'none';
+        if (url.includes('youtube.com/embed') || url.includes('youtu.be')) {
+            const videoId = url.split('v=')[1] || url.split('/').pop();
+            return { type: 'youtube', id: videoId.split('&')[0] };
+        }
+        if (url.includes('vimeo.com/')) {
+            const videoId = url.split('/').pop();
+            return { type: 'vimeo', id: videoId.split('?')[0] };
+        }
+        return { type: 'image' };
     };
 
     return (
@@ -99,7 +131,52 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
                 />
             )}
 
-            {/* ...controles de búsqueda y filtros... */}
+            <div className="admin-controls">
+                <div className="control-group">
+                    <label htmlFor="searchProduct">Buscar:</label>
+                    <input type="text" id="searchProduct" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder="Buscar por nombre, descripción, categoría, marca..."/>
+                </div>
+                <div className="control-group">
+                    <label htmlFor="sortBy">Ordenar por:</label>
+                    <select id="sortBy" value={sortBy} onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}>
+                        <option value="name">Nombre (A-Z)</option>
+                        <option value="price">Precio</option>
+                        <option value="createdAt">Más Recientes</option>
+                    </select>
+                </div>
+                <div className="control-group">
+                    <label htmlFor="order">Orden:</label>
+                    <select id="order" value={order} onChange={(e) => { setOrder(e.target.value); setCurrentPage(1); }}>
+                        <option value="asc">Ascendente</option>
+                        <option value="desc">Descendente</option>
+                    </select>
+                </div>
+                <div className="control-group">
+                    <label htmlFor="categoryFilter">Categoría:</label>
+                    <select id="categoryFilter" value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}>
+                        <option value="">Todas</option>
+                        {uniqueCategories.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                    </select>
+                </div>
+                 <div className="control-group">
+                    <label htmlFor="itemsPerPage">Ítems por página:</label>
+                    <select id="itemsPerPage" value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+                {hasPermission(['super_admin', 'regular_admin', 'inventory_admin']) && (
+                    <div className="control-group">
+                        <button onClick={handleExportExcel} className="action-button primary-button">
+                            Exportar a Excel
+                        </button>
+                    </div>
+                )}
+            </div>
 
             {loadingProducts ? (
                 <p>Cargando productos...</p>
@@ -108,24 +185,55 @@ function ProductAdminPanel({ authenticatedFetch, onDeleteProduct, userRole }) {
             ) : (
                 <>
                     <div className="product-list">
-                        {products.map(product => {
-                            // ...lógica de renderizado de tarjeta de producto...
-                            return (
-                                <div key={product.id} className="product-card">
-                                    {/* ...media, nombre, descripción, etc.... */}
-                                    <div className="product-actions">
-                                        {hasPermission(['super_admin', 'regular_admin', 'inventory_admin']) && (
-                                            <button onClick={() => setProductToEdit(product)}>Editar</button>
+                        {products.length === 0 ? (
+                            <p>No hay productos que coincidan con los criterios de búsqueda o filtro.</p>
+                        ) : (
+                            products.map(product => {
+                                const imageUrls = Array.isArray(product.imageUrls) ? product.imageUrls : (typeof product.imageUrls === 'string' && product.imageUrls ? product.imageUrls.split(/[\n,]/).map(url => url.trim()).filter(Boolean) : []);
+                                const firstMedia = imageUrls.length > 0 ? imageUrls[0] : 'https://via.placeholder.com/150';
+                                const mediaType = getMediaType(firstMedia);
+                                
+                                const { downPayment, weeklyPayment } = calculateCreditDetails(product.price);
+
+                                return (
+                                    <div key={product.id} className="product-card">
+                                        {/* ... JSX para renderizar media ... */}
+                                        <h2>{product.name}</h2>
+                                        <p>{product.description}</p>
+                                        <p>Precio: ${product.price ? product.price.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A'}</p>
+                                        <p>Stock: {product.stock}</p>
+                                        <p>Categoría: {product.category}</p>
+                                        <p>Marca: {product.brand}</p>
+                                        {product.price > 0 && (
+                                            <div className="credit-info">
+                                                <p>Enganche: <strong>${downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></p>
+                                                <p>Pago Semanal: <strong>${weeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (17 semanas)</strong></p>
+                                            </div>
                                         )}
-                                        {hasPermission('super_admin') && (
-                                            <button className="delete-button" onClick={() => onDeleteProduct(product.id)}>Eliminar</button>
-                                        )}
+                                        <div className="product-actions">
+                                            {hasPermission(['super_admin', 'regular_admin', 'inventory_admin']) && (
+                                                <button onClick={() => setProductToEdit(product)}>Editar</button>
+                                            )}
+                                            {hasPermission('super_admin') && (
+                                                <button className="delete-button" onClick={() => onDeleteProduct(product.id)}>Eliminar</button>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })
+                        )}
                     </div>
-                    {/* ...controles de paginación... */}
+                    {totalPages > 1 && (
+                        <div className="pagination-controls">
+                            <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
+                                Anterior
+                            </button>
+                            <span>Página {currentPage} de {totalPages} ({totalItems} ítems)</span>
+                            <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>
+                                Siguiente
+                            </button>
+                        </div>
+                    )}
                 </>
             )}
         </section>

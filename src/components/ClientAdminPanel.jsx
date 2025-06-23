@@ -29,6 +29,7 @@ function ClientAdminPanel({ authenticatedFetch, onDeleteClient, userRole }) {
         return permissionGranted;
     };
 
+
     const fetchClients = useCallback(async () => {
         setLoadingClients(true);
         setErrorClients(null);
@@ -60,11 +61,38 @@ function ClientAdminPanel({ authenticatedFetch, onDeleteClient, userRole }) {
     useEffect(() => {
         fetchClients();
     }, [fetchClients]);
-    
-    // Aquí no está la función handleDeleteClient
 
     const handleExportExcel = async () => {
-        // ...código de exportación...
+        if (!hasPermission(['super_admin', 'regular_admin', 'sales_admin'])) {
+            toast.error('No tienes permisos para exportar clientes.');
+            return;
+        }
+
+        try {
+            toast.info('Generando archivo Excel de clientes...');
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/clients/export-excel`, {
+                method: 'GET',
+                headers: {},
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'clientes_con_riesgo.xlsx'; 
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success('Archivo Excel exportado con éxito!');
+        } catch (err) {
+            console.error("Error al exportar clientes a Excel:", err);
+            toast.error(`Error al exportar clientes: ${err.message || "Error desconocido."}`);
+        }
     };
 
     return (
@@ -78,7 +106,28 @@ function ClientAdminPanel({ authenticatedFetch, onDeleteClient, userRole }) {
                 />
             )}
 
-            {/* ...controles de búsqueda y filtros... */}
+            <div className="admin-controls">
+                <div className="control-group">
+                    <label htmlFor="searchClient">Buscar Cliente:</label>
+                    <input type="text" id="searchClient" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder="Buscar por nombre, apellido, teléfono, email, ID..."/>
+                </div>
+                 <div className="control-group">
+                    <label htmlFor="itemsPerPage">Ítems por página:</label>
+                    <select id="itemsPerPage" value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+                {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
+                    <div className="control-group">
+                        <button onClick={handleExportExcel} className="action-button primary-button">
+                            Exportar a Excel
+                        </button>
+                    </div>
+                )}
+            </div>
 
             {loadingClients ? (
                 <p>Cargando clientes...</p>
@@ -92,7 +141,17 @@ function ClientAdminPanel({ authenticatedFetch, onDeleteClient, userRole }) {
                         onDeleteClient={onDeleteClient}
                         userRole={userRole}
                     />
-                    {/* ...controles de paginación... */}
+                    {totalPages > 1 && (
+                        <div className="pagination-controls">
+                            <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
+                                Anterior
+                            </button>
+                            <span>Página {currentPage} de {totalPages} ({totalItems} ítems)</span>
+                            <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>
+                                Siguiente
+                            </button>
+                        </div>
+                    )}
                 </>
             )}
         </section>
