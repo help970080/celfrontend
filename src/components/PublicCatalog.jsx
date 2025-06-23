@@ -86,7 +86,7 @@ function PublicCatalog() {
     const getMediaType = (url) => {
         if (!url) return 'none';
         // Ajuste en la URL de YouTube para que la interpolación sea correcta
-        if (url.includes('youtube.com/watch?v=') || url.includes('youtu.be/')) {
+        if (url.includes('youtube.com/watch') || url.includes('youtu.be/')) {
             const videoId = url.split('v=')[1] || url.split('/').pop();
             return { type: 'youtube', id: videoId.split('&')[0] };
         }
@@ -153,7 +153,6 @@ function PublicCatalog() {
                         return (
                             <div key={product.id} className="product-card">
                                 {mediaType.type === 'youtube' ? (
-                                    // URL de incrustación de YouTube corregida
                                     <iframe
                                         width="100%"
                                         height="200"
@@ -185,7 +184,18 @@ function PublicCatalog() {
                                         <p>Pago Semanal: <strong>${weeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (17 semanas)</strong></p>
                                     </div>
                                 )}
-                                <button className="contact-button">Contactar para comprar</button>
+                                
+                                {/* --- INICIO DE LA MODIFICACIÓN --- */}
+                                <a 
+                                    href="https://wa.me/525665489522" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="contact-button"
+                                >
+                                    Contactar para comprar
+                                </a>
+                                {/* --- FIN DE LA MODIFICACIÓN --- */}
+
                             </div>
                         );
                     })
