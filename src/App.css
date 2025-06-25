@@ -1711,3 +1711,99 @@ un error en la visualizacion de la tabla. */
 .assignment-cell button:hover {
   background-color: #138496;
 }
+/* --- Estilos para el Panel del Gestor de Cobranza --- */
+.collector-dashboard {
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  margin-top: 30px;
+  text-align: left;
+}
+
+.collector-dashboard h2 {
+    text-align: center;
+    color: #007bff;
+}
+
+.collector-dashboard > p {
+    text-align: center;
+    font-size: 1.1em;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.collection-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.collection-card {
+    border: 1px solid #ddd;
+    border-left: 5px solid #007bff;
+    border-radius: 8px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.collection-card h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 1.3em;
+}
+
+.collection-card p {
+    margin: 0;
+    color: #555;
+}
+
+.collection-financials {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #ccc;
+}
+
+.collection-financials p {
+    font-size: 1.1em;
+}
+
+.collection-financials strong {
+    color: #dc3545; /* Rojo para el saldo */
+}
+.collection-financials p:last-child strong {
+    color: #28a745; /* Verde para el pago semanal */
+}
+
+.collection-actions {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.collection-actions .button-as-link {
+    display: block;
+    text-align: center;
+    padding: 10px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    color: white;
+    background-color: #007bff;
+    transition: background-color 0.2s;
+}
+
+.collection-actions .button-as-link:hover {
+    background-color: #0056b3;
+}
+
+.collection-actions .button-as-link.secondary {
+    background-color: #6c757d;
+}
+.collection-actions .button-as-link.secondary:hover {
+    background-color: #5a6268;
+}
