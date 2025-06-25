@@ -1807,3 +1807,9 @@ un error en la visualizacion de la tabla. */
 .collection-actions .button-as-link.secondary:hover {
     background-color: #5a6268;
 }
+/* Estilo para botones deshabilitados en formularios */
+.sale-form button[type="submit"]:disabled {
+  background-color: #9e8fb8; /* Un morado más claro y apagado */
+  cursor: not-allowed;
+  transform: none;
+}

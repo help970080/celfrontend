@@ -19,11 +19,6 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
     const [totalItems, setTotalItems] = useState(0);
     const [showSaleForm, setShowSaleForm] = useState(false);
 
-    const handleSaleAdded = () => {
-        setShowSaleForm(false);
-        fetchSales();
-    };
-    
     const hasPermission = (roles) => {
         if (!userRole) return false;
         return Array.isArray(roles) ? roles.includes(userRole) : userRole === roles;
@@ -80,12 +75,20 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         fetchSupportingData();
     }, [fetchSales, fetchSupportingData]);
 
+    const handleSaleAdded = () => {
+        setShowSaleForm(false);
+        fetchSales();
+    };
+
+    // Función para eliminar una venta y luego refrescar la lista
     const onDeleteSale = async (id) => {
-        if (!window.confirm('¿Estás seguro de que quieres eliminar esta venta? Esto restaurará el stock.')) return;
+        if (!window.confirm('¿Estás seguro de que quieres eliminar esta venta? Esto restaurará el stock de los productos vendidos.')) {
+            return;
+        }
         try {
             await authenticatedFetch(`${API_BASE_URL}/api/sales/${id}`, { method: 'DELETE' });
             toast.success('Venta eliminada con éxito!');
-            fetchSales(); // Refresca la lista
+            fetchSales(); // ¡Esta línea refresca la tabla!
         } catch (err) {
             toast.error(`Error al eliminar la venta: ${err.message}`);
         }
@@ -117,7 +120,10 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
                 <div className="control-group">
                     <label htmlFor="itemsPerPage">Ítems por página:</label>
                     <select id="itemsPerPage" value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
-                        <option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
                     </select>
                 </div>
             </div>
