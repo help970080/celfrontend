@@ -4,11 +4,10 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 
-// Extender dayjs con los plugins necesarios
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const TIMEZONE = "America/Mexico_City"; // Asegúrate de que esta constante esté disponible
+const TIMEZONE = "America/Mexico_City";
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -26,7 +25,10 @@ function UserAdminPanel({ authenticatedFetch, userRole }) {
     const [formError, setFormError] = useState(null);
     const [formSuccess, setFormSuccess] = useState(null);
 
-    const availableRoles = ['super_admin', 'regular_admin', 'sales_admin', 'inventory_admin', 'viewer_reports'];
+    // --- LÍNEA MODIFICADA ---
+    // Se añade 'collector_agent' a la lista de roles que se pueden seleccionar en el formulario.
+    const availableRoles = ['super_admin', 'regular_admin', 'sales_admin', 'inventory_admin', 'viewer_reports', 'collector_agent'];
+    // --- FIN DE LA MODIFICACIÓN ---
 
     const hasPermission = useCallback((roles) => {
         if (!userRole) return false;
@@ -262,7 +264,6 @@ function UserAdminPanel({ authenticatedFetch, userRole }) {
                                 <td>{user.id}</td>
                                 <td>{user.username}</td>
                                 <td><span className={`status-badge status-${user.role}`}>{user.role}</span></td>
-                                {/* CORRECCIÓN APLICADA AQUÍ: Usar dayjs y TIMEZONE */}
                                 <td>{dayjs(user.createdAt).tz(TIMEZONE).format('DD/MM/YYYY')}</td>
                                 <td>{dayjs(user.updatedAt).tz(TIMEZONE).format('DD/MM/YYYY')}</td>
                                 <td>

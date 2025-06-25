@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ReceiptViewer from './ReceiptViewer';
+import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -9,10 +10,54 @@ dayjs.extend(timezone);
 
 const TIMEZONE = "America/Mexico_City";
 
-function SaleList({ sales, onDeleteSale, userRole }) { 
+const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
+
+// 1. Se reciben las nuevas propiedades: collectors, onSaleAssigned, authenticatedFetch
+function SaleList({ sales, onDeleteSale, userRole, collectors, onSaleAssigned, authenticatedFetch }) { 
     
     const [showReceiptModal, setShowReceiptModal] = useState(false);
     const [selectedSaleIdForReceipt, setSelectedSaleIdForReceipt] = useState(null);
+
+    // 2. Nuevo estado para manejar la selección del gestor en cada fila
+    const [assignmentSelection, setAssignmentSelection] = useState({});
+
+    const handleSelectionChange = (saleId, collectorId) => {
+        setAssignmentSelection(prev => ({
+            ...prev,
+            [saleId]: collectorId
+        }));
+    };
+
+    // 3. Nueva función para manejar el clic del botón "Asignar"
+    const handleAssignCollector = async (saleId) => {
+        const collectorId = assignmentSelection[saleId];
+        
+        if (collectorId === undefined) {
+            toast.warn("Por favor, selecciona un gestor de la lista.");
+            return;
+        }
+
+        try {
+            // Llama a la nueva ruta del backend que creamos
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/sales/${saleId}/assign`, {
+                method: 'PUT',
+                body: JSON.stringify({ 
+                    // Si se selecciona "Des-asignar", se envía null
+                    collectorId: collectorId === "null" ? null : collectorId 
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al asignar');
+            }
+
+            toast.success("Asignación actualizada con éxito.");
+            onSaleAssigned(); // Llama a la función del padre (fetchSales) para refrescar toda la lista
+        } catch (err) {
+            toast.error(`Error al asignar: ${err.message}`);
+        }
+    };
 
     const hasPermission = (roles) => {
         if (!userRole) return false;
@@ -52,33 +97,17 @@ function SaleList({ sales, onDeleteSale, userRole }) {
                         <th>Pago Semanal</th>
                         <th>Pagos Restantes</th>
                         <th>Estado</th>
+                        {/* 4. Nueva columna en la cabecera */}
+                        <th>Asignado A</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {sales.map(sale => {
-                        // --- INICIO DE LA LÓGICA DEFENSIVA Y CORREGIDA ---
-                        
-                        // VERIFICACIÓN 1: Se asegura de que el cliente exista y tenga nombre.
-                        const clientName = (sale && sale.client && typeof sale.client.name === 'string') 
-                            ? `${sale.client.name} ${sale.client.lastName || ''}`.trim()
-                            : 'N/A';
-
-                        // VERIFICACIÓN 2: Se asegura de que los productos existan y tengan nombre.
-                        const productListText = (sale && Array.isArray(sale.saleItems) && sale.saleItems.length > 0)
-                            ? sale.saleItems.map(item => {
-                                const productName = (item && item.product && typeof item.product.name === 'string') ? item.product.name : 'Producto Eliminado';
-                                const quantity = (item && typeof item.quantity === 'number') ? item.quantity : '?';
-                                return `${quantity}x ${productName}`;
-                              }).join(', ')
-                            : 'Sin Productos';
-                        
+                        const clientName = (sale && sale.client && sale.client.name) ? `${sale.client.name} ${sale.client.lastName || ''}`.trim() : 'N/A';
+                        const productListText = (sale && Array.isArray(sale.saleItems) && sale.saleItems.length > 0) ? sale.saleItems.map(item => `${item.quantity || '?'}x ${item.product ? item.product.name : 'Producto Eliminado'}`).join(', ') : 'Sin Productos';
                         const paymentsMade = (sale && Array.isArray(sale.payments)) ? sale.payments.length : 0;
-                        
-                        const remainingPayments = (sale && sale.isCredit && typeof sale.numberOfPayments === 'number') 
-                            ? sale.numberOfPayments - paymentsMade 
-                            : 0;
-                        // --- FIN DE LA LÓGICA DEFENSIVA Y CORREGIDA ---
+                        const remainingPayments = (sale && sale.isCredit && typeof sale.numberOfPayments === 'number') ? sale.numberOfPayments - paymentsMade : 0;
 
                         return (
                             <tr key={sale.id}>
@@ -94,6 +123,29 @@ function SaleList({ sales, onDeleteSale, userRole }) {
                                 <td>{sale.isCredit ? `$${(sale.weeklyPaymentAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : 'N/A'}</td>
                                 <td>{sale.isCredit ? (remainingPayments >= 0 ? remainingPayments : 'N/A') : 'N/A'}</td>
                                 <td><span className={`status-badge status-${sale.status || 'unknown'}`}>{`${sale.status || 'Desconocido'}`.replace('_', ' ')}</span></td>
+                                
+                                {/* 5. Nueva celda con la interfaz de asignación */}
+                                <td>
+                                    {sale.isCredit && hasPermission(['super_admin', 'regular_admin', 'sales_admin']) ? (
+                                        <div className="assignment-cell">
+                                            <span>{sale.assignedCollector ? sale.assignedCollector.username : 'Sin Asignar'}</span>
+                                            <select
+                                                value={assignmentSelection[sale.id] || ''}
+                                                onChange={(e) => handleSelectionChange(sale.id, e.target.value)}
+                                            >
+                                                <option value="" disabled>Cambiar asignación...</option>
+                                                {collectors.map(c => (
+                                                    <option key={c.id} value={c.id}>{c.username}</option>
+                                                ))}
+                                                <option value="null">-- Des-asignar --</option>
+                                            </select>
+                                            <button onClick={() => handleAssignCollector(sale.id)}>Asignar</button>
+                                        </div>
+                                    ) : (
+                                        sale.assignedCollector ? sale.assignedCollector.username : 'N/A'
+                                    )}
+                                </td>
+
                                 <td>
                                     <div className="action-buttons">
                                         <button onClick={() => handleOpenReceiptModal(sale.id)}>Ver Recibo</button>

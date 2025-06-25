@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import SaleForm from './SaleForm';
 import SaleList from './SaleList';
+import { toast } from 'react-toastify';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-// Usamos la versión restaurada que recibe onDeleteSale desde App.jsx
+// Se mantiene la versión que recibe onDeleteSale desde App.jsx
 function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) { 
     const [sales, setSales] = useState([]);
     const [clients, setClients] = useState([]);
@@ -12,11 +13,31 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
     const [loadingSales, setLoadingSales] = useState(true);
     const [errorSales, setErrorSales] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+
+    // --- INICIO DE LA MODIFICACIÓN ---
+    const [collectors, setCollectors] = useState([]); // 1. Nuevo estado para guardar los gestores.
+    
+    // 2. Nueva función para obtener solo los usuarios con el rol de gestor.
+    const fetchCollectors = useCallback(async () => {
+        if (!userRole || !['super_admin', 'regular_admin', 'sales_admin'].includes(userRole)) return;
+        try {
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/users`);
+            if (response.ok) {
+                const allUsers = await response.json();
+                // Filtramos para quedarnos solo con los gestores de cobranza
+                const collectorUsers = allUsers.filter(user => user.role === 'collector_agent');
+                setCollectors(collectorUsers);
+            }
+        } catch (err) {
+            console.error("Error al cargar gestores de cobranza:", err);
+            toast.error("No se pudieron cargar los gestores de cobranza.");
+        }
+    }, [authenticatedFetch, userRole]);
+    // --- FIN DE LA MODIFICACIÓN ---
 
     const hasPermission = (roles) => {
         if (!userRole) return false;
@@ -78,14 +99,15 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
         fetchSales();
         fetchClients();
         fetchProducts();
-    }, [fetchSales, fetchClients, fetchProducts]);
+        fetchCollectors(); // 3. Se llama a la nueva función al cargar el panel.
+    }, [fetchSales, fetchClients, fetchProducts, fetchCollectors]);
 
     return (
         <section className="sales-section">
             <h2>Gestión de Ventas y Cobranza</h2>
             {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
                 <SaleForm
-                    onSaleAdded={fetchSales} // Esto refrescará la lista al agregar una venta
+                    onSaleAdded={fetchSales}
                     clients={clients}
                     products={products}
                 />
@@ -119,11 +141,17 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
                 <p style={{ color: 'red', fontWeight: 'bold' }}>Error: {errorSales}</p>
             ) : (
                 <>
+                    {/* --- INICIO DE LA MODIFICACIÓN --- */}
+                    {/* 4. Se pasan las nuevas propiedades a SaleList. */}
                     <SaleList
                         sales={sales}
                         onDeleteSale={onDeleteSale}
-                        userRole={userRole} 
+                        userRole={userRole}
+                        collectors={collectors} 
+                        onSaleAssigned={fetchSales}
+                        authenticatedFetch={authenticatedFetch}
                     />
+                    {/* --- FIN DE LA MODIFICACIÓN --- */}
                     {totalPages > 1 && (
                         <div className="pagination-controls">
                             <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
