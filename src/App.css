@@ -1680,3 +1680,34 @@ un error en la visualizacion de la tabla. */
     font-weight: bold;
     color: #dc3545;
 }
+/* Estilos para la celda de asignación en la tabla de ventas */
+.assignment-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: stretch;
+  min-width: 200px;
+}
+.assignment-cell span {
+  font-weight: bold;
+  margin-bottom: 2px;
+  text-align: center;
+  font-size: 0.9em;
+}
+.assignment-cell select, .assignment-cell button {
+  width: 100%;
+  padding: 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  border: 1px solid #ccc;
+}
+.assignment-cell button {
+  background-color: #17a2b8; /* Cian */
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+.assignment-cell button:hover {
+  background-color: #138496;
+}
