@@ -3,29 +3,26 @@ import { toast } from 'react-toastify';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-// 1. Se recibe la nueva propiedad 'collectors'
 function SaleForm({ onSaleAdded, clients, products, collectors }) {
     const [clientId, setClientId] = useState('');
     const [selectedProducts, setSelectedProducts] = useState([]);
     const [totalAmount, setTotalAmount] = useState(0);
     const [isCredit, setIsCredit] = useState(false);
     const [downPayment, setDownPayment] = useState('');
-    const [interestRate, setInterestRate] = useState('0'); // Por defecto en 0
+    const [interestRate, setInterestRate] = useState('0');
     const [numberOfPayments, setNumberOfPayments] = useState('17'); 
+    const [assignedCollectorId, setAssignedCollectorId] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    
-    // 2. Nuevo estado para guardar el gestor seleccionado
-    const [assignedCollectorId, setAssignedCollectorId] = useState('');
 
+    // Efecto para recalcular el monto total cuando cambian los productos seleccionados
     useEffect(() => {
-        let currentTotal = 0;
-        selectedProducts.forEach(item => {
+        const newTotal = selectedProducts.reduce((sum, item) => {
             const product = products.find(p => p.id === item.productId);
-            currentTotal += (product?.price || 0) * item.quantity;
-        });
-        setTotalAmount(parseFloat(currentTotal.toFixed(2)));
-    }, [selectedProducts, products]); 
+            return sum + (product?.price || 0) * item.quantity;
+        }, 0);
+        setTotalAmount(parseFloat(newTotal.toFixed(2)));
+    }, [selectedProducts, products]);
 
     const resetForm = () => {
         setClientId('');
@@ -35,14 +32,19 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
         setDownPayment('');
         setInterestRate('0');
         setNumberOfPayments('17');
+        setAssignedCollectorId('');
         setError(null);
-        setAssignedCollectorId(''); // 3. Se limpia el estado del gestor
     };
 
     const handleProductSelection = (e) => {
         const id = parseInt(e.target.value, 10);
         if (id && !selectedProducts.some(item => item.productId === id)) {
-            setSelectedProducts(prev => [...prev, { productId: id, quantity: 1 }]);
+            const product = products.find(p => p.id === id);
+            if (product && product.stock > 0) {
+                setSelectedProducts(prev => [...prev, { productId: id, quantity: 1 }]);
+            } else {
+                toast.warn("Este producto no tiene stock disponible.");
+            }
         }
     };
 
@@ -61,12 +63,11 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
         setError(null);
 
         if (!clientId || selectedProducts.length === 0) {
-            setError('Por favor, selecciona un cliente y al menos un producto.');
-            toast.error('Cliente y productos son obligatorios.');
+            toast.error('Cliente y al menos un producto son obligatorios.');
             setLoading(false);
             return;
         }
-        
+
         const saleData = {
             clientId: parseInt(clientId),
             saleItems: selectedProducts,
@@ -74,7 +75,6 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
             downPayment: isCredit ? parseFloat(downPayment || 0) : totalAmount,
             interestRate: isCredit ? parseFloat(interestRate || 0) : 0,
             numberOfPayments: isCredit ? parseInt(numberOfPayments, 10) : null,
-            // 4. Se añade el gestor seleccionado al cuerpo de la petición si es una venta a crédito
             assignedCollectorId: isCredit && assignedCollectorId ? parseInt(assignedCollectorId, 10) : null
         };
 
@@ -84,16 +84,10 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
                 body: JSON.stringify(saleData),
             });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
-            }
-            
-            onSaleAdded(); // Llama a la función del padre para refrescar y cerrar el formulario
+            if (!response.ok) throw new Error((await response.json()).message || "Error al registrar");
+            onSaleAdded();
             resetForm();
         } catch (err) {
-            console.error("Error al registrar venta:", err);
             setError(err.message);
             toast.error(`Error al registrar: ${err.message}`);
         } finally {
@@ -101,6 +95,11 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
         }
     };
 
+    // --- LÓGICA DE CÁLCULO REVISADA Y CENTRALIZADA ---
+    const suggestedDownPayment = totalAmount > 0 ? parseFloat((totalAmount * 0.10).toFixed(2)) : 0;
+    const remainingForCalculation = totalAmount - parseFloat(downPayment || 0);
+    const calculatedWeeklyPayment = isCredit && remainingForCalculation > 0 ? parseFloat((remainingForCalculation / 17).toFixed(2)) : 0;
+    
     return (
         <div className="sale-form-container">
             <h2>Registrar Nueva Venta</h2>
@@ -120,7 +119,7 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
                     <select id="selectProduct" onChange={handleProductSelection} value="">
                         <option value="">Selecciona un producto</option>
                         {products.map(product => (
-                            <option key={product.id} value={product.id} disabled={selectedProducts.some(item => item.productId === product.id)}>
+                            <option key={product.id} value={product.id} disabled={selectedProducts.some(item => item.productId === product.id) || product.stock === 0}>
                                 {product.name} - ${product.price} (Stock: {product.stock})
                             </option>
                         ))}
@@ -153,7 +152,8 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
                         <h3>Detalles del Crédito</h3>
                         <div className="form-group">
                             <label htmlFor="downPayment">Enganche:</label>
-                            <input type="number" id="downPayment" value={downPayment} onChange={(e) => setDownPayment(e.target.value)} step="0.01" required={isCredit} />
+                            <input type="number" id="downPayment" value={downPayment} onChange={(e) => setDownPayment(e.target.value)} step="0.01" required={isCredit} placeholder={suggestedDownPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}/>
+                            <p className="hint-text">Enganche sugerido (10%): <strong>${suggestedDownPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></p>
                         </div>
                         <div className="form-group">
                             <label htmlFor="interestRate">Tasa de Interés Anual (%):</label>
@@ -163,8 +163,6 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
                             <label htmlFor="numberOfPayments">Número de Pagos Semanales (Fijo: 17):</label>
                             <input type="number" id="numberOfPayments" value={numberOfPayments} readOnly />
                         </div>
-
-                        {/* --- 5. NUEVO CAMPO PARA ASIGNAR GESTOR --- */}
                         <div className="form-group">
                             <label htmlFor="assignedCollector">Asignar a Gestor de Cobranza (Opcional):</label>
                             <select id="assignedCollector" value={assignedCollectorId} onChange={(e) => setAssignedCollectorId(e.target.value)}>
@@ -174,7 +172,11 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
                                 ))}
                             </select>
                         </div>
-                        {/* --- FIN DEL NUEVO CAMPO --- */}
+                        {calculatedWeeklyPayment > 0 && (
+                            <p className="calculated-payment">
+                                Pago Semanal Estimado: <strong>${calculatedWeeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                            </p>
+                        )}
                     </div>
                 )}
                 <button type="submit" disabled={loading}>{loading ? 'Registrando...' : 'Registrar Venta'}</button>
