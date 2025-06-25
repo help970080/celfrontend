@@ -5,11 +5,11 @@ import { toast } from 'react-toastify';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) { 
+function SaleAdminPanel({ authenticatedFetch, userRole }) { 
     const [sales, setSales] = useState([]);
     const [clients, setClients] = useState([]);
     const [products, setProducts] = useState([]);
-    const [collectors, setCollectors] = useState([]); // Para almacenar los gestores
+    const [collectors, setCollectors] = useState([]);
     const [loadingSales, setLoadingSales] = useState(true);
     const [errorSales, setErrorSales] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -20,8 +20,8 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
     const [showSaleForm, setShowSaleForm] = useState(false);
 
     const handleSaleAdded = () => {
-        setShowSaleForm(false); // Oculta el formulario después de agregar la venta
-        fetchSales(); // Recarga la lista de ventas
+        setShowSaleForm(false);
+        fetchSales();
     };
     
     const hasPermission = (roles) => {
@@ -39,8 +39,8 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
             }
             const response = await authenticatedFetch(url);
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Error al cargar ventas");
+                const errorData = await response.json().catch(() => ({ message: "Error del servidor." }));
+                throw new Error(errorData.message);
             }
             const data = await response.json();
             setSales(data.sales || []);
@@ -49,31 +49,29 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
         } catch (err) {
             console.error("Error al obtener ventas:", err);
             setErrorSales(err.message);
+            setSales([]);
         } finally {
             setLoadingSales(false);
         }
     }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage]);
 
-    // Función unificada para cargar todos los datos necesarios para los formularios
     const fetchSupportingData = useCallback(async () => {
         try {
             const [clientsRes, productsRes, usersRes] = await Promise.all([
                 authenticatedFetch(`${API_BASE_URL}/api/clients?limit=9999`),
                 authenticatedFetch(`${API_BASE_URL}/api/products?limit=9999`),
-                authenticatedFetch(`${API_BASE_URL}/api/users`) // Obtenemos todos los usuarios
+                authenticatedFetch(`${API_BASE_URL}/api/users`)
             ]);
 
             if (clientsRes.ok) setClients((await clientsRes.json()).clients || []);
             if (productsRes.ok) setProducts((await productsRes.json()).products || []);
-            
-            // Filtramos para quedarnos solo con los gestores y los guardamos en el estado
             if (usersRes.ok) {
                 const allUsers = await usersRes.json();
                 setCollectors(allUsers.filter(user => user.role === 'collector_agent'));
             }
         } catch (err) {
             console.error("Error al cargar datos de soporte:", err);
-            toast.error("Error al cargar datos necesarios para la venta.");
+            toast.error("Error al cargar datos para formularios.");
         }
     }, [authenticatedFetch]);
 
@@ -82,10 +80,20 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
         fetchSupportingData();
     }, [fetchSales, fetchSupportingData]);
 
+    const onDeleteSale = async (id) => {
+        if (!window.confirm('¿Estás seguro de que quieres eliminar esta venta? Esto restaurará el stock.')) return;
+        try {
+            await authenticatedFetch(`${API_BASE_URL}/api/sales/${id}`, { method: 'DELETE' });
+            toast.success('Venta eliminada con éxito!');
+            fetchSales(); // Refresca la lista
+        } catch (err) {
+            toast.error(`Error al eliminar la venta: ${err.message}`);
+        }
+    };
+
     return (
         <section className="sales-section">
             <h2>Gestión de Ventas y Cobranza</h2>
-            
             <div className="panel-actions">
                 {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
                     <button onClick={() => setShowSaleForm(!showSaleForm)} className="action-button primary-button">
@@ -93,32 +101,26 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
                     </button>
                 )}
             </div>
-            
             {showSaleForm && hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
                 <SaleForm
                     onSaleAdded={handleSaleAdded}
                     clients={clients}
                     products={products}
-                    collectors={collectors} // <-- Se pasa la lista de gestores al formulario
+                    collectors={collectors}
                 />
             )}
-
             <div className="admin-controls">
                 <div className="control-group">
                     <label htmlFor="searchSale">Buscar Venta:</label>
-                    <input type="text" id="searchSale" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder="Buscar por ID, cliente o producto..."/>
+                    <input type="text" id="searchSale" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder="Buscar por ID, cliente..."/>
                 </div>
                 <div className="control-group">
                     <label htmlFor="itemsPerPage">Ítems por página:</label>
                     <select id="itemsPerPage" value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
-                        <option value="5">5</option>
-                        <option value="10">10</option>
-                        <option value="20">20</option>
-                        <option value="50">50</option>
+                        <option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option>
                     </select>
                 </div>
             </div>
-
             {loadingSales ? <p>Cargando ventas...</p> : errorSales ? <p style={{ color: 'red', fontWeight: 'bold' }}>Error: {errorSales}</p> : (
                 <>
                     <SaleList
@@ -141,5 +143,4 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
         </section>
     );
 }
-
 export default SaleAdminPanel;

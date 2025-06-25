@@ -15,7 +15,6 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Efecto para recalcular el monto total cuando cambian los productos seleccionados
     useEffect(() => {
         const newTotal = selectedProducts.reduce((sum, item) => {
             const product = products.find(p => p.id === item.productId);
@@ -27,11 +26,9 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
     const resetForm = () => {
         setClientId('');
         setSelectedProducts([]);
-        setTotalAmount(0);
         setIsCredit(false);
         setDownPayment('');
         setInterestRate('0');
-        setNumberOfPayments('17');
         setAssignedCollectorId('');
         setError(null);
     };
@@ -47,7 +44,7 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
             }
         }
     };
-
+    
     const handleQuantityChange = (id, newQuantity) => {
         const quantity = Math.max(1, parseInt(newQuantity, 10) || 1);
         setSelectedProducts(prev => prev.map(item => item.productId === id ? { ...item, quantity } : item));
@@ -95,7 +92,6 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
         }
     };
 
-    // --- LÓGICA DE CÁLCULO REVISADA Y CENTRALIZADA ---
     const suggestedDownPayment = totalAmount > 0 ? parseFloat((totalAmount * 0.10).toFixed(2)) : 0;
     const remainingForCalculation = totalAmount - parseFloat(downPayment || 0);
     const calculatedWeeklyPayment = isCredit && remainingForCalculation > 0 ? parseFloat((remainingForCalculation / 17).toFixed(2)) : 0;
@@ -109,20 +105,14 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
                     <label htmlFor="clientId">Cliente:</label>
                     <select id="clientId" value={clientId} onChange={(e) => setClientId(e.target.value)} required>
                         <option value="">Selecciona un cliente</option>
-                        {clients.map(client => (
-                            <option key={client.id} value={client.id}>{client.name} {client.lastName}</option>
-                        ))}
+                        {clients.map(client => <option key={client.id} value={client.id}>{client.name} {client.lastName}</option>)}
                     </select>
                 </div>
                 <div className="form-group">
                     <label htmlFor="selectProduct">Añadir Producto(s):</label>
                     <select id="selectProduct" onChange={handleProductSelection} value="">
                         <option value="">Selecciona un producto</option>
-                        {products.map(product => (
-                            <option key={product.id} value={product.id} disabled={selectedProducts.some(item => item.productId === product.id) || product.stock === 0}>
-                                {product.name} - ${product.price} (Stock: {product.stock})
-                            </option>
-                        ))}
+                        {products.map(product => <option key={product.id} value={product.id} disabled={selectedProducts.some(item => item.productId === product.id) || product.stock === 0}>{product.name} - ${product.price} (Stock: {product.stock})</option>)}
                     </select>
                 </div>
                 {selectedProducts.length > 0 && (
@@ -150,40 +140,23 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
                 {isCredit && (
                     <div className="credit-details">
                         <h3>Detalles del Crédito</h3>
+                        <div className="form-group"><label htmlFor="downPayment">Enganche:</label><input type="number" id="downPayment" value={downPayment} onChange={(e) => setDownPayment(e.target.value)} step="0.01" required={isCredit} placeholder={suggestedDownPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}/><p className="hint-text">Sugerido (10%): <strong>${suggestedDownPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></p></div>
+                        <div className="form-group"><label htmlFor="interestRate">Tasa de Interés Anual (%):</label><input type="number" id="interestRate" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} step="0.01" /></div>
+                        <div className="form-group"><label htmlFor="numberOfPayments">Número de Pagos Semanales (Fijo: 17):</label><input type="number" id="numberOfPayments" value={numberOfPayments} readOnly /></div>
                         <div className="form-group">
-                            <label htmlFor="downPayment">Enganche:</label>
-                            <input type="number" id="downPayment" value={downPayment} onChange={(e) => setDownPayment(e.target.value)} step="0.01" required={isCredit} placeholder={suggestedDownPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}/>
-                            <p className="hint-text">Enganche sugerido (10%): <strong>${suggestedDownPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></p>
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="interestRate">Tasa de Interés Anual (%):</label>
-                            <input type="number" id="interestRate" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} step="0.01" />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="numberOfPayments">Número de Pagos Semanales (Fijo: 17):</label>
-                            <input type="number" id="numberOfPayments" value={numberOfPayments} readOnly />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="assignedCollector">Asignar a Gestor de Cobranza (Opcional):</label>
+                            <label htmlFor="assignedCollector">Asignar a Gestor (Opcional):</label>
                             <select id="assignedCollector" value={assignedCollectorId} onChange={(e) => setAssignedCollectorId(e.target.value)}>
                                 <option value="">Sin Asignar</option>
-                                {collectors.map(collector => (
-                                    <option key={collector.id} value={collector.id}>{collector.username}</option>
-                                ))}
+                                {collectors.map(collector => <option key={collector.id} value={collector.id}>{collector.username}</option>)}
                             </select>
                         </div>
-                        {calculatedWeeklyPayment > 0 && (
-                            <p className="calculated-payment">
-                                Pago Semanal Estimado: <strong>${calculatedWeeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
-                            </p>
-                        )}
+                        {calculatedWeeklyPayment > 0 && <p className="calculated-payment">Pago Semanal Estimado: <strong>${calculatedWeeklyPayment.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</strong></p>}
                     </div>
                 )}
                 <button type="submit" disabled={loading}>{loading ? 'Registrando...' : 'Registrar Venta'}</button>
-                <button type="button" onClick={resetForm} disabled={loading} className="cancel-button">Limpiar Formulario</button>
+                <button type="button" onClick={resetForm} disabled={loading} className="cancel-button">Limpiar</button>
             </form>
         </div>
     );
 }
-
 export default SaleForm;
