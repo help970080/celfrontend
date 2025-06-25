@@ -9,7 +9,7 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
     const [sales, setSales] = useState([]);
     const [clients, setClients] = useState([]);
     const [products, setProducts] = useState([]);
-    const [collectors, setCollectors] = useState([]); // Estado para guardar los gestores
+    const [collectors, setCollectors] = useState([]); // Para almacenar los gestores
     const [loadingSales, setLoadingSales] = useState(true);
     const [errorSales, setErrorSales] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -20,8 +20,8 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
     const [showSaleForm, setShowSaleForm] = useState(false);
 
     const handleSaleAdded = () => {
-        setShowSaleForm(false);
-        fetchSales();
+        setShowSaleForm(false); // Oculta el formulario después de agregar la venta
+        fetchSales(); // Recarga la lista de ventas
     };
     
     const hasPermission = (roles) => {
@@ -54,17 +54,19 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
         }
     }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage]);
 
+    // Función unificada para cargar todos los datos necesarios para los formularios
     const fetchSupportingData = useCallback(async () => {
         try {
-            // Se piden todos los datos necesarios en paralelo para mayor eficiencia
             const [clientsRes, productsRes, usersRes] = await Promise.all([
                 authenticatedFetch(`${API_BASE_URL}/api/clients?limit=9999`),
                 authenticatedFetch(`${API_BASE_URL}/api/products?limit=9999`),
-                authenticatedFetch(`${API_BASE_URL}/api/users`)
+                authenticatedFetch(`${API_BASE_URL}/api/users`) // Obtenemos todos los usuarios
             ]);
 
             if (clientsRes.ok) setClients((await clientsRes.json()).clients || []);
             if (productsRes.ok) setProducts((await productsRes.json()).products || []);
+            
+            // Filtramos para quedarnos solo con los gestores y los guardamos en el estado
             if (usersRes.ok) {
                 const allUsers = await usersRes.json();
                 setCollectors(allUsers.filter(user => user.role === 'collector_agent'));
@@ -83,6 +85,7 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
     return (
         <section className="sales-section">
             <h2>Gestión de Ventas y Cobranza</h2>
+            
             <div className="panel-actions">
                 {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
                     <button onClick={() => setShowSaleForm(!showSaleForm)} className="action-button primary-button">
@@ -90,13 +93,16 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
                     </button>
                 )}
             </div>
+            
             {showSaleForm && hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
                 <SaleForm
                     onSaleAdded={handleSaleAdded}
                     clients={clients}
                     products={products}
+                    collectors={collectors} // <-- Se pasa la lista de gestores al formulario
                 />
             )}
+
             <div className="admin-controls">
                 <div className="control-group">
                     <label htmlFor="searchSale">Buscar Venta:</label>
@@ -105,10 +111,14 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
                 <div className="control-group">
                     <label htmlFor="itemsPerPage">Ítems por página:</label>
                     <select id="itemsPerPage" value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
-                        <option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
                     </select>
                 </div>
             </div>
+
             {loadingSales ? <p>Cargando ventas...</p> : errorSales ? <p style={{ color: 'red', fontWeight: 'bold' }}>Error: {errorSales}</p> : (
                 <>
                     <SaleList
@@ -131,4 +141,5 @@ function SaleAdminPanel({ authenticatedFetch, onDeleteSale, userRole }) {
         </section>
     );
 }
+
 export default SaleAdminPanel;
