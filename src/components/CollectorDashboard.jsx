@@ -60,7 +60,9 @@ function CollectorDashboard({ authenticatedFetch }) {
                         <div key={client.id} className="client-group">
                             <div className="client-summary-row" onClick={() => handleToggleClient(client.id)}>
                                 <div className="client-info">
+                                    {/* --- INICIO DE LA CORRECCIÓN --- */}
                                     {hasOverdue && <span className="overdue-indicator" title="Este cliente tiene pagos vencidos">⚠️</span>}
+                                    {/* --- FIN DE LA CORRECCIÓN --- */}
                                     <span className="client-name">{client.name} {client.lastName}</span>
                                     <span className="sales-count">({sales.length} venta(s) activa(s))</span>
                                 </div>
@@ -89,10 +91,8 @@ function CollectorDashboard({ authenticatedFetch }) {
                                                 <p>Pago Semanal: <strong>${(sale.weeklyPaymentAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></p>
                                             </div>
                                             <div className="collection-actions">
-                                                {/* --- INICIO DE LA CORRECCIÓN --- */}
                                                 <Link to={`/admin/clients/payments/${client.id}`} className="button-as-link">Registrar Pago / Ver Historial</Link>
                                                 <Link to={`/admin/clients/statement/${client.id}`} className="button-as-link secondary">Estado de Cuenta Completo</Link>
-                                                {/* --- FIN DE LA CORRECCIÓN --- */}
                                             </div>
                                         </div>
                                     ))}
