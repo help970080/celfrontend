@@ -1,12 +1,14 @@
+// Archivo: components/ReportsDashboard.jsx
+
 import React, { useState, useEffect, useCallback } from 'react';
-import dayjs from 'dayjs'; // <-- ¡CAMBIADO!
-import utc from 'dayjs/plugin/utc'; // <-- ¡AGREGADO!
-import timezone from 'dayjs/plugin/timezone'; // <-- ¡AGREGADO!
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 
-dayjs.extend(utc); // <-- ¡AGREGADO!
-dayjs.extend(timezone); // <-- ¡AGREGADO!
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
-const TIMEZONE = "America/Mexico_City"; // <-- ¡AGREGADO!
+const TIMEZONE = "America/Mexico_City";
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -34,6 +36,12 @@ function ReportsDashboard({ authenticatedFetch }) {
     const [clientStatusDashboard, setClientStatusDashboard] = useState(null);
     const [loadingClientStatus, setLoadingClientStatus] = useState(false);
     const [errorClientStatus, setErrorClientStatus] = useState(null);
+    
+    // --- INICIO DE LA CORRECCIÓN ---
+    const [agentCollections, setAgentCollections] = useState([]);
+    const [loadingAgentCollections, setLoadingAgentCollections] = useState(false);
+    const [errorAgentCollections, setErrorAgentCollections] = useState(null);
+    // --- FIN DE LA CORRECCIÓN ---
 
 
     const fetchSummaryAndPendingCredits = useCallback(async () => {
@@ -41,29 +49,21 @@ function ReportsDashboard({ authenticatedFetch }) {
         setError(null);
         try {
             const summaryResponse = await authenticatedFetch(`${API_BASE_URL}/api/reports/summary`);
-            if (!summaryResponse.ok) {
-                const errorData = await summaryResponse.json();
-                throw new Error(errorData.message || `Error HTTP: ${summaryResponse.status}`);
-            }
-            const summaryData = await summaryResponse.json();
-            setSummary(summaryData);
+            if (!summaryResponse.ok) throw new Error('Error al cargar resumen');
+            setSummary(await summaryResponse.json());
 
             const pendingCreditsResponse = await authenticatedFetch(`${API_BASE_URL}/api/reports/pending-credits`);
-            if (!pendingCreditsResponse.ok) {
-                const errorData = await pendingCreditsResponse.json();
-                throw new Error(errorData.message || `Error HTTP: ${pendingCreditsResponse.status}`);
-            }
-            const pendingCreditsData = await pendingCreditsResponse.json();
-            setPendingCredits(pendingCreditsData);
+            if (!pendingCreditsResponse.ok) throw new Error('Error al cargar créditos pendientes');
+            setPendingCredits(await pendingCreditsResponse.json());
 
         } catch (err) {
-            console.error("Error al cargar datos de resumen/pendientes:", err);
-            setError(err.message || "No se pudieron cargar el resumen o los créditos pendientes.");
+            setError(err.message || "No se pudieron cargar los datos de resumen.");
         } finally {
             setLoading(false);
         }
     }, [authenticatedFetch]);
-
+    
+    // ... (las otras funciones de fetch no cambian) ...
     const fetchDailyReports = useCallback(async () => {
         setLoadingDaily(true);
         setErrorDaily(null);
@@ -150,6 +150,27 @@ function ReportsDashboard({ authenticatedFetch }) {
             setLoadingClientStatus(false);
         }
     }, [authenticatedFetch]);
+    
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Nueva función para obtener la cobranza por gestor
+    const fetchAgentCollections = useCallback(async () => {
+        setLoadingAgentCollections(true);
+        setErrorAgentCollections(null);
+        try {
+            let url = `${API_BASE_URL}/api/reports/collections-by-agent?period=${encodeURIComponent(accumulatedPeriod)}`;
+            if (accStartDate && accEndDate) {
+                url += `&startDate=${encodeURIComponent(accStartDate)}&endDate=${encodeURIComponent(accEndDate)}`;
+            }
+            const response = await authenticatedFetch(url);
+            if (!response.ok) throw new Error('Error al cargar cobranza por gestor');
+            setAgentCollections(await response.json());
+        } catch (err) {
+            setErrorAgentCollections(err.message || "No se pudo cargar el reporte de cobranza.");
+        } finally {
+            setLoadingAgentCollections(false);
+        }
+    }, [authenticatedFetch, accumulatedPeriod, accStartDate, accEndDate]);
+    // --- FIN DE LA CORRECCIÓN ---
 
 
     useEffect(() => {
@@ -157,48 +178,41 @@ function ReportsDashboard({ authenticatedFetch }) {
         fetchDailyReports();
         fetchClientStatusDashboard();
         fetchAccumulatedReports();
-    }, [fetchSummaryAndPendingCredits, fetchDailyReports, fetchClientStatusDashboard, fetchAccumulatedReports]);
+        // --- INICIO DE LA CORRECCIÓN ---
+        fetchAgentCollections();
+        // --- FIN DE LA CORRECCIÓN ---
+    }, [fetchSummaryAndPendingCredits, fetchDailyReports, fetchClientStatusDashboard, fetchAccumulatedReports, fetchAgentCollections]);
 
     const handleRangeDateChange = (e, type) => {
-        if (type === 'start') {
-            setStartDate(e.target.value);
-        } else {
-            setEndDate(e.target.value);
-        }
+        if (type === 'start') setStartDate(e.target.value);
+        else setEndDate(e.target.value);
     };
 
     useEffect(() => {
-        if (startDate && endDate) {
-            fetchDailyReports();
-        }
+        if (startDate && endDate) fetchDailyReports();
     }, [startDate, endDate, fetchDailyReports]);
 
 
-    const handleAccumulatedPeriodChange = (e) => {
-        setAccumulatedPeriod(e.target.value);
-    };
+    const handleAccumulatedPeriodChange = (e) => setAccumulatedPeriod(e.target.value);
     const handleAccDateRangeChange = (e, type) => {
-        if (type === 'start') {
-            setAccStartDate(e.target.value);
-        } else {
-            setAccEndDate(e.target.value);
-        }
+        if (type === 'start') setAccStartDate(e.target.value);
+        else setAccEndDate(e.target.value);
     };
+    
     useEffect(() => {
         fetchAccumulatedReports();
-    }, [accumulatedPeriod, accStartDate, accEndDate, fetchAccumulatedReports]);
+        // --- INICIO DE LA CORRECCIÓN ---
+        fetchAgentCollections();
+        // --- FIN DE LA CORRECCIÓN ---
+    }, [accumulatedPeriod, accStartDate, accEndDate, fetchAccumulatedReports, fetchAgentCollections]);
 
 
-    if (loading) {
-        return <p>Cargando reportes...</p>;
-    }
-
-    if (error) {
-        return <p className="error-message">Error al cargar reportes: {error}</p>;
-    }
+    if (loading) return <p>Cargando reportes...</p>;
+    if (error) return <p className="error-message">Error al cargar reportes: {error}</p>;
 
     return (
         <div className="reports-dashboard">
+            {/* ... (Las otras secciones del dashboard: Resumen, Estado de Clientes, etc., no cambian) ... */}
             <h2>Resumen Financiero</h2>
             {summary ? (
                 <div className="summary-cards">
@@ -360,7 +374,6 @@ function ReportsDashboard({ authenticatedFetch }) {
                     )}
                 </div>
             )}
-
             <h2 style={{ marginTop: '40px' }}>Ventas y Pagos Acumulados por Período</h2>
             <div className="accumulated-controls">
                 <label htmlFor="accumulatedPeriod">Acumular por:</label>
@@ -384,7 +397,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                     value={accEndDate}
                     onChange={(e) => handleAccDateRangeChange(e, 'end')}
                 />
-                <button onClick={fetchAccumulatedReports} className="refresh-button">Actualizar Acumulados</button>
+                <button onClick={() => { fetchAccumulatedReports(); fetchAgentCollections(); }} className="refresh-button">Actualizar Acumulados</button>
             </div>
 
             {loadingAccumulated ? (
@@ -393,6 +406,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                 <p className="error-message">Error: {errorAccumulated}</p>
             ) : (
                 <div className="accumulated-reports-content">
+                    {/* ... (Tablas de ventas y pagos acumulados no cambian) ... */}
                     <h3>Ventas Acumuladas por {accumulatedPeriod === 'day' ? 'Día' : accumulatedPeriod === 'week' ? 'Semana' : accumulatedPeriod === 'month' ? 'Mes' : 'Año'}</h3>
                     {accumulatedSales.length === 0 ? (
                         <p>No hay ventas acumuladas para este período o rango.</p>
@@ -442,7 +456,43 @@ function ReportsDashboard({ authenticatedFetch }) {
                     )}
                 </div>
             )}
-
+            
+            {/* --- INICIO DE LA CORRECCIÓN --- */}
+            {/* Nueva sección para la cobranza de gestores */}
+            <h2 style={{ marginTop: '40px' }}>Cobranza Realizada por Gestores</h2>
+            {loadingAgentCollections ? (
+                <p>Cargando cobranza de gestores...</p>
+            ) : errorAgentCollections ? (
+                <p className="error-message">{errorAgentCollections}</p>
+            ) : (
+                <div className="agent-collections-content">
+                    {agentCollections.length === 0 ? (
+                        <p>No hay datos de cobranza de gestores para este período o rango.</p>
+                    ) : (
+                        <table className="daily-table">
+                            <thead>
+                                <tr>
+                                    <th>Período</th>
+                                    <th>Gestor</th>
+                                    <th>Total Cobrado</th>
+                                    <th># Pagos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {agentCollections.map((item, index) => (
+                                    <tr key={index}>
+                                        <td>{dayjs(item[accumulatedPeriod]).format('DD/MM/YYYY')}</td>
+                                        <td>{item.collectorName}</td>
+                                        <td>${parseFloat(item.totalAmount).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                        <td>{item.count}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            )}
+            {/* --- FIN DE LA CORRECCIÓN --- */}
 
             <h2 style={{ marginTop: '40px' }}>Créditos con Saldo Pendiente</h2>
             {pendingCredits.length === 0 ? (
