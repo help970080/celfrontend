@@ -1944,3 +1944,27 @@ un error en la visualizacion de la tabla. */
 }
 .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
 .chart-container { padding: 20px; border: 1px solid #eee; border-radius: 8px; }
+/* ... (todos tus estilos existentes) ... */
+
+/* --- INICIO: ESTILOS PARA EL DASHBOARD VISUAL --- */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 30px;
+  margin-top: 30px;
+}
+
+.chart-container {
+  padding: 20px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  background-color: #fff;
+}
+
+.chart-container h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+/* --- FIN: ESTILOS PARA EL DASHBOARD VISUAL --- */

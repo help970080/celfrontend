@@ -13,7 +13,8 @@ import ClientStatementViewer from './components/ClientStatementViewer';
 import ClientPayments from './components/ClientPayments';
 import UserAdminPanel from './components/UserAdminPanel';
 import CollectorDashboard from './components/CollectorDashboard';
-import AuditLogViewer from './components/AuditLogViewer'; // <-- AÑADIR IMPORTACIÓN
+import AuditLogViewer from './components/AuditLogViewer';
+import VisualDashboard from './components/VisualDashboard'; // <-- AÑADIR IMPORTACIÓN
 
 import './App.css';
 
@@ -82,16 +83,17 @@ function App() {
             <Link to="/" className="nav-button">Catálogo Público</Link>
             {token ? (
               <>
+                {/* --- INICIO: NUEVO ENLACE --- */}
+                {hasRole(['super_admin', 'regular_admin', 'sales_admin', 'viewer_reports']) && <Link to="/admin/visual-dashboard" className="nav-button">Dashboard Visual</Link>}
+                {/* --- FIN: NUEVO ENLACE --- */}
+                
                 {hasRole(['super_admin', 'regular_admin', 'sales_admin']) && <Link to="/admin/sales" className="nav-button">Gestión Ventas</Link>}
                 {hasRole(['super_admin', 'regular_admin', 'inventory_admin']) && <Link to="/admin/products" className="nav-button">Gestión Productos</Link>}
                 {hasRole(['super_admin', 'regular_admin', 'sales_admin']) && <Link to="/admin/clients" className="nav-button">Gestión Clientes</Link>}
                 {hasRole(['super_admin', 'regular_admin', 'sales_admin', 'viewer_reports']) && <Link to="/admin/reports" className="nav-button">Reportes</Link>}
                 {hasRole('super_admin') && <Link to="/admin/users" className="nav-button">Gestión Usuarios</Link>}
                 {hasRole('collector_agent') && <Link to="/admin/my-collections" className="nav-button">Mis Cobranzas</Link>}
-                
-                {/* --- INICIO: NUEVO ENLACE --- */}
                 {hasRole('super_admin') && <Link to="/admin/audit" className="nav-button">Auditoría</Link>}
-                {/* --- FIN: NUEVO ENLACE --- */}
 
                 <span className="user-info">Bienvenido, {username} ({userRole})</span>
                 <button onClick={handleLogout} className="logout-button nav-button">Cerrar Sesión</button>
@@ -113,9 +115,10 @@ function App() {
             <Route path="/admin/clients/statement/:clientId" element={<PrivateRoute isAuthenticated={!!token}><ClientStatementViewer authenticatedFetch={authenticatedFetch} /></PrivateRoute>} />
             <Route path="/admin/clients/payments/:clientId" element={<PrivateRoute isAuthenticated={!!token}><ClientPayments authenticatedFetch={authenticatedFetch} userRole={userRole} /></PrivateRoute>} />
             <Route path="/admin/my-collections" element={<PrivateRoute isAuthenticated={!!token}><CollectorDashboard authenticatedFetch={authenticatedFetch} /></PrivateRoute>} />
+            <Route path="/admin/audit" element={<PrivateRoute isAuthenticated={!!token}><AuditLogViewer authenticatedFetch={authenticatedFetch} /></PrivateRoute>} />
             
             {/* --- INICIO: NUEVA RUTA --- */}
-            <Route path="/admin/audit" element={<PrivateRoute isAuthenticated={!!token}><AuditLogViewer authenticatedFetch={authenticatedFetch} /></PrivateRoute>} />
+            <Route path="/admin/visual-dashboard" element={<PrivateRoute isAuthenticated={!!token}><VisualDashboard authenticatedFetch={authenticatedFetch} /></PrivateRoute>} />
             {/* --- FIN: NUEVA RUTA --- */}
 
             {token && <Route path="/admin" element={<Navigate to="/admin/sales" />} />}
