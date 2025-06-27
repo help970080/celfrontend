@@ -13,6 +13,7 @@ import ClientStatementViewer from './components/ClientStatementViewer';
 import ClientPayments from './components/ClientPayments';
 import UserAdminPanel from './components/UserAdminPanel';
 import CollectorDashboard from './components/CollectorDashboard';
+import AuditLogViewer from './components/AuditLogViewer'; // <-- AÑADIR IMPORTACIÓN
 
 import './App.css';
 
@@ -86,9 +87,11 @@ function App() {
                 {hasRole(['super_admin', 'regular_admin', 'sales_admin']) && <Link to="/admin/clients" className="nav-button">Gestión Clientes</Link>}
                 {hasRole(['super_admin', 'regular_admin', 'sales_admin', 'viewer_reports']) && <Link to="/admin/reports" className="nav-button">Reportes</Link>}
                 {hasRole('super_admin') && <Link to="/admin/users" className="nav-button">Gestión Usuarios</Link>}
-                
-                {/* Enlace para el Gestor de Cobranza */}
                 {hasRole('collector_agent') && <Link to="/admin/my-collections" className="nav-button">Mis Cobranzas</Link>}
+                
+                {/* --- INICIO: NUEVO ENLACE --- */}
+                {hasRole('super_admin') && <Link to="/admin/audit" className="nav-button">Auditoría</Link>}
+                {/* --- FIN: NUEVO ENLACE --- */}
 
                 <span className="user-info">Bienvenido, {username} ({userRole})</span>
                 <button onClick={handleLogout} className="logout-button nav-button">Cerrar Sesión</button>
@@ -109,10 +112,11 @@ function App() {
             <Route path="/admin/users" element={<PrivateRoute isAuthenticated={!!token}><UserAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} /></PrivateRoute>} />
             <Route path="/admin/clients/statement/:clientId" element={<PrivateRoute isAuthenticated={!!token}><ClientStatementViewer authenticatedFetch={authenticatedFetch} /></PrivateRoute>} />
             <Route path="/admin/clients/payments/:clientId" element={<PrivateRoute isAuthenticated={!!token}><ClientPayments authenticatedFetch={authenticatedFetch} userRole={userRole} /></PrivateRoute>} />
-            
-            {/* --- LA CORRECCIÓN ESTÁ EN ESTA LÍNEA --- */}
-            {/* Se añade la prop 'authenticatedFetch' que faltaba */}
             <Route path="/admin/my-collections" element={<PrivateRoute isAuthenticated={!!token}><CollectorDashboard authenticatedFetch={authenticatedFetch} /></PrivateRoute>} />
+            
+            {/* --- INICIO: NUEVA RUTA --- */}
+            <Route path="/admin/audit" element={<PrivateRoute isAuthenticated={!!token}><AuditLogViewer authenticatedFetch={authenticatedFetch} /></PrivateRoute>} />
+            {/* --- FIN: NUEVA RUTA --- */}
 
             {token && <Route path="/admin" element={<Navigate to="/admin/sales" />} />}
             <Route path="*" element={<Navigate to="/" />} />

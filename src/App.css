@@ -1942,3 +1942,5 @@ un error en la visualizacion de la tabla. */
 .client-payments-section .credit-sale-card .secondary-button:hover {
     background-color: #138496;
 }
+.charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+.chart-container { padding: 20px; border: 1px solid #eee; border-radius: 8px; }
