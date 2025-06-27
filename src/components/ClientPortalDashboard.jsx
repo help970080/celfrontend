@@ -8,18 +8,16 @@ function ClientPortalDashboard() {
     const [clientData, setClientData] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Creamos una función de fetch específica para el portal del cliente
     const clientAuthFetch = useCallback(async (url, options = {}) => {
-        const token = localStorage.getItem('clientToken'); // Usa el token del cliente
+        const token = localStorage.getItem('clientToken');
         if (!token) {
             toast.error('Sesión no válida. Por favor, inicia sesión de nuevo.');
-            // Aquí podrías implementar una redirección al login
             return Promise.reject(new Error('No autenticado como cliente.'));
         }
         const headers = { ...options.headers, 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
         const response = await fetch(url, { ...options, headers });
         if (response.status === 401 || response.status === 403) {
-             // Manejar deslogueo si el token es inválido
+            // Aquí se podría manejar el deslogueo automático si el token es inválido
         }
         if (!response.ok) throw new Error('Error al obtener los datos.');
         return response;
@@ -71,16 +69,22 @@ function ClientPortalDashboard() {
                         <p><strong>Total de la Compra:</strong> ${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                         <p><strong>Tipo:</strong> {sale.isCredit ? `Crédito | Saldo Actual: $${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : 'Contado'}</p>
                         <p><strong>Productos:</strong> {(sale.saleItems || []).map(item => item.product?.name).join(', ') || 'N/A'}</p>
+                        
+                        {/* --- INICIO DE LA MODIFICACIÓN --- */}
+                        {/* Se añade la lista de pagos si existen para esa venta */}
                         {sale.payments && sale.payments.length > 0 && (
                             <div className="payments-detail">
-                                <h5>Tus Pagos Realizados:</h5>
+                                <h5>Tus Pagos para esta Compra:</h5>
                                 <ul>
                                     {sale.payments.map(p => (
-                                        <li key={p.id}>{dayjs(p.paymentDate).format('DD/MM/YYYY')} - ${p.amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</li>
+                                        <li key={p.id}>
+                                            {dayjs(p.paymentDate).format('DD/MM/YYYY')} - <strong>${p.amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong> ({p.paymentMethod})
+                                        </li>
                                     ))}
                                 </ul>
                             </div>
                         )}
+                        {/* --- FIN DE LA MODIFICACIÓN --- */}
                     </div>
                 ))
             }
