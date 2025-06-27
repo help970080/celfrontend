@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
-// ... (tus imports de dayjs)
+import PaymentManager from './PaymentManager'; // Asegúrate de que la importación es correcta
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -20,14 +20,10 @@ function ClientPayments({ authenticatedFetch, userRole }) {
         setLoading(true);
         setError(null);
         try {
-            // Se piden todos los datos en paralelo para mayor eficiencia
             const [clientRes, statementRes, riskRes] = await Promise.all([
                 authenticatedFetch(`${API_BASE_URL}/api/clients/${clientId}`),
                 authenticatedFetch(`${API_BASE_URL}/api/reports/client-statement/${clientId}`),
-                // --- INICIO DE LA CORRECCIÓN ---
-                // Se ha corregido la URL para incluir "/reports/"
                 authenticatedFetch(`${API_BASE_URL}/api/reports/client-risk/${clientId}`)
-                // --- FIN DE LA CORRECCIÓN ---
             ]);
 
             if (!clientRes.ok) throw new Error('Error al cargar datos del cliente.');
@@ -36,12 +32,12 @@ function ClientPayments({ authenticatedFetch, userRole }) {
             
             setClient(await clientRes.json());
             const statementData = await statementRes.json();
-            setSales(statementData.sales.filter(sale => sale.isCredit));
+            setSales(statementData.sales.filter(sale => sale.isCredit && sale.balanceDue > 0)); // Solo mostrar ventas a crédito con adeudo
             setRiskAnalysis(await riskRes.json());
 
         } catch (err) {
             setError(err.message || "No se pudieron cargar los datos.");
-            toast.error(err.message);
+            toast.error(err.message || "No se pudieron cargar los datos.");
         } finally {
             setLoading(false);
         }
@@ -51,12 +47,86 @@ function ClientPayments({ authenticatedFetch, userRole }) {
         fetchClientData();
     }, [fetchClientData]);
 
-    // ... (El resto de tus funciones como handleOpenPaymentForm, etc., no necesitan cambios)
+    // --- INICIO DE LA CORRECIÓN ---
+    // Se añaden las funciones para manejar el modal de pago
+
+    const handleOpenPaymentForm = (sale) => {
+        setSelectedSaleForPayment(sale);
+        setShowPaymentForm(true);
+    };
+
+    const handleClosePaymentForm = () => {
+        setShowPaymentForm(false);
+        setSelectedSaleForPayment(null);
+    };
+
+    const handlePaymentSuccess = () => {
+        fetchClientData(); // Recargar todos los datos para reflejar el nuevo saldo
+    };
+
+    // --- FIN DE LA CORRECIÓN ---
+
+    if (loading) return <p>Cargando datos del cliente...</p>;
+    if (error) return <p className="error-message">{error}</p>;
 
     return (
-        <section className="client-payments-section">
-            {/* ... (El resto del JSX para mostrar la información no necesita cambios) ... */}
-        </section>
+        <>
+            <section className="client-payments-section">
+                {client && (
+                    <>
+                        <h2>Gestión de Cobranza de: {client.name} {client.lastName}</h2>
+                        <p><strong>Teléfono:</strong> {client.phone} | <strong>Dirección:</strong> {client.address}, {client.city}</p>
+                    </>
+                )}
+
+                {riskAnalysis && (
+                    <div className="risk-analysis-card">
+                        <p>
+                            Nivel de Riesgo del Cliente:
+                            <span className={`risk-badge risk-${riskAnalysis.riskCategory?.toLowerCase() || 'unknown'}`}>
+                                {riskAnalysis.riskCategory || 'Desconocido'}
+                            </span>
+                        </p>
+                        <p><strong>Detalle:</strong> {riskAnalysis.riskDetails}</p>
+                    </div>
+                )}
+                <hr/>
+                <h3>Ventas a Crédito con Saldo Pendiente</h3>
+                {sales.length > 0 ? (
+                    <div className="credit-sales-list">
+                        {sales.map(sale => (
+                            <div key={sale.id} className="credit-sale-card">
+                                <h4>Venta #{sale.id} - {dayjs(sale.saleDate).format('DD/MM/YYYY')}</h4>
+                                <p><strong>Productos:</strong> {(sale.saleItems || []).map(item => item.product?.name).join(', ')}</p>
+                                <p><strong>Monto Original:</strong> ${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
+                                <p className="highlight-balance"><strong>Saldo Pendiente:</strong> ${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
+                                <p><strong>Pago Semanal Sugerido:</strong> ${sale.weeklyPaymentAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
+                                <button 
+                                    className="action-button"
+                                    onClick={() => handleOpenPaymentForm(sale)}
+                                >
+                                    Registrar Abono
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p>¡Felicidades! Este cliente no tiene saldos pendientes.</p>
+                )}
+            </section>
+            
+            {/* --- INICIO DE LA CORRECIÓN --- */}
+            {/* Renderizado condicional del modal de pago */}
+            {showPaymentForm && selectedSaleForPayment && (
+                <PaymentManager
+                    sale={selectedSaleForPayment}
+                    onClose={handleClosePaymentForm}
+                    onPaymentSuccess={handlePaymentSuccess}
+                    authenticatedFetch={authenticatedFetch}
+                />
+            )}
+            {/* --- FIN DE LA CORRECIÓN --- */}
+        </>
     );
 }
 
