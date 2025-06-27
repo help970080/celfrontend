@@ -75,19 +75,38 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
 
     useEffect(() => {
         fetchSales();
-        fetchSupportingData();
-    }, [fetchSales, fetchSupportingData]);
+    }, [fetchSales]);
 
+    useEffect(() => {
+        // Cargar solo una vez o cuando se abre el formulario
+        if (showSaleForm) {
+            fetchSupportingData();
+        }
+    }, [showSaleForm, fetchSupportingData]);
+
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Función robusta para eliminar una venta
     const onDeleteSale = async (id) => {
-        if (!window.confirm('¿Estás seguro de que quieres eliminar esta venta?')) return;
+        if (!window.confirm('¿Estás seguro de que quieres eliminar esta venta? Esta acción es irreversible y restaurará el stock de los productos vendidos.')) {
+            return;
+        }
         try {
-            await authenticatedFetch(`${API_BASE_URL}/api/sales/${id}`, { method: 'DELETE' });
-            toast.success('Venta eliminada con éxito!');
-            fetchSales();
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/sales/${id}`, { 
+                method: 'DELETE' 
+            });
+            
+            if (response.status === 204) {
+                toast.success('¡Venta eliminada con éxito!');
+                fetchSales(); // Refrescar la lista de ventas
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al eliminar la venta.');
+            }
         } catch (err) {
             toast.error(`Error al eliminar: ${err.message}`);
         }
     };
+    // --- FIN DE LA CORRECCIÓN ---
 
     return (
         <section className="sales-section">
