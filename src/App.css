@@ -1905,3 +1905,40 @@ un error en la visualizacion de la tabla. */
   gap: 15px;
   border-top: 1px solid #e0e0e0;
 }
+/* --- ESTILOS PARA LOS BOTONES EN LA TARJETA DE GESTIÓN DE COBRANZA --- */
+
+.client-payments-section .credit-sale-card .card-actions {
+    display: flex;
+    flex-direction: column; /* Apila los botones verticalmente */
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.client-payments-section .credit-sale-card .card-actions button {
+    width: 100%;
+    padding: 10px 15px;
+    font-size: 0.9em;
+    font-weight: bold;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+/* Estilo para el botón principal "Registrar Abono" */
+.client-payments-section .credit-sale-card .action-button {
+    background-color: #6f42c1; /* Morado */
+    color: white;
+}
+.client-payments-section .credit-sale-card .action-button:hover {
+    background-color: #5935a6;
+}
+
+/* Estilo para el botón secundario "Ver Recibo" */
+.client-payments-section .credit-sale-card .secondary-button {
+    background-color: #17a2b8; /* Cian */
+    color: white;
+}
+.client-payments-section .credit-sale-card .secondary-button:hover {
+    background-color: #138496;
+}
