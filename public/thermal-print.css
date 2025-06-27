@@ -2,67 +2,75 @@
 
 /* --- ESTILOS QUE SE APLICAN SOLO AL IMPRIMIR --- */
 @media print {
-    /* Oculta los elementos que marcamos para no imprimir */
-    .no-print {
-        display: none !important;
+
+    /* --- INICIO DE LA CORRECCIÓN --- */
+    /* 1. Oculta todo en la página por defecto */
+    body * {
+        visibility: hidden;
     }
 
-    /* Nos aseguramos de que el cuerpo y el contenedor del recibo ocupen todo */
-    body, html {
-        margin: 0;
-        padding: 0;
-        width: 100%;
+    /* 2. Hace visible únicamente el contenedor del recibo y todo su contenido */
+    .receipt-container, .receipt-container * {
+        visibility: visible;
     }
 
+    /* 3. Posiciona el contenedor del recibo en la esquina superior izquierda de la página de impresión */
     .receipt-container {
         position: absolute;
         left: 0;
         top: 0;
         width: 100%;
+        margin: 0;
         padding: 0;
         border: none;
         box-shadow: none;
-        margin: 0;
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 10pt;
-        color: #000;
     }
-    
+    /* --- FIN DE LA CORRECCIÓN --- */
+
+
+    /* Oculta los elementos que marcamos explícitamente para no imprimir */
+    .no-print {
+        display: none !important;
+    }
+
     /* Define el tamaño del papel de la impresora térmica */
     @page {
         size: 80mm auto; /* 'auto' para la altura */
         margin: 3mm;
     }
 
-    /* Estilos específicos para el contenido del ticket */
-    .receipt-header h1, .receipt-header h2 {
+    /* Estilos específicos para el contenido del ticket (se mantienen) */
+    .receipt-header h2 {
         font-size: 14pt;
         text-align: center;
         margin: 5px 0;
     }
-
     .receipt-header p {
         text-align: center;
         margin: 2px 0;
         font-size: 9pt;
     }
-
     .receipt-details hr {
         border: 0;
         border-top: 1px dashed #000;
         margin: 5px 0;
     }
-
     .receipt-product-list {
         list-style-type: none;
         padding: 0;
         margin: 5px 0;
     }
+    /* Se asegura de que la fuente sea negra y el tamaño base sea consistente */
+    body, .receipt-container {
+        color: #000;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 10pt;
+    }
 }
 
-/* --- ESTILOS PARA LA VISTA EN PANTALLA (No se aplican al imprimir) --- */
+/* --- ESTILOS PARA LA VISTA EN PANTALLA (No cambian) --- */
 .receipt-container {
-    width: 302px;
+    width: 302px; /* Ancho para simular un ticket en pantalla */
     padding: 15px;
     background: #ffffff;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
