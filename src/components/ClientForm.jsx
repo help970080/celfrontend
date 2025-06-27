@@ -14,6 +14,9 @@ function ClientForm({ onClientAdded, clientToEdit, setClientToEdit }) {
     const [zipCode, setZipCode] = useState('');
     const [identificationId, setIdentificationId] = useState('');
     const [notes, setNotes] = useState('');
+    // --- INICIO DE LA MODIFICACIÓN ---
+    const [password, setPassword] = useState(''); // Estado para la nueva contraseña
+    // --- FIN DE LA MODIFICACIÓN ---
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -31,6 +34,7 @@ function ClientForm({ onClientAdded, clientToEdit, setClientToEdit }) {
             setZipCode(clientToEdit.zipCode || '');
             setIdentificationId(clientToEdit.identificationId || '');
             setNotes(clientToEdit.notes || '');
+            setPassword(''); // Limpiar campo de contraseña al editar
         } else {
             resetForm();
         }
@@ -47,6 +51,7 @@ function ClientForm({ onClientAdded, clientToEdit, setClientToEdit }) {
         setZipCode('');
         setIdentificationId('');
         setNotes('');
+        setPassword(''); // Asegurarse de limpiar también la contraseña
         setError(null);
         setSuccess(null);
         if (setClientToEdit) {
@@ -61,17 +66,18 @@ function ClientForm({ onClientAdded, clientToEdit, setClientToEdit }) {
         setSuccess(null);
 
         const clientData = {
-            name,
-            lastName,
-            phone,
+            name, lastName, phone, address, city, state, zipCode,
             email: email === '' ? null : email,
-            address,
-            city,
-            state,
-            zipCode,
             identificationId: identificationId === '' ? null : identificationId,
             notes: notes === '' ? null : notes,
         };
+
+        // --- INICIO DE LA MODIFICACIÓN ---
+        // Solo añadir la contraseña al objeto si el campo no está vacío
+        if (password) {
+            clientData.password = password;
+        }
+        // --- FIN DE LA MODIFICACIÓN ---
 
         const url = clientToEdit
             ? `${API_BASE_URL}/api/clients/${clientToEdit.id}`
@@ -81,10 +87,7 @@ function ClientForm({ onClientAdded, clientToEdit, setClientToEdit }) {
         try {
             const response = await fetch(url, { 
                 method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}` 
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
                 body: JSON.stringify(clientData),
             });
 
@@ -118,6 +121,7 @@ function ClientForm({ onClientAdded, clientToEdit, setClientToEdit }) {
                     <label htmlFor="clientName">Nombre:</label>
                     <input type="text" id="clientName" value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
+                {/* ... (otros campos del formulario no cambian) ... */}
                 <div className="form-group">
                     <label htmlFor="clientLastName">Apellido:</label>
                     <input type="text" id="clientLastName" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
@@ -130,6 +134,15 @@ function ClientForm({ onClientAdded, clientToEdit, setClientToEdit }) {
                     <label htmlFor="clientEmail">Email:</label>
                     <input type="email" id="clientEmail" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
+
+                {/* --- INICIO DE LA MODIFICACIÓN --- */}
+                <div className="form-group">
+                    <label htmlFor="clientPassword">Contraseña (Portal de Clientes):</label>
+                    <input type="password" id="clientPassword" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={clientToEdit ? 'Dejar en blanco para no cambiar' : ''} />
+                    {clientToEdit && <p className="hint-text">Si dejas este campo en blanco, la contraseña actual no se modificará.</p>}
+                </div>
+                {/* --- FIN DE LA MODIFICACIÓN --- */}
+
                 <div className="form-group">
                     <label htmlFor="clientAddress">Dirección:</label>
                     <input type="text" id="clientAddress" value={address} onChange={(e) => setAddress(e.target.value)} required />
