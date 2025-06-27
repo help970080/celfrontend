@@ -1813,3 +1813,30 @@ un error en la visualizacion de la tabla. */
   cursor: not-allowed;
   transform: none;
 }
+/* Agrega estas reglas al final de tu archivo App.css */
+
+/* Estilo para la alerta de pago vencido en el dashboard del gestor */
+.overdue-alert {
+    background-color: #f8d7da; /* Rojo claro */
+    color: #721c24; /* Rojo oscuro */
+    border: 1px solid #f5c6cb;
+    border-radius: 6px;
+    padding: 10px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.overdue-alert span {
+    margin-right: 8px;
+}
+
+/* Estilo para la dirección del cliente en la tarjeta del gestor */
+.client-address {
+    font-style: italic;
+    color: #555;
+    background-color: #e9ecef;
+    padding: 5px 8px;
+    border-radius: 4px;
+}

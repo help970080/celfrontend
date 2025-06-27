@@ -1,8 +1,10 @@
+// Archivo: components/ClientPayments.jsx
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
-import PaymentManager from './PaymentManager'; // Asegúrate de que la importación es correcta
+import PaymentManager from './PaymentManager';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -32,7 +34,7 @@ function ClientPayments({ authenticatedFetch, userRole }) {
             
             setClient(await clientRes.json());
             const statementData = await statementRes.json();
-            setSales(statementData.sales.filter(sale => sale.isCredit && sale.balanceDue > 0)); // Solo mostrar ventas a crédito con adeudo
+            setSales(statementData.sales.filter(sale => sale.isCredit && sale.balanceDue > 0));
             setRiskAnalysis(await riskRes.json());
 
         } catch (err) {
@@ -47,9 +49,6 @@ function ClientPayments({ authenticatedFetch, userRole }) {
         fetchClientData();
     }, [fetchClientData]);
 
-    // --- INICIO DE LA CORRECIÓN ---
-    // Se añaden las funciones para manejar el modal de pago
-
     const handleOpenPaymentForm = (sale) => {
         setSelectedSaleForPayment(sale);
         setShowPaymentForm(true);
@@ -61,10 +60,8 @@ function ClientPayments({ authenticatedFetch, userRole }) {
     };
 
     const handlePaymentSuccess = () => {
-        fetchClientData(); // Recargar todos los datos para reflejar el nuevo saldo
+        fetchClientData();
     };
-
-    // --- FIN DE LA CORRECIÓN ---
 
     if (loading) return <p>Cargando datos del cliente...</p>;
     if (error) return <p className="error-message">{error}</p>;
@@ -75,7 +72,9 @@ function ClientPayments({ authenticatedFetch, userRole }) {
                 {client && (
                     <>
                         <h2>Gestión de Cobranza de: {client.name} {client.lastName}</h2>
-                        <p><strong>Teléfono:</strong> {client.phone} | <strong>Dirección:</strong> {client.address}, {client.city}</p>
+                        {/* --- INICIO DE LA CORRECCIÓN --- */}
+                        <p><strong>Teléfono:</strong> <a href={`tel:${client.phone}`}>{client.phone}</a> | <strong>Dirección:</strong> {client.address}, {client.city}</p>
+                        {/* --- FIN DE LA CORRECCIÓN --- */}
                     </>
                 )}
 
@@ -115,8 +114,6 @@ function ClientPayments({ authenticatedFetch, userRole }) {
                 )}
             </section>
             
-            {/* --- INICIO DE LA CORRECIÓN --- */}
-            {/* Renderizado condicional del modal de pago */}
             {showPaymentForm && selectedSaleForPayment && (
                 <PaymentManager
                     sale={selectedSaleForPayment}
@@ -125,7 +122,6 @@ function ClientPayments({ authenticatedFetch, userRole }) {
                     authenticatedFetch={authenticatedFetch}
                 />
             )}
-            {/* --- FIN DE LA CORRECIÓN --- */}
         </>
     );
 }

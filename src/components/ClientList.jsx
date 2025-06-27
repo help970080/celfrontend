@@ -1,8 +1,9 @@
+// Archivo: components/ClientList.jsx
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-function ClientList({ clients, onEditClient, onDeleteClient, userRole }) { // Recibe userRole
-    // Helper para verificar roles
+function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
     const hasPermission = (roles) => {
         if (!userRole) return false;
         if (Array.isArray(roles)) {
@@ -37,24 +38,23 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) { // Re
                             <td>{client.id}</td>
                             <td>{client.name}</td>
                             <td>{client.lastName}</td>
-                            <td>{client.phone}</td>
+                            {/* --- INICIO DE LA CORRECCIÓN --- */}
+                            <td><a href={`tel:${client.phone}`}>{client.phone}</a></td>
+                            {/* --- FIN DE LA CORRECCIÓN --- */}
                             <td>{client.email || 'N/A'}</td>
                             <td>{`${client.address}, ${client.city}`}</td>
                             <td>{client.identificationId || 'N/A'}</td>
                             <td>
                                 <div className="action-buttons">
-                                    {/* Solo permitir editar a ciertos roles */}
                                     {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
                                         <button onClick={() => onEditClient(client)}>Editar</button>
                                     )}
-                                    {/* Gestionar Cobranza y Estado de Cuenta: accesibles para roles de ventas/admin */}
                                     {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
                                         <>
                                             <Link to={`/admin/clients/payments/${client.id}`} className="button-as-link">Gestionar Cobranza</Link>
                                             <Link to={`/admin/clients/statement/${client.id}`} className="button-as-link">Ver Estado Cuenta</Link>
                                         </>
                                     )}
-                                    {/* Solo permitir eliminar a super_admin */}
                                     {hasPermission('super_admin') && (
                                         <button className="delete-button" onClick={() => onDeleteClient(client.id)}>Eliminar</button>
                                     )}

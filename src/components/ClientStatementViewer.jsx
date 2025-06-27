@@ -1,16 +1,18 @@
+// Archivo: components/ClientStatementViewer.jsx
+
 import React, { useState, useEffect, useCallback, useRef } from 'react'; 
 import { useParams } from 'react-router-dom';
-import dayjs from 'dayjs'; // <-- ¡CAMBIADO!
-import utc from 'dayjs/plugin/utc'; // <-- ¡AGREGADO!
-import timezone from 'dayjs/plugin/timezone'; // <-- ¡AGREGADO!
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { toast } from 'react-toastify';
 import html2canvas from 'html2canvas'; 
 import jsPDF from 'jspdf'; 
 
-dayjs.extend(utc); // <-- ¡AGREGADO!
-dayjs.extend(timezone); // <-- ¡AGREGADO!
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
-const TIMEZONE = "America/Mexico_City"; // <-- ¡AGREGADO!
+const TIMEZONE = "America/Mexico_City";
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -55,7 +57,8 @@ function ClientStatementViewer({ authenticatedFetch }) {
     useEffect(() => {
         fetchClientStatement();
     }, [fetchClientStatement]);
-
+    
+    // ... (resto de funciones como handleGeneratePdf, etc. no cambian) ...
     const handleGeneratePdf = async () => {
         if (!statementRef.current) {
             toast.error("No se pudo capturar el contenido del estado de cuenta.");
@@ -89,7 +92,6 @@ function ClientStatementViewer({ authenticatedFetch }) {
             toast.error("Error al generar el estado de cuenta PDF.");
         }
     };
-
     const handleShareWhatsApp = () => {
         const clientPhone = client ? client.phone : '';
         if (!clientPhone) {
@@ -100,7 +102,6 @@ function ClientStatementViewer({ authenticatedFetch }) {
         window.open(`https://wa.me/${clientPhone}?text=${encodeURIComponent(message)}`, '_blank');
         toast.info("Se abrió WhatsApp con el mensaje. Adapta el mensaje si es necesario.");
     };
-
     const handleShareSMS = () => {
         const clientPhone = client ? client.phone : '';
         if (!clientPhone) {
@@ -112,17 +113,10 @@ function ClientStatementViewer({ authenticatedFetch }) {
         toast.info("Se abrió la aplicación de SMS. Adapta el mensaje si es necesario.");
     };
 
-    if (loading) {
-        return <p>Cargando estado de cuenta...</p>;
-    }
 
-    if (error) {
-        return <p className="error-message">Error al cargar estado de cuenta: {error}</p>;
-    }
-
-    if (!client) {
-        return <p>Cliente no encontrado o ID inválido.</p>;
-    }
+    if (loading) return <p>Cargando estado de cuenta...</p>;
+    if (error) return <p className="error-message">Error al cargar estado de cuenta: {error}</p>;
+    if (!client) return <p>Cliente no encontrado o ID inválido.</p>;
 
     return (
         <div className="client-statement-container">
@@ -138,13 +132,15 @@ function ClientStatementViewer({ authenticatedFetch }) {
                     <h2>{businessInfo.name} - Estado de Cuenta</h2>
                     <p>{businessInfo.address}</p>
                     <p>Tel: {businessInfo.phone} | Email: {businessInfo.email}</p>
-                    <p>Fecha de Emisión: {dayjs().tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</p> {/* <-- ¡CAMBIADO! */}
+                    <p>Fecha de Emisión: {dayjs().tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</p>
                     <hr />
                 </div>
                 <div className="statement-client-info">
                     <h3>Datos del Cliente</h3>
                     <p><strong>Nombre:</strong> {client.name} {client.lastName}</p>
-                    <p><strong>Teléfono:</strong> {client.phone}</p>
+                    {/* --- INICIO DE LA CORRECCIÓN --- */}
+                    <p><strong>Teléfono:</strong> <a href={`tel:${client.phone}`}>{client.phone}</a></p>
+                    {/* --- FIN DE LA CORRECCIÓN --- */}
                     <p><strong>Email:</strong> {client.email || 'N/A'}</p>
                     <p><strong>Dirección:</strong> {`${client.address}, ${client.city || 'N/A'}, ${client.state || 'N/A'}, ${client.zipCode || 'N/A'}`}</p>
                     <p><strong>ID Identificación:</strong> {client.identificationId || 'N/A'}</p>
@@ -169,12 +165,11 @@ function ClientStatementViewer({ authenticatedFetch }) {
                 <hr />
 
                 <h3>Detalle de Ventas y Movimientos</h3>
-                {sales.length === 0 ? (
-                    <p>Este cliente no tiene ventas registradas.</p>
-                ) : (
+                {sales.length === 0 ? <p>Este cliente no tiene ventas registradas.</p> : (
                     sales.map(sale => (
                         <div key={sale.id} className="sale-movement-card">
-                            <h4>Venta #{sale.id} - {dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY')}</h4> {/* <-- ¡CAMBIADO! */}
+                            <h4>Venta #{sale.id} - {dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY')}</h4>
+                            {/* ... (resto del JSX de la tarjeta de venta no cambia) ... */}
                             <p><strong>Monto Venta:</strong> ${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                             <p><strong>Tipo:</strong> {sale.isCredit ? 'Crédito' : 'Contado'}</p>
                             <p><strong>Producto(s):</strong></p>
@@ -201,7 +196,7 @@ function ClientStatementViewer({ authenticatedFetch }) {
                                     <ul>
                                         {sale.payments.map(payment => (
                                             <li key={payment.id}>
-                                                {dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')} - ${payment.amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} ({payment.paymentMethod}) - {payment.notes || ''} {/* <-- ¡CAMBIADO! */}
+                                                {dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')} - ${payment.amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} ({payment.paymentMethod}) - {payment.notes || ''}
                                             </li>
                                         ))}
                                     </ul>

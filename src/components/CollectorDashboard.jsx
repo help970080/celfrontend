@@ -1,3 +1,5 @@
+// Archivo: components/CollectorDashboard.jsx
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
@@ -14,7 +16,6 @@ function CollectorDashboard({ authenticatedFetch }) {
         setLoading(true);
         setError(null);
         try {
-            // Usamos la nueva ruta segura que creamos en el backend
             const response = await authenticatedFetch(`${API_BASE_URL}/api/sales/my-assigned`);
             if (!response.ok) {
                 const errorData = await response.json();
@@ -49,17 +50,29 @@ function CollectorDashboard({ authenticatedFetch }) {
                 <div className="collection-list">
                     {assignedSales.map(sale => (
                         <div key={sale.id} className="collection-card">
+                            {sale.dynamicStatus === 'VENCIDO' && (
+                                <div className="overdue-alert">
+                                    <span role="img" aria-label="alert">⚠️</span> PAGO VENCIDO
+                                </div>
+                            )}
+
                             <h4>Cliente: {sale.client?.name} {sale.client?.lastName}</h4>
-                            <p><strong>Teléfono:</strong> {sale.client?.phone}</p>
-                            <p><strong>Dirección:</strong> {sale.client?.address}, {sale.client?.city}</p>
+                            
+                            {/* --- INICIO DE LA CORRECCIÓN --- */}
+                            <p><strong>Teléfono:</strong> <a href={`tel:${sale.client?.phone}`}>{sale.client?.phone}</a></p>
+                            {/* --- FIN DE LA CORRECCIÓN --- */}
+                            
+                            <p className="client-address"><strong>Dirección:</strong> {sale.client?.address}, {sale.client?.city}</p>
+                            
                             <p><strong>Venta ID:</strong> {sale.id} - {dayjs(sale.saleDate).format('DD/MM/YYYY')}</p>
                             <p><strong>Productos:</strong> {(sale.saleItems || []).map(item => item.product?.name).join(', ')}</p>
+                            
                             <div className="collection-financials">
                                 <p>Saldo Pendiente: <strong>${(sale.balanceDue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></p>
                                 <p>Pago Semanal: <strong>${(sale.weeklyPaymentAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></p>
                             </div>
+                            
                             <div className="collection-actions">
-                                {/* Estos botones enlazarán a las herramientas que ya creamos */}
                                 <Link to={`/admin/clients/payments/${sale.clientId}`} className="button-as-link">Registrar Pago / Ver Historial</Link>
                                 <Link to={`/admin/clients/statement/${sale.clientId}`} className="button-as-link secondary">Estado de Cuenta</Link>
                             </div>
