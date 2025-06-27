@@ -24,7 +24,6 @@ function CollectorDashboard({ authenticatedFetch }) {
             }
             let data = await response.json();
             
-            // Priorizar: clientes con atraso primero
             data.sort((a, b) => b.hasOverdue - a.hasOverdue);
 
             setGroupedClients(data);
@@ -90,8 +89,10 @@ function CollectorDashboard({ authenticatedFetch }) {
                                                 <p>Pago Semanal: <strong>${(sale.weeklyPaymentAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></p>
                                             </div>
                                             <div className="collection-actions">
-                                                <Link to={`/admin/clients/payments/${sale.clientId}`} className="button-as-link">Registrar Pago / Ver Historial</Link>
-                                                <Link to={`/admin/clients/statement/${sale.clientId}`} className="button-as-link secondary">Estado de Cuenta Completo</Link>
+                                                {/* --- INICIO DE LA CORRECCIÓN --- */}
+                                                <Link to={`/admin/clients/payments/${client.id}`} className="button-as-link">Registrar Pago / Ver Historial</Link>
+                                                <Link to={`/admin/clients/statement/${client.id}`} className="button-as-link secondary">Estado de Cuenta Completo</Link>
+                                                {/* --- FIN DE LA CORRECCIÓN --- */}
                                             </div>
                                         </div>
                                     ))}
