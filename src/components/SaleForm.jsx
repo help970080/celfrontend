@@ -1,3 +1,5 @@
+// Archivo: src/components/SaleForm.jsx
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
@@ -13,6 +15,12 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // --- INICIO DE LA MODIFICACIÓN ---
+    const [paymentFrequency, setPaymentFrequency] = useState('weekly');
+    const [numberOfPayments, setNumberOfPayments] = useState('');
+    // --- FIN DE LA MODIFICACIÓN ---
+
+
     useEffect(() => {
         const newTotal = selectedProducts.reduce((sum, item) => {
             const product = products.find(p => p.id === item.productId);
@@ -27,6 +35,10 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
         setIsCredit(false);
         setDownPayment('');
         setAssignedCollectorId('');
+        // --- INICIO DE LA MODIFICACIÓN ---
+        setPaymentFrequency('weekly');
+        setNumberOfPayments('');
+        // --- FIN DE LA MODIFICACIÓN ---
         setError(null);
     };
 
@@ -62,16 +74,20 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
             setLoading(false);
             return;
         }
-
+        
+        // --- INICIO DE LA MODIFICACIÓN ---
+        // Se incluyen los nuevos campos en el objeto a enviar
         const saleData = {
             clientId: parseInt(clientId),
             saleItems: selectedProducts,
             isCredit,
             downPayment: isCredit ? parseFloat(downPayment || 0) : totalAmount,
-            interestRate: 0, // Como se acordó, ya no se maneja en el formulario
-            numberOfPayments: isCredit ? 17 : null,
-            assignedCollectorId: isCredit && assignedCollectorId ? parseInt(assignedCollectorId, 10) : null
+            assignedCollectorId: isCredit && assignedCollectorId ? parseInt(assignedCollectorId, 10) : null,
+            paymentFrequency: isCredit ? paymentFrequency : null,
+            numberOfPayments: isCredit ? parseInt(numberOfPayments, 10) : null,
         };
+        // --- FIN DE LA MODIFICACIÓN ---
+
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/sales`, {
@@ -93,14 +109,17 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
             setLoading(false);
         }
     };
-
-    const suggestedDownPayment = totalAmount > 0 ? parseFloat((totalAmount * 0.10).toFixed(2)) : 0;
+    
+    // --- Lógica de cálculo actualizada ---
     const remainingForCalculation = totalAmount - parseFloat(downPayment || 0);
-    const calculatedWeeklyPayment = isCredit && remainingForCalculation >= 0 ? parseFloat((remainingForCalculation / 17).toFixed(2)) : 0;
+    const numPayments = parseInt(numberOfPayments, 10);
+    const calculatedInstallment = isCredit && remainingForCalculation > 0 && numPayments > 0 
+        ? parseFloat((remainingForCalculation / numPayments).toFixed(2)) 
+        : 0;
     
     const isFormValid = () => {
         if (!clientId || selectedProducts.length === 0) return false;
-        if (isCredit && (downPayment === '' || parseFloat(downPayment) < 0 || parseFloat(downPayment) > totalAmount)) return false;
+        if (isCredit && (downPayment === '' || parseFloat(downPayment) < 0 || parseFloat(downPayment) > totalAmount || !numberOfPayments || parseInt(numberOfPayments, 10) <= 0)) return false;
         return true;
     };
 
@@ -132,8 +151,24 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
                 {isCredit && (
                     <div className="credit-details">
                         <h3>Detalles del Crédito</h3>
-                        <div className="form-group"><label>Enganche:</label><input type="number" value={downPayment} onChange={(e) => setDownPayment(e.target.value)} step="0.01" required={isCredit} placeholder={suggestedDownPayment.toLocaleString('es-MX')} /><p className="hint-text">Sugerido (10%): <strong>${suggestedDownPayment.toLocaleString('es-MX')}</strong></p></div>
-                        <div className="form-group"><label>Pagos Semanales (Fijo):</label><input type="number" value="17" readOnly /></div>
+                        <div className="form-group"><label>Enganche:</label><input type="number" value={downPayment} onChange={(e) => setDownPayment(e.target.value)} step="0.01" required={isCredit} /></div>
+                        
+                        {/* --- INICIO DE LA MODIFICACIÓN --- */}
+                        <div className="form-group">
+                            <label>Frecuencia de Pago:</label>
+                            <select value={paymentFrequency} onChange={(e) => setPaymentFrequency(e.target.value)}>
+                                <option value="daily">Diario</option>
+                                <option value="weekly">Semanal</option>
+                                <option value="fortnightly">Quincenal</option>
+                                <option value="monthly">Mensual</option>
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label>Número de Pagos:</label>
+                            <input type="number" value={numberOfPayments} onChange={(e) => setNumberOfPayments(e.target.value)} required={isCredit} placeholder="Ej: 12, 17, 24..." />
+                        </div>
+                        {/* --- FIN DE LA MODIFICACIÓN --- */}
+                        
                         <div className="form-group">
                             <label>Asignar a Gestor (Opcional):</label>
                             <select value={assignedCollectorId} onChange={(e) => setAssignedCollectorId(e.target.value)}>
@@ -141,7 +176,9 @@ function SaleForm({ onSaleAdded, clients, products, collectors }) {
                                 {collectors.map(c => <option key={c.id} value={c.id}>{c.username}</option>)}
                             </select>
                         </div>
-                        {calculatedWeeklyPayment > 0 && <p className="calculated-payment">Pago Semanal Estimado: <strong>${calculatedWeeklyPayment.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</strong></p>}
+                        
+                        {/* --- Cálculo actualizado --- */}
+                        {calculatedInstallment > 0 && <p className="calculated-payment">Pago por Período Estimado: <strong>${calculatedInstallment.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</strong></p>}
                     </div>
                 )}
                 <button type="submit" disabled={loading || !isFormValid()}>{loading ? 'Registrando...' : 'Registrar Venta'}</button>

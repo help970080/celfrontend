@@ -1,3 +1,5 @@
+// Archivo: src/components/ClientAdminPanel.jsx
+
 import React, { useState, useEffect, useCallback } from 'react';
 import ClientForm from './ClientForm';
 import ClientList from './ClientList';
@@ -5,7 +7,7 @@ import { toast } from 'react-toastify';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function ClientAdminPanel({ authenticatedFetch, onDeleteClient, userRole }) {
+function ClientAdminPanel({ authenticatedFetch, userRole }) { // onDeleteClient no se usa, se puede quitar
     const [clients, setClients] = useState([]);
     const [loadingClients, setLoadingClients] = useState(true);
     const [errorClients, setErrorClients] = useState(null);
@@ -17,29 +19,20 @@ function ClientAdminPanel({ authenticatedFetch, onDeleteClient, userRole }) {
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
 
-    const hasPermission = (roles) => {
-        let permissionGranted = false;
-        if (!userRole) {
-            permissionGranted = false;
-        } else if (Array.isArray(roles)) {
-            permissionGranted = roles.includes(userRole);
-        } else { 
-            permissionGranted = userRole === roles;
-        }
-        return permissionGranted;
-    };
+    // --- INICIO DE LA MODIFICACIÓN ---
+    const [showForm, setShowForm] = useState(false); // Estado para controlar la visibilidad del formulario
+    // --- FIN DE LA MODIFICACIÓN ---
 
+    const hasPermission = (roles) => {
+        if (!userRole) return false;
+        return Array.isArray(roles) ? roles.includes(userRole) : userRole === roles;
+    };
 
     const fetchClients = useCallback(async () => {
         setLoadingClients(true);
         setErrorClients(null);
         try {
-            let url = `${API_BASE_URL}/api/clients`;
-            if (searchTerm) {
-                url += `?search=${encodeURIComponent(searchTerm)}`;
-            }
-            url += `${searchTerm ? '&' : '?'}page=${currentPage}&limit=${itemsPerPage}`;
-
+            let url = `${API_BASE_URL}/api/clients?search=${encodeURIComponent(searchTerm)}&page=${currentPage}&limit=${itemsPerPage}`;
             const response = await authenticatedFetch(url);
             if (!response.ok) {
                 const errorData = await response.json();
@@ -61,20 +54,53 @@ function ClientAdminPanel({ authenticatedFetch, onDeleteClient, userRole }) {
     useEffect(() => {
         fetchClients();
     }, [fetchClients]);
+    
+    // --- INICIO DE LA MODIFICACIÓN ---
+    // Efecto para mostrar el formulario cuando se selecciona un cliente para editar
+    useEffect(() => {
+        if (clientToEdit) {
+            setShowForm(true);
+        }
+    }, [clientToEdit]);
+
+    // Nuevo manejador para cuando se agrega o actualiza un cliente
+    const handleFormSuccess = () => {
+        fetchClients(); // Refresca la lista
+        setShowForm(false); // Oculta el formulario
+        setClientToEdit(null); // Limpia el estado de edición
+    };
+
+    // Nuevo manejador para el botón de cancelar en el formulario
+    const handleFormCancel = () => {
+        setShowForm(false);
+        setClientToEdit(null);
+    };
+
+    // Función para eliminar cliente
+    const handleDeleteClient = async (clientId) => {
+        if (!window.confirm('¿Estás seguro de que quieres eliminar este cliente? Esta acción también puede afectar a las ventas asociadas.')) {
+            return;
+        }
+        try {
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/clients/${clientId}`, { method: 'DELETE' });
+            if (!response.ok) throw new Error('Error al eliminar cliente');
+            toast.success('Cliente eliminado con éxito');
+            fetchClients();
+        } catch(err) {
+            toast.error(err.message);
+        }
+    };
+    // --- FIN DE LA MODIFICACIÓN ---
 
     const handleExportExcel = async () => {
+        // ... (el código de exportar no cambia)
         if (!hasPermission(['super_admin', 'regular_admin', 'sales_admin'])) {
             toast.error('No tienes permisos para exportar clientes.');
             return;
         }
-
         try {
             toast.info('Generando archivo Excel de clientes...');
-            const response = await authenticatedFetch(`${API_BASE_URL}/api/clients/export-excel`, {
-                method: 'GET',
-                headers: {},
-            });
-
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/clients/export-excel`, { method: 'GET', headers: {} });
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `Error HTTP: ${response.status}`);
@@ -98,18 +124,29 @@ function ClientAdminPanel({ authenticatedFetch, onDeleteClient, userRole }) {
     return (
         <section className="clients-section">
             <h2>Gestión de Clientes</h2>
-            {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
+
+            {/* --- INICIO DE LA MODIFICACIÓN --- */}
+            <div className="panel-actions" style={{ marginBottom: '20px' }}>
+                <button onClick={() => { setShowForm(!showForm); if (showForm) setClientToEdit(null); }} className="action-button primary-button">
+                    {showForm ? 'Ocultar Formulario' : '+ Agregar Nuevo Cliente'}
+                </button>
+            </div>
+
+            {/* El formulario ahora se renderiza condicionalmente */}
+            {showForm && hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
                 <ClientForm
-                    onClientAdded={fetchClients}
+                    onClientAdded={handleFormSuccess}
                     clientToEdit={clientToEdit}
-                    setClientToEdit={setClientToEdit}
+                    setClientToEdit={setClientToEdit} // setClientToEdit se pasa para que el formulario se pueda auto-limpiar
+                    onCancel={handleFormCancel} // Prop para cancelar
                 />
             )}
+            {/* --- FIN DE LA MODIFICACIÓN --- */}
 
             <div className="admin-controls">
                 <div className="control-group">
                     <label htmlFor="searchClient">Buscar Cliente:</label>
-                    <input type="text" id="searchClient" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder="Buscar por nombre, apellido, teléfono, email, ID..."/>
+                    <input type="text" id="searchClient" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder="Buscar por nombre, apellido, teléfono..."/>
                 </div>
                  <div className="control-group">
                     <label htmlFor="itemsPerPage">Ítems por página:</label>
@@ -132,13 +169,13 @@ function ClientAdminPanel({ authenticatedFetch, onDeleteClient, userRole }) {
             {loadingClients ? (
                 <p>Cargando clientes...</p>
             ) : errorClients ? (
-                <p style={{ color: 'red', fontWeight: 'bold' }}>Error: {errorClients}</p>
+                <p className="error-message">{errorClients}</p>
             ) : (
                 <>
                     <ClientList
                         clients={clients}
                         onEditClient={setClientToEdit}
-                        onDeleteClient={onDeleteClient}
+                        onDeleteClient={handleDeleteClient} // Se usa la nueva función
                         userRole={userRole}
                     />
                     {totalPages > 1 && (

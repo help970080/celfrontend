@@ -1,3 +1,5 @@
+// Archivo: src/components/SaleList.jsx
+
 import React, { useState } from 'react';
 import ReceiptViewer from './ReceiptViewer';
 import { toast } from 'react-toastify';
@@ -40,6 +42,14 @@ function SaleList({ sales, onDeleteSale, userRole, collectors, onSaleAssigned, a
     const handleOpenReceiptModal = (saleId) => { setSelectedSaleIdForReceipt(saleId); setShowReceiptModal(true); };
     const handleCloseReceiptModal = () => { setSelectedSaleIdForReceipt(null); setShowReceiptModal(false); };
 
+    // --- INICIO DE LA MODIFICACIÓN ---
+    // Helper para traducir la frecuencia
+    const formatFrequency = (freq) => {
+        const map = { daily: 'Diario', weekly: 'Semanal', fortnightly: 'Quincenal', monthly: 'Mensual' };
+        return map[freq] || freq;
+    };
+    // --- FIN DE LA MODIFICACIÓN ---
+
     if (!sales || sales.length === 0) {
         return <p>No hay ventas registradas que coincidan con la búsqueda.</p>;
     }
@@ -49,8 +59,9 @@ function SaleList({ sales, onDeleteSale, userRole, collectors, onSaleAssigned, a
             <h2>Ventas Registradas</h2>
             <table className="sale-table">
                 <thead>
+                    {/* --- Cabeceras de tabla actualizadas --- */}
                     <tr>
-                        <th>ID</th><th>Cliente</th><th>Producto(s)</th><th>Monto</th><th>Tipo</th><th>Enganche</th><th>Saldo</th><th>Pago Sem.</th><th>Pagos Rest.</th><th>Estado</th><th>Asignado A</th><th>Acciones</th>
+                        <th>ID</th><th>Cliente</th><th>Producto(s)</th><th>Monto</th><th>Tipo</th><th>Enganche</th><th>Saldo</th><th>Plan de Pago</th><th>Pagos Rest.</th><th>Estado</th><th>Asignado A</th><th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -62,7 +73,16 @@ function SaleList({ sales, onDeleteSale, userRole, collectors, onSaleAssigned, a
 
                         return (
                             <tr key={sale.id}>
-                                <td>{sale.id}</td><td>{clientName}</td><td>{productListText}</td><td>${(sale.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td><td>{sale.isCredit ? 'Crédito' : 'Contado'}</td><td>${(sale.downPayment || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td><td className={(sale.balanceDue || 0) > 0 ? 'highlight-balance' : ''}>${(sale.balanceDue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td><td>{sale.isCredit ? `$${(sale.weeklyPaymentAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : 'N/A'}</td><td>{sale.isCredit ? (remainingPayments >= 0 ? remainingPayments : 'N/A') : 'N/A'}</td><td><span className={`status-badge status-${sale.status || 'unknown'}`}>{`${sale.status || 'Desconocido'}`.replace('_', ' ')}</span></td>
+                                <td>{sale.id}</td><td>{clientName}</td><td>{productListText}</td><td>${(sale.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td><td>{sale.isCredit ? 'Crédito' : 'Contado'}</td><td>${(sale.downPayment || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td><td className={(sale.balanceDue || 0) > 0 ? 'highlight-balance' : ''}>${(sale.balanceDue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                
+                                {/* --- Celda de Plan de Pago actualizada --- */}
+                                <td>
+                                    {sale.isCredit 
+                                        ? `$${(sale.weeklyPaymentAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} (${formatFrequency(sale.paymentFrequency)})` 
+                                        : 'N/A'}
+                                </td>
+
+                                <td>{sale.isCredit ? (remainingPayments >= 0 ? remainingPayments : 'N/A') : 'N/A'}</td><td><span className={`status-badge status-${sale.status || 'unknown'}`}>{`${sale.status || 'Desconocido'}`.replace('_', ' ')}</span></td>
                                 <td>
                                     {sale.isCredit && hasPermission(['super_admin', 'regular_admin', 'sales_admin']) ? (
                                         <div className="assignment-cell">
