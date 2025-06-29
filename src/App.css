@@ -1594,7 +1594,7 @@ h2 {
         padding: 6px 10px;
         font-size: 0.8em;
     }
-    .payment-form-row { /* Este estilo ahora es solo para el modal PaymentManager antiguo si se sigue usando */
+    .payment-form-row { /* Este estilo ahora es solo para el modal PaymentManager antiguo si se sigue usando en algún lugar */
         max-width: 90%;
     }
 }
@@ -1968,3 +1968,196 @@ un error en la visualizacion de la tabla. */
     color: #333;
 }
 /* --- FIN: ESTILOS PARA EL DASHBOARD VISUAL --- */
+/* Estilo para que el ID de la venta parezca un enlace clickeable */
+.id-link-button {
+  background: none;
+  border: none;
+  color: #007bff; /* Color azul de enlace */
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit; /* Hereda el tamaño de fuente de la tabla */
+  font-family: inherit; /* Hereda la fuente de la tabla */
+}
+
+.id-link-button:hover {
+  color: #0056b3; /* Un azul más oscuro al pasar el mouse */
+}
+/* --- INICIO: ESTILOS PARA EL MODAL DEL RECIBO (VENTANA EMERGENTE) --- */
+
+.receipt-modal-overlay {
+  position: fixed; /* Se posiciona sobre toda la ventana */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.65); /* Fondo oscuro semitransparente */
+  display: flex;
+  justify-content: center; /* Centrado horizontal */
+  align-items: center;    /* Centrado vertical */
+  z-index: 1050; /* Se asegura de que esté por encima de otros elementos */
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.receipt-modal-content {
+  background-color: #fff;
+  color: #333; /* Asegura que el texto dentro sea legible */
+  padding: 25px 30px;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  max-width: 500px; /* Ancho máximo del recibo */
+  width: 100%;
+  max-height: 90vh; /* Altura máxima para que no ocupe toda la pantalla */
+  overflow-y: auto; /* Permite scroll si el contenido es muy largo */
+  position: relative; /* Necesario para el botón de cerrar */
+}
+
+/* --- FIN: ESTILOS PARA EL MODAL DEL RECIBO --- */
+/* --- INICIO: ESTILOS PARA EL MODAL DEL RECIBO (VENTANA EMERGENTE) --- */
+/* --- FIN: ESTILOS PARA EL MODAL DEL RECIBO --- */
+/* Estilos para el panel de administración de usuarios */
+/* Controles de filtro para la vista de auditoría */
+.admin-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.admin-controls .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.admin-controls label {
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #333;
+}
+
+.admin-controls input[type="date"],
+.admin-controls input[type="text"],
+.admin-controls select {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 0.95em;
+}
+
+.admin-controls button {
+    padding: 8px 15px;
+    /* Estilos adicionales ya definidos en .action-button */
+}
+
+.panel-actions {
+    margin-bottom: 20px;
+}
+
+.action-button.primary-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+.action-button.primary-button:hover {
+    background-color: #0056b3;
+}
+
+/* Estilos adicionales para los botones de acción en la auditoría */
+.admin-controls .action-button.primary-button {
+    background-color: #28a745; /* Verde para filtrar */
+}
+.admin-controls .action-button.primary-button:hover {
+    background-color: #218838;
+}
+
+.admin-controls .action-button {
+    background-color: #6c757d; /* Gris para limpiar */
+    color: white;
+}
+.admin-controls .action-button:hover {
+    background-color: #5a6268;
+}
+/* Estilo para que el ID de la venta parezca un enlace clickeable */
+.id-link-button {
+  background: none;
+  border: none;
+  color: #007bff; /* Color azul de enlace */
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit; /* Hereda el tamaño de fuente de la tabla */
+  font-family: inherit; /* Hereda la fuente de la tabla */
+}
+
+.id-link-button:hover {
+  color: #0056b3; /* Un azul más oscuro al pasar el mouse */
+}
+
+/* Estilos para el recibo modal */
+.receipt-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.receipt-modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #888;
+}
+
+.close-button:hover {
+    color: #000;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    .receipt-modal-overlay {
+        position: static;
+        background: none;
+        padding: 0;
+    }
+    .receipt-modal-content {
+        box-shadow: none;
+        max-width: 100%;
+        max-height: none;
+        border: none;
+    }
+}
