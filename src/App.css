@@ -2189,3 +2189,45 @@ un error en la visualizacion de la tabla. */
 }
 
 /* --- FIN: Estilos para nuevos botones en Panel de Productos --- */
+/* --- INICIO: ESTILOS DEFINITIVOS PARA IMPRESIÓN DE RECIBOS --- */
+
+@media print {
+  /* Oculta todo el cuerpo de la página por defecto */
+  body > * {
+    display: none !important;
+  }
+
+  /* Muestra únicamente el contenedor del modal y su contenido */
+  #modal-root, #modal-root * {
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  /* Reinicia los estilos del overlay del modal para que sea invisible */
+  .receipt-modal-overlay {
+    position: static;
+    background-color: transparent !important;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Asegura que el contenido del recibo ocupe todo el espacio de impresión */
+  .receipt-modal-content {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0;
+    padding: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    /* Ajusta el color del texto para que siempre sea negro en la impresión */
+    color: #000 !important; 
+  }
+
+  /* Oculta los elementos que no deben salir en la impresión, como los botones */
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* --- FIN: ESTILOS DEFINITIVOS PARA IMPRESIÓN DE RECIBOS --- */
