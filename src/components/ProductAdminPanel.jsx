@@ -21,16 +21,13 @@ function ProductAdminPanel({ authenticatedFetch, userRole }) {
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
 
-    // --- INICIO DE LA MODIFICACIÓN ---
-    const [showForm, setShowForm] = useState(false); // Estado para controlar la visibilidad del formulario
-    // --- FIN DE LA MODIFICACIÓN ---
+    const [showForm, setShowForm] = useState(false);
 
     const hasPermission = (roles) => {
         if (!userRole) return false;
         return Array.isArray(roles) ? roles.includes(userRole) : userRole === roles;
     };
     
-    // ... (La función calculateCreditDetails no cambia) ...
     const calculateCreditDetails = (price) => {
         const downPaymentPercentage = 0.10;
         const numberOfWeeks = 17;
@@ -74,7 +71,6 @@ function ProductAdminPanel({ authenticatedFetch, userRole }) {
     }, [fetchProducts]);
 
     const handleDeleteProduct = async (productId) => {
-        // ... (la lógica de eliminar no cambia) ...
         if (!window.confirm('¿Estás seguro de que quieres eliminar este producto? Esta acción no se puede deshacer.')) return;
         try {
             const response = await authenticatedFetch(`${API_BASE_URL}/api/products/${productId}`, { method: 'DELETE' });
@@ -90,32 +86,67 @@ function ProductAdminPanel({ authenticatedFetch, userRole }) {
         }
     };
     
-    // --- INICIO DE LA MODIFICACIÓN ---
-    // Efecto para mostrar el formulario cuando se selecciona un producto para editar
     useEffect(() => {
         if (productToEdit) {
             setShowForm(true);
         }
     }, [productToEdit]);
     
-    // Nuevo manejador para cuando se agrega o actualiza un producto
     const handleFormSuccess = () => {
-        fetchProducts(); // Refresca la lista
-        setShowForm(false); // Oculta el formulario
-        setProductToEdit(null); // Limpia el estado de edición
+        fetchProducts();
+        setShowForm(false);
+        setProductToEdit(null);
     };
-    // --- FIN DE LA MODIFICACIÓN ---
 
-    const handleExportExcel = async () => { /* ... (sin cambios) ... */ };
-    const getMediaType = (url) => { /* ... (sin cambios, pero recuerda que tiene el bug de la URL de youtube) ... */ };
+    const handleExportExcel = async () => {
+        if (!hasPermission(['super_admin', 'regular_admin', 'inventory_admin'])) {
+            toast.error('No tienes permisos para exportar el inventario.');
+            return;
+        }
+        try {
+            toast.info('Generando reporte de inventario en Excel...');
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/products/export-excel`);
 
-    // Para obtener las categorías únicas para el filtro
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Reporte_Inventario.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success('Reporte de inventario exportado con éxito!');
+        } catch (err) {
+            console.error("Error al exportar inventario a Excel:", err);
+            toast.error(`Error al exportar: ${err.message || "Error desconocido."}`);
+        }
+    };
+
+    const getMediaType = (url) => { 
+        if (!url) return 'none';
+        if (url.includes('youtube.com/') || url.includes('youtu.be/')) {
+            const videoIdMatch = url.match(/(?:v=|\/|embed\/|youtu.be\/)([a-zA-Z0-9_-]{11})/);
+            const videoId = videoIdMatch ? videoIdMatch[1] : null;
+            return { type: 'youtube', id: videoId };
+        }
+        if (url.includes('vimeo.com/')) {
+            const videoId = url.split('/').pop();
+            return { type: 'vimeo', id: videoId.split('?')[0] };
+        }
+        return { type: 'image' };
+    };
+
     const [allCategories, setAllCategories] = useState([]);
     useEffect(() => {
         const fetchAllCategories = async () => {
             try {
-                // Hacemos una petición para obtener todos los productos sin paginación, solo para extraer las categorías
                 const response = await authenticatedFetch(`${API_BASE_URL}/api/products?limit=9999`);
+                if (!response.ok) return;
                 const data = await response.json();
                 const uniqueCategories = [...new Set(data.products.map(p => p.category).filter(Boolean))];
                 setAllCategories(uniqueCategories);
@@ -131,16 +162,28 @@ function ProductAdminPanel({ authenticatedFetch, userRole }) {
         <section className="products-section">
             <h2>Gestión de Productos</h2>
 
-            {/* --- INICIO DE LA MODIFICACIÓN --- */}
             {hasPermission(['super_admin', 'regular_admin', 'inventory_admin']) && (
-                <div className="panel-actions" style={{ marginBottom: '20px' }}>
-                    <button onClick={() => { setShowForm(!showForm); if (showForm) setProductToEdit(null); }} className="action-button primary-button">
+                // --- INICIO DE LA MODIFICACIÓN: BOTONES DE ACCIÓN PRINCIPALES ---
+                <div className="panel-actions" style={{ marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    <button 
+                        onClick={() => { setShowForm(!showForm); if (showForm) setProductToEdit(null); }} 
+                        className="action-button primary-button"
+                    >
                         {showForm ? 'Ocultar Formulario' : '+ Agregar Nuevo Producto'}
                     </button>
+                    
+                    <a 
+                        href="https://shopping.google.com/" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="action-button google-shopping-button"
+                    >
+                        Buscar en Google Shopping
+                    </a>
                 </div>
+                // --- FIN DE LA MODIFICACIÓN ---
             )}
 
-            {/* El formulario ahora se renderiza condicionalmente */}
             {showForm && hasPermission(['super_admin', 'regular_admin', 'inventory_admin']) && (
                 <ProductForm
                     onProductAdded={handleFormSuccess}
@@ -148,11 +191,8 @@ function ProductAdminPanel({ authenticatedFetch, userRole }) {
                     setProductToEdit={setProductToEdit}
                 />
             )}
-            {/* --- FIN DE LA MODIFICACIÓN --- */}
             
-
             <div className="admin-controls">
-                {/* Controles de búsqueda, orden, categoría y exportación (sin cambios) */}
                  <div className="control-group">
                     <label>Buscar:</label>
                     <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Buscar por nombre..."/>
@@ -179,6 +219,18 @@ function ProductAdminPanel({ authenticatedFetch, userRole }) {
                         {allCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
                 </div>
+                
+                {/* --- INICIO DE LA MODIFICACIÓN: BOTÓN EXPORTAR A EXCEL --- */}
+                {hasPermission(['super_admin', 'regular_admin', 'inventory_admin']) && (
+                    <div className="control-group">
+                        <label>&nbsp;</label> {/* Espacio para alinear con los otros controles */}
+                        <button onClick={handleExportExcel} className="action-button export-button">
+                            Exportar a Excel
+                        </button>
+                    </div>
+                )}
+                {/* --- FIN DE LA MODIFICACIÓN --- */}
+
             </div>
 
             {loadingProducts ? (
@@ -195,6 +247,29 @@ function ProductAdminPanel({ authenticatedFetch, userRole }) {
                                 const { downPayment, weeklyPayment } = calculateCreditDetails(product.price);
                                 return (
                                     <div key={product.id} className="product-card">
+                                        {mediaType.type === 'youtube' && mediaType.id ? (
+                                            <iframe
+                                                width="100%"
+                                                height="200"
+                                                src={`https://www.youtube.com/embed/${mediaType.id}`}
+                                                frameBorder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                                title={product.name}
+                                            ></iframe>
+                                        ) : mediaType.type === 'vimeo' && mediaType.id ? (
+                                            <iframe
+                                                src={`https://player.vimeo.com/video/${mediaType.id}`}
+                                                width="100%"
+                                                height="200"
+                                                frameBorder="0"
+                                                allow="autoplay; fullscreen; picture-in-picture"
+                                                allowFullScreen
+                                                title={product.name}
+                                            ></iframe>
+                                        ) : (
+                                            <img src={firstMedia} alt={product.name} />
+                                        )}
                                         <h2>{product.name}</h2>
                                         <p>{product.description}</p>
                                         <p>Precio: ${product.price ? product.price.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A'}</p>

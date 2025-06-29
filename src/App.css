@@ -2161,3 +2161,31 @@ un error en la visualizacion de la tabla. */
         border: none;
     }
 }
+/* --- INICIO: Estilos para nuevos botones en Panel de Productos --- */
+
+/* Estilo para el botón de Google Shopping */
+.google-shopping-button {
+  background-color: #34A853; /* Color verde de Google */
+  color: white;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.google-shopping-button:hover {
+  background-color: #2c8f45;
+}
+
+/* Estilo para el botón de exportar a Excel */
+.export-button {
+  background-color: #1D6F42; /* Color verde oscuro de Excel */
+  color: white;
+  border: none;
+}
+
+.export-button:hover {
+  background-color: #165934;
+}
+
+/* --- FIN: Estilos para nuevos botones en Panel de Productos --- */
