@@ -1,62 +1,81 @@
-// Archivo: src/components/ReportsDashboard.jsx (Versión Final con Carga Bajo Demanda)
+// Archivo: src/components/ReportsDashboard.jsx (Versión con API_BASE_URL corregido)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import dayjs from 'dayjs';
-// ... (otras importaciones no cambian)
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TIMEZONE = "America/Mexico_City";
+
+// --- LÍNEA FALTANTE QUE CAUSA EL ERROR, AHORA AÑADIDA ---
+const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
 function ReportsDashboard({ authenticatedFetch }) {
-    // --- ESTADOS PARA CADA SECCIÓN ---
+    // Estados para cada sección para carga individual
     const [summary, setSummary] = useState(null);
     const [loadingSummary, setLoadingSummary] = useState(true);
+    const [errorSummary, setErrorSummary] = useState(null);
 
     const [clientStatus, setClientStatus] = useState(null);
     const [loadingClientStatus, setLoadingClientStatus] = useState(true);
-
-    const [pendingCredits, setPendingCredits] = useState(null); // Inicia como null para saber si ya se cargó
+    const [errorClientStatus, setErrorClientStatus] = useState(null);
+    
+    const [pendingCredits, setPendingCredits] = useState(null);
     const [loadingPendingCredits, setLoadingPendingCredits] = useState(false);
+    const [errorPendingCredits, setErrorPendingCredits] = useState(null);
 
-    // ... (El resto de los estados para otros reportes no cambian)
+    // (Puedes añadir estados de carga y error para los otros reportes si lo deseas)
 
-    // --- FUNCIONES DE FETCH SEPARADAS ---
-
+    // --- Funciones de Fetch ---
     const fetchSummary = useCallback(async () => {
         setLoadingSummary(true);
+        setErrorSummary(null);
         try {
             const res = await authenticatedFetch(`${API_BASE_URL}/api/reports/summary`);
-            if (!res.ok) throw new Error('Error al cargar resumen');
+            if (!res.ok) throw new Error('No se pudo cargar el resumen.');
             setSummary(await res.json());
-        } catch (err) { console.error(err); } 
-        finally { setLoadingSummary(false); }
+        } catch (err) { 
+            setErrorSummary(err.message);
+        } finally { 
+            setLoadingSummary(false); 
+        }
     }, [authenticatedFetch]);
 
     const fetchClientStatusDashboard = useCallback(async () => {
         setLoadingClientStatus(true);
+        setErrorClientStatus(null);
         try {
             const res = await authenticatedFetch(`${API_BASE_URL}/api/reports/client-status-dashboard`);
-            if (!res.ok) throw new Error('Error al cargar estado de clientes');
+            if (!res.ok) throw new Error('No se pudo cargar el estado de clientes.');
             setClientStatus(await res.json());
-        } catch (err) { console.error(err); }
-        finally { setLoadingClientStatus(false); }
+        } catch (err) { 
+            setErrorClientStatus(err.message);
+        } finally { 
+            setLoadingClientStatus(false); 
+        }
     }, [authenticatedFetch]);
 
     const fetchPendingCredits = useCallback(async () => {
         setLoadingPendingCredits(true);
+        setErrorPendingCredits(null);
         try {
             const res = await authenticatedFetch(`${API_BASE_URL}/api/reports/pending-credits`);
-            if (!res.ok) throw new Error('Error al cargar créditos pendientes');
+            if (!res.ok) throw new Error('No se pudieron cargar los créditos pendientes.');
             setPendingCredits(await res.json());
-        } catch (err) { console.error(err); }
-        finally { setLoadingPendingCredits(false); }
+        } catch (err) { 
+            setErrorPendingCredits(err.message);
+        } finally { 
+            setLoadingPendingCredits(false); 
+        }
     }, [authenticatedFetch]);
-
-    // ... (El resto de las funciones de fetch para otros reportes no cambian)
-
-
-    // --- EFECTO DE CARGA INICIAL (SOLO LO ESENCIAL) ---
+    
+    // --- Carga inicial solo de los datos principales ---
     useEffect(() => {
         fetchSummary();
         fetchClientStatusDashboard();
-        // Ya no se llaman todos los demás fetchers aquí
     }, [fetchSummary, fetchClientStatusDashboard]);
 
 
@@ -67,12 +86,19 @@ function ReportsDashboard({ authenticatedFetch }) {
     return (
         <div className="reports-dashboard">
             <h2>Resumen Financiero</h2>
-            {summary ? ( <div className="summary-cards">{/* ...jsx de las tarjetas de resumen... */}</div> ) : <p>No se pudo cargar el resumen.</p>}
+            {errorSummary ? <p className="error-message">{errorSummary}</p> : summary ? (
+                <div className="summary-cards">
+                    {/* ... JSX de tarjetas de resumen ... */}
+                </div>
+            ) : <p>No hay datos de resumen.</p>}
 
             <h2 style={{ marginTop: '40px' }}>Estado de Clientes por Cobranza</h2>
-            {clientStatus ? ( <div className="client-status-cards">{/* ...jsx de las tarjetas de estado... */}</div> ) : <p>No se pudo cargar el estado de clientes.</p>}
+            {errorClientStatus ? <p className="error-message">{errorClientStatus}</p> : clientStatus ? (
+                <div className="client-status-cards">
+                    {/* ... JSX de tarjetas de estado de clientes ... */}
+                </div>
+            ) : <p>No hay datos de estado de clientes.</p>}
 
-            {/* --- SECCIÓN DE CRÉDITOS PENDIENTES CON CARGA BAJO DEMANDA --- */}
             <h2 style={{ marginTop: '40px' }}>Créditos con Saldo Pendiente</h2>
             <div className="panel-actions" style={{marginBottom: '20px'}}>
                  <button onClick={fetchPendingCredits} disabled={loadingPendingCredits} className="action-button primary-button">
@@ -81,16 +107,39 @@ function ReportsDashboard({ authenticatedFetch }) {
             </div>
            
             {loadingPendingCredits && <p>Cargando créditos...</p>}
+            {errorPendingCredits && <p className="error-message">{errorPendingCredits}</p>}
             
             {pendingCredits && (
                 pendingCredits.length === 0 ? <p>No hay créditos pendientes de cobro.</p> : (
                     <table className="pending-credits-table">
-                        {/* ... jsx de la tabla de créditos pendientes ... */}
+                        <thead>
+                            <tr>
+                                <th>ID Venta</th>
+                                <th>Cliente</th>
+                                <th>Producto(s)</th>
+                                <th>Saldo Actual</th>
+                                <th>Pagos Realizados</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {pendingCredits.map(sale => {
+                                const paymentsMade = sale.paymentsCount ? parseInt(sale.paymentsCount, 10) : 0;
+                                return (
+                                    <tr key={sale.id}>
+                                        <td>{sale.id}</td>
+                                        <td>{sale.client ? `${sale.client.name} ${sale.client.lastName}` : 'N/A'}</td>
+                                        <td>{(sale.saleItems || []).map(item => item.product?.name).join(', ')}</td>
+                                        <td className="highlight-balance">${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                        <td>{paymentsMade}</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
                     </table>
                 )
             )}
 
-            {/* ... (El resto de las secciones de reportes seguirían un patrón similar con botones para generar) ... */}
+            {/* Aquí irían las otras secciones de reportes (Cierre de caja, etc.) con sus propios botones de "Generar" */}
         </div>
     );
 }
