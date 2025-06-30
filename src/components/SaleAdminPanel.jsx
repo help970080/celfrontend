@@ -31,6 +31,9 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         return Array.isArray(roles) ? roles.includes(userRole) : userRole === roles;
     };
 
+    // --- CORRECCIÓN CLAVE: USO DE useCallback ---
+    // Es VITAL envolver esta función en useCallback para evitar que se
+    // cree una nueva instancia en cada render y cause un bucle infinito.
     const fetchSales = useCallback(async () => {
         setLoadingSales(true);
         setErrorSales(null);
@@ -55,7 +58,7 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         } finally {
             setLoadingSales(false);
         }
-    }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage]);
+    }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage]); // Las dependencias deben ser correctas
 
     const fetchSupportingData = useCallback(async () => {
         try {
@@ -75,6 +78,7 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         }
     }, [authenticatedFetch]);
 
+    // Este useEffect depende de la función memoizada de arriba y se ejecuta solo cuando debe.
     useEffect(() => {
         fetchSales();
     }, [fetchSales]);
@@ -106,7 +110,6 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         }
     };
     
-    // --- INICIO: FUNCIÓN PARA EXPORTAR VENTAS A EXCEL ---
     const handleExportSalesExcel = async () => {
         if (!hasPermission(['super_admin', 'regular_admin', 'sales_admin', 'viewer_reports'])) {
             toast.error('No tienes permisos para exportar ventas.');
@@ -134,7 +137,6 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
             toast.error(`Error al exportar: ${err.message || "Error desconocido."}`);
         }
     };
-    // --- FIN: FUNCIÓN PARA EXPORTAR VENTAS A EXCEL ---
 
     return (
         <section className="sales-section">
@@ -168,14 +170,12 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
                     </select>
                 </div>
                 
-                {/* --- INICIO: BOTÓN PARA EXPORTAR VENTAS --- */}
                 <div className="control-group">
-                    <label> </label> {/* Espacio para alinear */}
+                    <label> </label>
                     <button onClick={handleExportSalesExcel} className="action-button export-button">
                         Exportar a Excel
                     </button>
                 </div>
-                {/* --- FIN: BOTÓN PARA EXPORTAR VENTAS --- */}
             </div>
 
             {loadingSales ? <p>Cargando...</p> : errorSales ? <p className="error-message">{errorSales}</p> : (
