@@ -78,14 +78,11 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
     }, [fetchSales]);
 
     useEffect(() => {
-        // Cargar solo una vez o cuando se abre el formulario
         if (showSaleForm) {
             fetchSupportingData();
         }
     }, [showSaleForm, fetchSupportingData]);
 
-    // --- INICIO DE LA CORRECCIÓN ---
-    // Función robusta para eliminar una venta
     const onDeleteSale = async (id) => {
         if (!window.confirm('¿Estás seguro de que quieres eliminar esta venta? Esta acción es irreversible y restaurará el stock de los productos vendidos.')) {
             return;
@@ -97,7 +94,7 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
             
             if (response.status === 204) {
                 toast.success('¡Venta eliminada con éxito!');
-                fetchSales(); // Refrescar la lista de ventas
+                fetchSales();
             } else {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Error al eliminar la venta.');
@@ -106,7 +103,38 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
             toast.error(`Error al eliminar: ${err.message}`);
         }
     };
-    // --- FIN DE LA CORRECCIÓN ---
+
+    // --- INICIO DE LA MODIFICACIÓN ---
+    // Nueva función para manejar la exportación a Excel
+    const handleExportSalesExcel = async () => {
+        if (!hasPermission(['super_admin', 'regular_admin', 'sales_admin', 'viewer_reports'])) {
+            toast.error('No tienes permisos para exportar ventas.');
+            return;
+        }
+        try {
+            toast.info('Generando reporte de ventas en Excel...');
+            // La URL apunta a la nueva ruta que creamos en el backend
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/sales/export-excel`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al generar el reporte.');
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Reporte_Ventas.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success('Reporte de ventas exportado con éxito!');
+        } catch (err) {
+            console.error("Error al exportar ventas:", err);
+            toast.error(`Error al exportar: ${err.message || "Error desconocido."}`);
+        }
+    };
+    // --- FIN DE LA MODIFICACIÓN ---
 
     return (
         <section className="sales-section">
@@ -137,6 +165,16 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
                         <option value="10">10</option><option value="20">20</option><option value="50">50</option>
                     </select>
                 </div>
+                
+                {/* --- INICIO DE LA MODIFICACIÓN --- */}
+                {/* Botón para activar la exportación a Excel */}
+                <div className="control-group">
+                     <button onClick={handleExportSalesExcel} className="action-button export-button">
+                        Exportar a Excel
+                    </button>
+                </div>
+                {/* --- FIN DE LA MODIFICACIÓN --- */}
+
             </div>
             {loadingSales ? <p>Cargando...</p> : errorSales ? <p className="error-message">{errorSales}</p> : (
                 <>
