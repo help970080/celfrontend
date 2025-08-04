@@ -15,8 +15,12 @@ function PublicCatalog() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
 
-    // --- MODIFICACIÓN: URL actualizada con el enlace de YouTube Shorts ---
-    const PROMOTIONAL_VIDEO_URL = "https://youtube.com/shorts/edfanYFXfE4?feature=share";
+    // --- MODIFICACIÓN CLAVE: Ahora es un ARREGLO de URLs promocionales ---
+    const PROMOTIONAL_VIDEO_URLS = [
+        "https://youtube.com/shorts/edfanYFXfE4?feature=share", // Primer video (el Short)
+        "https://youtu.be/2iFqF30g8s8", // Segundo video
+        "https://youtu.be/1HZvoIGjL4Q"  // Tercer video
+    ];
 
     const calculateCreditDetails = (price) => {
         const downPaymentPercentage = 0.10;
@@ -67,8 +71,8 @@ function PublicCatalog() {
 
     const getMediaType = (url) => {
         if (!url) return 'none';
-        if (url.includes('youtube.com/watch') || url.includes('youtu.be/') || url.includes('youtube.com/shorts')) { // Added youtube.com/shorts
-            const videoIdMatch = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/); // Adjusted regex
+        if (url.includes('youtube.com/watch') || url.includes('youtu.be/') || url.includes('youtube.com/shorts')) {
+            const videoIdMatch = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
             const videoId = videoIdMatch ? videoIdMatch[1] : null;
             return { type: 'youtube', id: videoId };
         }
@@ -104,51 +108,57 @@ function PublicCatalog() {
 
     const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
 
-    const promotionalMediaDetails = getMediaType(PROMOTIONAL_VIDEO_URL);
-
     return (
         <div className="public-catalog">
             <h1>Nuestro Catálogo de Celulares</h1>
 
-            {PROMOTIONAL_VIDEO_URL && (
-                <div className="promotional-media-container" style={{ margin: '30px auto', maxWidth: '800px' }}>
-                    {promotionalMediaDetails.type === 'youtube' && promotionalMediaDetails.id ? (
-                        <iframe
-                            width="100%"
-                            height="450"
-                            src={`https://www.youtube.com/embed/${promotionalMediaDetails.id}?autoplay=0&mute=0&loop=0`}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            title="Video Promocional"
-                        ></iframe>
-                    ) : promotionalMediaDetails.type === 'vimeo' && promotionalMediaDetails.id ? (
-                        <iframe
-                            src={`https://player.vimeo.com/video/${promotionalMediaDetails.id}?autoplay=0&loop=0&byline=0&portrait=0`}
-                            width="100%"
-                            height="450"
-                            frameBorder="0"
-                            allow="autoplay; fullscreen; picture-in-picture"
-                            allowFullScreen
-                            title="Video Promocional"
-                        ></iframe>
-                    ) : promotionalMediaDetails.type === 'vidnoz' && promotionalMediaDetails.id ? (
-                        <iframe
-                            src={`https://share.vidnoz.com/embed/${promotionalMediaDetails.id}`}
-                            width="100%"
-                            height="450"
-                            frameBorder="0"
-                            allow="autoplay; fullscreen; picture-in-picture"
-                            allowFullScreen
-                            title="Video Promocional Vidnoz"
-                        ></iframe>
-                    ) : (
-                        <img
-                            src={PROMOTIONAL_VIDEO_URL || 'https://via.placeholder.com/800x450?text=Espacio+para+Contenido+Destacado'}
-                            alt="Contenido Destacado"
-                            style={{ width: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}
-                        />
-                    )}
+            {/* --- MODIFICACIÓN CLAVE: Iteramos sobre el arreglo de URLs promocionales --- */}
+            {PROMOTIONAL_VIDEO_URLS.length > 0 && (
+                <div className="promotional-videos-section" style={{ margin: '30px auto', maxWidth: '800px' }}>
+                    {PROMOTIONAL_VIDEO_URLS.map((videoUrl, index) => {
+                        const mediaDetails = getMediaType(videoUrl);
+                        return (
+                            <div key={index} className="promotional-video-item" style={{ marginBottom: '20px' }}>
+                                {mediaDetails.type === 'youtube' && mediaDetails.id ? (
+                                    <iframe
+                                        width="100%"
+                                        height="450"
+                                        src={`https://www.youtube.com/embed/${mediaDetails.id}?autoplay=0&mute=0&loop=0`}
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        title={`Video Promocional ${index + 1}`}
+                                    ></iframe>
+                                ) : mediaDetails.type === 'vimeo' && mediaDetails.id ? (
+                                    <iframe
+                                        src={`https://player.vimeo.com/video/${mediaDetails.id}?autoplay=0&loop=0&byline=0&portrait=0`}
+                                        width="100%"
+                                        height="450"
+                                        frameBorder="0"
+                                        allow="autoplay; fullscreen; picture-in-picture"
+                                        allowFullScreen
+                                        title={`Video Promocional ${index + 1}`}
+                                    ></iframe>
+                                ) : mediaDetails.type === 'vidnoz' && mediaDetails.id ? (
+                                    <iframe
+                                        src={`https://share.vidnoz.com/embed/${mediaDetails.id}`}
+                                        width="100%"
+                                        height="450"
+                                        frameBorder="0"
+                                        allow="autoplay; fullscreen; picture-in-picture"
+                                        allowFullScreen
+                                        title={`Video Promocional ${index + 1}`}
+                                    ></iframe>
+                                ) : (
+                                    <img
+                                        src={videoUrl || 'https://via.placeholder.com/800x450?text=Espacio+para+Contenido+Destacado'}
+                                        alt={`Contenido Destacado ${index + 1}`}
+                                        style={{ width: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}
+                                    />
+                                )}
+                            </div>
+                        );
+                    })}
                     <p className="catalog-intro" style={{ marginTop: '20px', fontSize: '1.2em', fontWeight: 'bold' }}>
                         ¡Descubre la innovación que cabe en tu bolsillo!
                     </p>
@@ -198,6 +208,7 @@ function PublicCatalog() {
                     <p>No hay productos disponibles en el catálogo que coincidan con los criterios.</p>
                 ) : (
                     products.map(product => {
+                        // Asegúrate de que imageUrls sea un array y toma la primera URL
                         const imageUrls = Array.isArray(product.imageUrls) ? product.imageUrls : (typeof product.imageUrls === 'string' && product.imageUrls ? product.imageUrls.split(/[\n,]/).map(url => url.trim()).filter(Boolean) : []);
                         const firstMedia = imageUrls.length > 0 ? imageUrls[0] : 'https://via.placeholder.com/200';
                         const mediaType = getMediaType(firstMedia);
@@ -228,7 +239,7 @@ function PublicCatalog() {
                                     ></iframe>
                                 ) : mediaType.type === 'vidnoz' && mediaType.id ? (
                                     <iframe
-                                        src={`https://share.vidnoz.com/embed/${mediaType.id}`}
+                                        src={`https://share.vidnoz.com/embed/${mediaDetails.id}`} // Use mediaDetails.id
                                         width="100%"
                                         height="200"
                                         frameBorder="0"
