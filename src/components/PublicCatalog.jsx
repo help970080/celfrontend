@@ -15,9 +15,12 @@ function PublicCatalog() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
 
+    // --- MODIFICACIÓN: URL actualizada con el enlace de YouTube Shorts ---
+    const PROMOTIONAL_VIDEO_URL = "https://youtube.com/shorts/edfanYFXfE4?feature=share";
+
     const calculateCreditDetails = (price) => {
-        const downPaymentPercentage = 0.10; 
-        const numberOfWeeks = 17; 
+        const downPaymentPercentage = 0.10;
+        const numberOfWeeks = 17;
 
         const downPayment = price * downPaymentPercentage;
         const remainingBalance = price - downPayment;
@@ -47,13 +50,13 @@ function PublicCatalog() {
                     throw new Error(errorData.message || `Error HTTP: ${response.status}`);
                 }
                 const data = await response.json();
-                setProducts(data.products || []); 
+                setProducts(data.products || []);
                 setTotalPages(data.totalPages);
                 setTotalItems(data.totalItems);
             } catch (err) {
                 console.error("Error al obtener productos para catálogo público:", err);
                 setError(err.message || "No se pudieron cargar los productos del catálogo.");
-                setProducts([]); 
+                setProducts([]);
             } finally {
                 setLoading(false);
             }
@@ -62,6 +65,24 @@ function PublicCatalog() {
         fetchPublicProducts();
     }, [sortBy, order, category, currentPage, itemsPerPage]);
 
+    const getMediaType = (url) => {
+        if (!url) return 'none';
+        if (url.includes('youtube.com/watch') || url.includes('youtu.be/') || url.includes('youtube.com/shorts')) { // Added youtube.com/shorts
+            const videoIdMatch = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/); // Adjusted regex
+            const videoId = videoIdMatch ? videoIdMatch[1] : null;
+            return { type: 'youtube', id: videoId };
+        }
+        if (url.includes('vimeo.com/')) {
+            const videoId = url.split('/').pop();
+            return { type: 'vimeo', id: videoId.split('?')[0] };
+        }
+        if (url.includes('share.vidnoz.com/aivideo')) {
+            const videoIdMatch = url.match(/id=(aishare-[a-zA-Z0-9_-]+)/);
+            const videoId = videoIdMatch ? videoIdMatch[1] : null;
+            return { type: 'vidnoz', id: videoId };
+        }
+        return { type: 'image' };
+    };
 
     if (loading) {
         return (
@@ -83,24 +104,57 @@ function PublicCatalog() {
 
     const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
 
-    const getMediaType = (url) => {
-        if (!url) return 'none';
-        // Ajuste en la URL de YouTube para que la interpolación sea correcta
-        if (url.includes('youtube.com/watch') || url.includes('youtu.be/')) {
-            const videoId = url.split('v=')[1] || url.split('/').pop();
-            return { type: 'youtube', id: videoId.split('&')[0] };
-        }
-        if (url.includes('vimeo.com/')) {
-            const videoId = url.split('/').pop();
-            return { type: 'vimeo', id: videoId.split('?')[0] };
-        }
-        return { type: 'image' };
-    };
-
+    const promotionalMediaDetails = getMediaType(PROMOTIONAL_VIDEO_URL);
 
     return (
         <div className="public-catalog">
             <h1>Nuestro Catálogo de Celulares</h1>
+
+            {PROMOTIONAL_VIDEO_URL && (
+                <div className="promotional-media-container" style={{ margin: '30px auto', maxWidth: '800px' }}>
+                    {promotionalMediaDetails.type === 'youtube' && promotionalMediaDetails.id ? (
+                        <iframe
+                            width="100%"
+                            height="450"
+                            src={`https://www.youtube.com/embed/${promotionalMediaDetails.id}?autoplay=0&mute=0&loop=0`}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            title="Video Promocional"
+                        ></iframe>
+                    ) : promotionalMediaDetails.type === 'vimeo' && promotionalMediaDetails.id ? (
+                        <iframe
+                            src={`https://player.vimeo.com/video/${promotionalMediaDetails.id}?autoplay=0&loop=0&byline=0&portrait=0`}
+                            width="100%"
+                            height="450"
+                            frameBorder="0"
+                            allow="autoplay; fullscreen; picture-in-picture"
+                            allowFullScreen
+                            title="Video Promocional"
+                        ></iframe>
+                    ) : promotionalMediaDetails.type === 'vidnoz' && promotionalMediaDetails.id ? (
+                        <iframe
+                            src={`https://share.vidnoz.com/embed/${promotionalMediaDetails.id}`}
+                            width="100%"
+                            height="450"
+                            frameBorder="0"
+                            allow="autoplay; fullscreen; picture-in-picture"
+                            allowFullScreen
+                            title="Video Promocional Vidnoz"
+                        ></iframe>
+                    ) : (
+                        <img
+                            src={PROMOTIONAL_VIDEO_URL || 'https://via.placeholder.com/800x450?text=Espacio+para+Contenido+Destacado'}
+                            alt="Contenido Destacado"
+                            style={{ width: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}
+                        />
+                    )}
+                    <p className="catalog-intro" style={{ marginTop: '20px', fontSize: '1.2em', fontWeight: 'bold' }}>
+                        ¡Descubre la innovación que cabe en tu bolsillo!
+                    </p>
+                </div>
+            )}
+
             <p className="catalog-intro">Descubre las últimas novedades y ofertas en celulares y accesorios.</p>
 
             <div className="catalog-controls">
@@ -147,12 +201,12 @@ function PublicCatalog() {
                         const imageUrls = Array.isArray(product.imageUrls) ? product.imageUrls : (typeof product.imageUrls === 'string' && product.imageUrls ? product.imageUrls.split(/[\n,]/).map(url => url.trim()).filter(Boolean) : []);
                         const firstMedia = imageUrls.length > 0 ? imageUrls[0] : 'https://via.placeholder.com/200';
                         const mediaType = getMediaType(firstMedia);
-                        
+
                         const { downPayment, weeklyPayment } = calculateCreditDetails(product.price);
 
                         return (
                             <div key={product.id} className="product-card">
-                                {mediaType.type === 'youtube' ? (
+                                {mediaType.type === 'youtube' && mediaType.id ? (
                                     <iframe
                                         width="100%"
                                         height="200"
@@ -162,9 +216,19 @@ function PublicCatalog() {
                                         allowFullScreen
                                         title={product.name}
                                     ></iframe>
-                                ) : mediaType.type === 'vimeo' ? (
+                                ) : mediaType.type === 'vimeo' && mediaType.id ? (
                                     <iframe
                                         src={`https://player.vimeo.com/video/${mediaType.id}`}
+                                        width="100%"
+                                        height="200"
+                                        frameBorder="0"
+                                        allow="autoplay; fullscreen; picture-in-picture"
+                                        allowFullScreen
+                                        title={product.name}
+                                    ></iframe>
+                                ) : mediaType.type === 'vidnoz' && mediaType.id ? (
+                                    <iframe
+                                        src={`https://share.vidnoz.com/embed/${mediaType.id}`}
                                         width="100%"
                                         height="200"
                                         frameBorder="0"
@@ -178,23 +242,21 @@ function PublicCatalog() {
                                 <h2>{product.name}</h2>
                                 <p className="product-description">{product.description}</p>
                                 <p className="product-price">Precio: ${product.price ? product.price.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A'}</p>
-                                {product.price > 0 && ( 
+                                {product.price > 0 && (
                                     <div className="credit-info">
                                         <p>Enganche: <strong>${downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></p>
                                         <p>Pago Semanal: <strong>${weeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (17 semanas)</strong></p>
                                     </div>
                                 )}
-                                
-                                {/* --- INICIO DE LA MODIFICACIÓN --- */}
-                                <a 
-                                    href="https://wa.me/525665489522" 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
+
+                                <a
+                                    href="https://wa.me/525665489522"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="contact-button"
                                 >
                                     Contactar para comprar
                                 </a>
-                                {/* --- FIN DE LA MODIFICACIÓN --- */}
 
                             </div>
                         );
