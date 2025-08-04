@@ -9,7 +9,7 @@ import ReceiptViewer from './ReceiptViewer';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function ClientPayments({ authenticatedFetch, userRole }) { 
+function ClientPayments({ authenticatedFetch, userRole }) {
     const { clientId } = useParams();
     const [client, setClient] = useState(null);
     const [sales, setSales] = useState([]);
@@ -34,7 +34,7 @@ function ClientPayments({ authenticatedFetch, userRole }) {
             if (!clientRes.ok) throw new Error('Error al cargar datos del cliente.');
             if (!statementRes.ok) throw new Error('Error al cargar estado de cuenta.');
             if (!riskRes.ok) throw new Error('Error al cargar análisis de riesgo.');
-            
+
             setClient(await clientRes.json());
             const statementData = await statementRes.json();
             setSales(statementData.sales.filter(sale => sale.isCredit && sale.balanceDue > 0));
@@ -63,9 +63,9 @@ function ClientPayments({ authenticatedFetch, userRole }) {
     };
 
     const handlePaymentSuccess = () => {
-        fetchClientData();
+        fetchClientData(); // Refresh data after a payment is successfully registered
     };
-    
+
     const handleOpenReceiptModal = (saleId) => {
         setSelectedSaleIdForReceipt(saleId);
         setShowReceiptModal(true);
@@ -76,8 +76,39 @@ function ClientPayments({ authenticatedFetch, userRole }) {
         setSelectedSaleIdForReceipt(null);
     };
 
+    // NEW: Handler for canceling a payment (super_admin only)
+    const handleCancelPayment = async (paymentId) => {
+        if (!window.confirm('¿Estás seguro de que quieres CANCELAR este pago? Esta acción revertirá el monto al saldo de la venta.')) {
+            return;
+        }
+
+        try {
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/sales/payments/${paymentId}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+            }
+
+            toast.success('Pago cancelado y saldo de venta actualizado con éxito.');
+            fetchClientData(); // Re-fetch client data to update balances and payment lists
+        } catch (err) {
+            console.error('Error al cancelar el pago:', err);
+            toast.error(`Error al cancelar pago: ${err.message || 'Error desconocido.'}`);
+        }
+    };
+
+    const hasPermission = (roles) => {
+        if (!userRole) return false;
+        return Array.isArray(roles) ? roles.includes(userRole) : userRole === roles;
+    };
+
+
     if (loading) return <p>Cargando datos del cliente...</p>;
     if (error) return <p className="error-message">{error}</p>;
+    if (!client) return <p>Cliente no encontrado o ID inválido.</p>;
 
     return (
         <>
@@ -106,13 +137,35 @@ function ClientPayments({ authenticatedFetch, userRole }) {
                                 <p><strong>Monto Original:</strong> ${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                                 <p className="highlight-balance"><strong>Saldo Pendiente:</strong> ${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                                 <p><strong>Pago Semanal Sugerido:</strong> ${sale.weeklyPaymentAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
-                                
-                                {/* ESTE ES EL BLOQUE QUE GENERA LOS BOTONES */}
+
                                 <div className="card-actions">
                                     <button className="action-button" onClick={() => handleOpenPaymentForm(sale)}>Registrar Abono</button>
                                     <button className="secondary-button" onClick={() => handleOpenReceiptModal(sale.id)}>Ver Recibo</button>
                                 </div>
-                                
+
+                                {sale.payments && sale.payments.length > 0 && (
+                                    <div className="payments-detail" style={{ marginTop: '20px', borderTop: '1px dashed #eee', paddingTop: '15px' }}>
+                                        <h5>Historial de Pagos para esta Venta:</h5>
+                                        <ul>
+                                            {sale.payments.map(payment => (
+                                                <li key={payment.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0' }}>
+                                                    <span>
+                                                        {dayjs(payment.paymentDate).format('DD/MM/YYYY HH:mm')} - ${payment.amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} ({payment.paymentMethod}) - {payment.notes || ''}
+                                                    </span>
+                                                    {hasPermission('super_admin') && ( // Show "Cancelar" button only for super_admin
+                                                        <button
+                                                            onClick={() => handleCancelPayment(payment.id)}
+                                                            className="delete-button" // Reuse existing delete button style
+                                                            style={{ marginLeft: '10px', padding: '5px 8px', fontSize: '0.7em' }}
+                                                        >
+                                                            Cancelar
+                                                        </button>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -120,7 +173,7 @@ function ClientPayments({ authenticatedFetch, userRole }) {
                     <p>¡Felicidades! Este cliente no tiene saldos pendientes.</p>
                 )}
             </section>
-            
+
             {showPaymentForm && selectedSaleForPayment && (
                 <PaymentManager
                     sale={selectedSaleForPayment}
@@ -131,9 +184,10 @@ function ClientPayments({ authenticatedFetch, userRole }) {
             )}
 
             {showReceiptModal && (
-                <ReceiptViewer 
-                    saleId={selectedSaleIdForReceipt} 
-                    onClose={handleCloseReceiptModal} 
+                <ReceiptViewer
+                    saleId={selectedSaleIdForReceipt}
+                    onClose={handleCloseReceiptModal}
+                    authenticatedFetch={authenticatedFetch} // Pass authenticatedFetch to ReceiptViewer
                 />
             )}
         </>

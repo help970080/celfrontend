@@ -15,7 +15,8 @@ dayjs.extend(timezone);
 const TIMEZONE = "America/Mexico_City";
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-// Función de fetch autenticado para usarla de forma aislada en este componente
+// Remove this local authenticatedFetch function definition, as it will now be passed as a prop:
+/*
 const authenticatedFetch = async (url, options = {}) => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -34,8 +35,10 @@ const authenticatedFetch = async (url, options = {}) => {
     }
     return response;
 };
+*/
 
-function ReceiptViewer({ saleId, onClose }) {
+// Modify the function signature to accept authenticatedFetch as a prop
+function ReceiptViewer({ saleId, onClose, authenticatedFetch }) { // <--- MODIFIED HERE
     const [sale, setSale] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -48,12 +51,13 @@ function ReceiptViewer({ saleId, onClose }) {
         phone: "56 66548 9522",
         email: "contacto@tuempresa.com"
     };
-    
+
     const fetchSaleData = useCallback(async () => {
         if (!saleId) return;
         setLoading(true);
         setError(null);
         try {
+            // Use the authenticatedFetch prop directly
             const response = await authenticatedFetch(`${API_BASE_URL}/api/sales/${saleId}`);
             const data = await response.json();
             setSale(data);
@@ -63,7 +67,7 @@ function ReceiptViewer({ saleId, onClose }) {
         } finally {
             setLoading(false);
         }
-    }, [saleId]);
+    }, [saleId, authenticatedFetch]); // Add authenticatedFetch to dependency array
 
     useEffect(() => {
         fetchSaleData();
@@ -88,19 +92,16 @@ function ReceiptViewer({ saleId, onClose }) {
             toast.error("Error al generar PDF.");
         }
     };
-    
+
     const handleShareWhatsApp = () => {
         if (!sale?.client?.phone) return toast.error("Cliente sin teléfono registrado.");
         const message = `¡Hola ${sale.client.name}! Tu recibo de venta #${sale.id} de ${appName}. Monto Total: $${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}.`;
         window.open(`https://wa.me/${sale.client.phone}?text=${encodeURIComponent(message)}`, '_blank');
     };
 
-    // --- INICIO DE LA CORRECCIÓN ---
-    // Esta es la función que ejecuta la impresión
-    const handlePrintThermal = () => {
-        window.print();
+    const handlePrintThermal = () => { //
+        window.print(); //
     };
-    // --- FIN DE LA CORRECCIÓN ---
 
     const renderContent = () => {
         if (loading) return <p>Cargando recibo...</p>;
@@ -152,15 +153,11 @@ function ReceiptViewer({ saleId, onClose }) {
                         <p className="receipt-footer-text">¡Gracias por tu compra!</p>
                     </div>
                 </div>
-                {/* --- INICIO DE LA CORRECCIÓN --- */}
-                {/* Contenedor de botones con la clase 'no-print' */}
-                <div className="receipt-actions no-print">
-                    <button onClick={handleGeneratePdf}>Descargar PDF</button>
-                    {/* Este es el botón que faltaba */}
-                    <button onClick={handlePrintThermal}>Imprimir Ticket</button>
-                    <button onClick={handleShareWhatsApp}>Compartir WhatsApp</button>
+                <div className="receipt-actions no-print"> {/* */}
+                    <button onClick={handleGeneratePdf}>Descargar PDF</button> {/* */}
+                    <button onClick={handlePrintThermal}>Imprimir Ticket</button> {/* */}
+                    <button onClick={handleShareWhatsApp}>Compartir WhatsApp</button> {/* */}
                 </div>
-                {/* --- FIN DE LA CORRECCIÓN --- */}
             </>
         );
     };
