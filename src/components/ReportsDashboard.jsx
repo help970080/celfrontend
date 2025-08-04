@@ -36,12 +36,18 @@ function ReportsDashboard({ authenticatedFetch }) {
     const [clientStatusDashboard, setClientStatusDashboard] = useState(null);
     const [loadingClientStatus, setLoadingClientStatus] = useState(false);
     const [errorClientStatus, setErrorClientStatus] = useState(null);
-    
-    // --- INICIO DE LA CORRECCIÓN ---
+
     const [agentCollections, setAgentCollections] = useState([]);
     const [loadingAgentCollections, setLoadingAgentCollections] = useState(false);
     const [errorAgentCollections, setErrorAgentCollections] = useState(null);
-    // --- FIN DE LA CORRECCIÓN ---
+
+    // --- NUEVO ESTADO PARA EL REPORTE DE PROYECCIONES ---
+    const [projectedIncomeReport, setProjectedIncomeReport] = useState(null);
+    const [loadingProjectedIncome, setLoadingProjectedIncome] = useState(false);
+    const [errorProjectedIncome, setErrorProjectedIncome] = useState(null);
+    const [projPeriod, setProjPeriod] = useState('month'); // Período por defecto para proyectado
+    const [projStartDate, setProjStartDate] = useState('');
+    const [projEndDate, setProjEndDate] = useState('');
 
 
     const fetchSummaryAndPendingCredits = useCallback(async () => {
@@ -62,8 +68,7 @@ function ReportsDashboard({ authenticatedFetch }) {
             setLoading(false);
         }
     }, [authenticatedFetch]);
-    
-    // ... (las otras funciones de fetch no cambian) ...
+
     const fetchDailyReports = useCallback(async () => {
         setLoadingDaily(true);
         setErrorDaily(null);
@@ -131,7 +136,6 @@ function ReportsDashboard({ authenticatedFetch }) {
         }
     }, [authenticatedFetch, accumulatedPeriod, accStartDate, accEndDate]);
 
-
     const fetchClientStatusDashboard = useCallback(async () => {
         setLoadingClientStatus(true);
         setErrorClientStatus(null);
@@ -150,9 +154,7 @@ function ReportsDashboard({ authenticatedFetch }) {
             setLoadingClientStatus(false);
         }
     }, [authenticatedFetch]);
-    
-    // --- INICIO DE LA CORRECCIÓN ---
-    // Nueva función para obtener la cobranza por gestor
+
     const fetchAgentCollections = useCallback(async () => {
         setLoadingAgentCollections(true);
         setErrorAgentCollections(null);
@@ -170,18 +172,38 @@ function ReportsDashboard({ authenticatedFetch }) {
             setLoadingAgentCollections(false);
         }
     }, [authenticatedFetch, accumulatedPeriod, accStartDate, accEndDate]);
-    // --- FIN DE LA CORRECCIÓN ---
 
+    // --- NUEVA FUNCIÓN: Obtener reporte de ingresos proyectados ---
+    const fetchProjectedIncomeReport = useCallback(async () => {
+        setLoadingProjectedIncome(true);
+        setErrorProjectedIncome(null);
+        try {
+            let url = `${API_BASE_URL}/api/reports/projected-vs-real-income?period=${projPeriod}`;
+            if (projStartDate && projEndDate) {
+                url += `&startDate=${encodeURIComponent(projStartDate)}&endDate=${encodeURIComponent(projEndDate)}`;
+            }
+            const response = await authenticatedFetch(url);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+            }
+            setProjectedIncomeReport(await response.json());
+        } catch (err) {
+            console.error("Error al cargar reporte de ingresos proyectados:", err);
+            setErrorProjectedIncome(err.message || "No se pudo cargar el reporte de ingresos proyectados.");
+        } finally {
+            setLoadingProjectedIncome(false);
+        }
+    }, [authenticatedFetch, projPeriod, projStartDate, projEndDate]);
 
     useEffect(() => {
         fetchSummaryAndPendingCredits();
         fetchDailyReports();
         fetchClientStatusDashboard();
         fetchAccumulatedReports();
-        // --- INICIO DE LA CORRECCIÓN ---
         fetchAgentCollections();
-        // --- FIN DE LA CORRECCIÓN ---
-    }, [fetchSummaryAndPendingCredits, fetchDailyReports, fetchClientStatusDashboard, fetchAccumulatedReports, fetchAgentCollections]);
+        fetchProjectedIncomeReport(); // NEW: Call new report fetch
+    }, [fetchSummaryAndPendingCredits, fetchDailyReports, fetchClientStatusDashboard, fetchAccumulatedReports, fetchAgentCollections, fetchProjectedIncomeReport]); // Add new report fetch to dependencies
 
     const handleRangeDateChange = (e, type) => {
         if (type === 'start') setStartDate(e.target.value);
@@ -198,13 +220,21 @@ function ReportsDashboard({ authenticatedFetch }) {
         if (type === 'start') setAccStartDate(e.target.value);
         else setAccEndDate(e.target.value);
     };
-    
+
     useEffect(() => {
         fetchAccumulatedReports();
-        // --- INICIO DE LA CORRECCIÓN ---
         fetchAgentCollections();
-        // --- FIN DE LA CORRECCIÓN ---
     }, [accumulatedPeriod, accStartDate, accEndDate, fetchAccumulatedReports, fetchAgentCollections]);
+
+    // NEW: Handlers for projected income report
+    const handleProjPeriodChange = (e) => setProjPeriod(e.target.value);
+    const handleProjDateRangeChange = (e, type) => {
+        if (type === 'start') setProjStartDate(e.target.value);
+        else setProjEndDate(e.target.value);
+    };
+    useEffect(() => {
+        fetchProjectedIncomeReport();
+    }, [projPeriod, projStartDate, projEndDate, fetchProjectedIncomeReport]);
 
 
     if (loading) return <p>Cargando reportes...</p>;
@@ -212,7 +242,6 @@ function ReportsDashboard({ authenticatedFetch }) {
 
     return (
         <div className="reports-dashboard">
-            {/* ... (Las otras secciones del dashboard: Resumen, Estado de Clientes, etc., no cambian) ... */}
             <h2>Resumen Financiero</h2>
             {summary ? (
                 <div className="summary-cards">
@@ -282,7 +311,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                     id="startDate"
                     value={startDate}
                     onChange={(e) => handleRangeDateChange(e, 'start')}
-                    max={dayjs().tz(TIMEZONE).format('YYYY-MM-DD')} 
+                    max={dayjs().tz(TIMEZONE).format('YYYY-MM-DD')}
                 />
                 <label htmlFor="endDate">Hasta:</label>
                 <input
@@ -290,7 +319,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                     id="endDate"
                     value={endDate}
                     onChange={(e) => handleRangeDateChange(e, 'end')}
-                    max={dayjs().tz(TIMEZONE).format('YYYY-MM-DD')} 
+                    max={dayjs().tz(TIMEZONE).format('YYYY-MM-DD')}
                 />
                 <button onClick={fetchDailyReports} className="refresh-button">Actualizar Rango</button>
             </div>
@@ -331,7 +360,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                                             <td>{soldProductsDisplay}</td>
                                             <td>${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                                             <td>{sale.isCredit ? 'Crédito' : 'Contado'}</td>
-                                            <td>{dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</td> 
+                                            <td>{dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</td>
                                         </tr>
                                     );
                                 })}
@@ -365,7 +394,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                                             <td>${payment.amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                                             <td>{payment.paymentMethod || 'N/A'}</td>
                                             <td>{payment.notes || 'N/A'}</td>
-                                            <td>{dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</td> 
+                                            <td>{dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</td>
                                         </tr>
                                     );
                                 })}
@@ -406,7 +435,6 @@ function ReportsDashboard({ authenticatedFetch }) {
                 <p className="error-message">Error: {errorAccumulated}</p>
             ) : (
                 <div className="accumulated-reports-content">
-                    {/* ... (Tablas de ventas y pagos acumulados no cambian) ... */}
                     <h3>Ventas Acumuladas por {accumulatedPeriod === 'day' ? 'Día' : accumulatedPeriod === 'week' ? 'Semana' : accumulatedPeriod === 'month' ? 'Mes' : 'Año'}</h3>
                     {accumulatedSales.length === 0 ? (
                         <p>No hay ventas acumuladas para este período o rango.</p>
@@ -456,9 +484,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                     )}
                 </div>
             )}
-            
-            {/* --- INICIO DE LA CORRECCIÓN --- */}
-            {/* Nueva sección para la cobranza de gestores */}
+
             <h2 style={{ marginTop: '40px' }}>Cobranza Realizada por Gestores</h2>
             {loadingAgentCollections ? (
                 <p>Cargando cobranza de gestores...</p>
@@ -492,7 +518,65 @@ function ReportsDashboard({ authenticatedFetch }) {
                     )}
                 </div>
             )}
-            {/* --- FIN DE LA CORRECCIÓN --- */}
+
+            {/* --- NUEVA SECCIÓN: Ingresos Proyectados vs. Reales --- */}
+            <h2 style={{ marginTop: '40px' }}>Ingresos Proyectados vs. Reales (Créditos)</h2>
+            <div className="accumulated-controls"> {/* Reutilizamos la clase de controles */}
+                <label htmlFor="projPeriod">Período:</label>
+                <select id="projPeriod" value={projPeriod} onChange={handleProjPeriodChange}>
+                    <option value="day">Día</option>
+                    <option value="week">Semana</option>
+                    <option value="month">Mes</option>
+                    <option value="year">Año</option>
+                </select>
+                <label htmlFor="projStartDate">Desde:</label>
+                <input
+                    type="date"
+                    id="projStartDate"
+                    value={projStartDate}
+                    onChange={(e) => handleProjDateRangeChange(e, 'start')}
+                />
+                <label htmlFor="projEndDate">Hasta:</label>
+                <input
+                    type="date"
+                    id="projEndDate"
+                    value={projEndDate}
+                    onChange={(e) => handleProjDateRangeChange(e, 'end')}
+                />
+                <button onClick={fetchProjectedIncomeReport} className="refresh-button">Actualizar Reporte</button>
+            </div>
+
+            {loadingProjectedIncome ? (
+                <p>Cargando reporte de ingresos proyectados...</p>
+            ) : errorProjectedIncome ? (
+                <p className="error-message">Error: {errorProjectedIncome}</p>
+            ) : projectedIncomeReport ? (
+                <div className="summary-cards"> {/* Reutilizamos la clase de cards de resumen */}
+                    <div className="summary-card">
+                        <h3>Ingreso Proyectado</h3>
+                        <p>${projectedIncomeReport.totalProjectedIncome.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="summary-card">
+                        <h3>Ingreso Real Recibido</h3>
+                        <p>${projectedIncomeReport.totalRealIncome.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="summary-card">
+                        <h3>Monto Atrasado</h3>
+                        <p style={{ color: projectedIncomeReport.totalOverdueAmount > 0 ? '#dc3545' : 'inherit' }}>
+                            ${projectedIncomeReport.totalOverdueAmount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                    </div>
+                    <div className="summary-card">
+                        <h3>Monto en Adelanto</h3>
+                        <p style={{ color: projectedIncomeReport.totalAdvanceAmount > 0 ? '#28a745' : 'inherit' }}>
+                            ${projectedIncomeReport.totalAdvanceAmount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                    </div>
+                </div>
+            ) : (
+                <p>No hay datos disponibles para el reporte de ingresos proyectados.</p>
+            )}
+            {/* --- FIN NUEVA SECCIÓN --- */}
 
             <h2 style={{ marginTop: '40px' }}>Créditos con Saldo Pendiente</h2>
             {pendingCredits.length === 0 ? (
