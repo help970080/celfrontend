@@ -17,7 +17,7 @@ import AuditLogViewer from './components/AuditLogViewer';
 import VisualDashboard from './components/VisualDashboard';
 import ClientLogin from './components/ClientLogin';
 import ClientPortalDashboard from './components/ClientPortalDashboard';
-import RouteTracker from './components/RouteTracker'; // --- AÑADIDO: Importa el rastreador de rutas ---
+import RouteTracker from './components/RouteTracker';
 
 import './App.css';
 
@@ -95,7 +95,7 @@ function App() {
 
   return (
     <Router>
-      <RouteTracker /> {/* --- AÑADIDO: El componente que rastrea la navegación --- */}
+      <RouteTracker />
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       <div className="App">
         <header className="app-header">
@@ -161,52 +161,5 @@ function App() {
     </Router>
   );
 }
-/* Nuevo estilo para el botón de Filtros */
-.filter-button {
-  background-color: #007bff;
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1em;
-  font-weight: bold;
-  margin-bottom: 20px;
-  transition: background-color 0.3s ease;
-}
 
-.filter-button:hover {
-  background-color: #0056b3;
-}
-
-/* Contenedor de filtros que se mostrará/ocultará */
-.filters-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 20px;
-    margin-bottom: 30px;
-    padding: 20px;
-    background-color: #f0f0f0;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    /* Estilos para ocultar/mostrar */
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    transition: max-height 0.4s ease-out, opacity 0.4s ease-out;
-}
-
-.filters-container.open {
-    max-height: 500px; /* Suficientemente grande para mostrar todos los filtros */
-    opacity: 1;
-}
-
-/* Estilos de responsividad para los filtros */
-@media (max-width: 768px) {
-  .catalog-controls {
-    flex-direction: column;
-    align-items: center;
-  }
-}
 export default App;

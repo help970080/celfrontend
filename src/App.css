@@ -1,3 +1,5 @@
+/* Corrección: Se agregó este comentario para forzar la actualización de este archivo en Git. */
+
 /* Estilos generales para el contenedor raíz de la aplicación */
 #root {
   max-width: 1280px;
@@ -657,7 +659,6 @@ h2 {
 .payment-form-row .cancel-button {
     background-color: #6c757d;
 }
-
 .payment-form-row .cancel-button:hover:not(:disabled) {
     background-color: #5a6268;
 }
