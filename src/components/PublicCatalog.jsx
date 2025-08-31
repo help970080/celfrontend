@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -14,7 +14,6 @@ function PublicCatalog() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
 
-    // --- AÑADIDO: Estado para controlar la visibilidad de los filtros ---
     const [showFilters, setShowFilters] = useState(false);
 
     const PROMOTIONAL_VIDEO_URL = "https://youtu.be/2iFqF30g8s8";
@@ -83,6 +82,69 @@ function PublicCatalog() {
             return { type: 'vidnoz', id: videoId };
         }
         return { type: 'image' };
+    };
+
+    const Carousel = ({ mediaUrls, alt }) => {
+        if (!mediaUrls || mediaUrls.length === 0) {
+            return (
+                <div className="media-placeholder">
+                    <img src="https://via.placeholder.com/300x200?text=No+Media" alt="No disponible" />
+                </div>
+            );
+        }
+
+        return (
+            <div className="media-carousel-container">
+                <div className="media-carousel">
+                    {mediaUrls.map((url, index) => {
+                        const media = getMediaType(url);
+                        if (media.type === 'youtube' && media.id) {
+                            return (
+                                <div key={index} className="media-slide">
+                                    <iframe
+                                        src={`https://www.youtube.com/embed/${media.id}`}
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        title={`${alt} - Video ${index + 1}`}
+                                    ></iframe>
+                                </div>
+                            );
+                        } else if (media.type === 'vimeo' && media.id) {
+                            return (
+                                <div key={index} className="media-slide">
+                                    <iframe
+                                        src={`https://player.vimeo.com/video/${media.id}`}
+                                        frameBorder="0"
+                                        allow="autoplay; fullscreen; picture-in-picture"
+                                        allowFullScreen
+                                        title={`${alt} - Video ${index + 1}`}
+                                    ></iframe>
+                                </div>
+                            );
+                        } else if (media.type === 'vidnoz' && media.id) {
+                            return (
+                                <div key={index} className="media-slide">
+                                    <iframe
+                                        src={`https://share.vidnoz.com/embed/${media.id}`}
+                                        frameBorder="0"
+                                        allow="autoplay; fullscreen; picture-in-picture"
+                                        allowFullScreen
+                                        title={`${alt} - Video ${index + 1}`}
+                                    ></iframe>
+                                </div>
+                            );
+                        } else {
+                            return (
+                                <div key={index} className="media-slide">
+                                    <img src={url} alt={`${alt} - Imagen ${index + 1}`} />
+                                </div>
+                            );
+                        }
+                    })}
+                </div>
+            </div>
+        );
     };
 
     if (loading) {
@@ -157,12 +219,10 @@ function PublicCatalog() {
 
             <p className="catalog-intro">Descubre las últimas novedades y ofertas en celulares y accesorios.</p>
 
-            {/* --- Nuevo botón para alternar la visibilidad de los filtros --- */}
             <button className="filter-button" onClick={() => setShowFilters(!showFilters)}>
                 {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
             </button>
             
-            {/* --- Contenedor de filtros con clase dinámica para animar --- */}
             <div className={`filters-container ${showFilters ? 'open' : ''}`}>
                 <div className="control-group">
                     <label htmlFor="sortBy">Ordenar por:</label>
@@ -205,63 +265,30 @@ function PublicCatalog() {
                 ) : (
                     products.map(product => {
                         const imageUrls = Array.isArray(product.imageUrls) ? product.imageUrls : (typeof product.imageUrls === 'string' && product.imageUrls ? product.imageUrls.split(/[\n,]/).map(url => url.trim()).filter(Boolean) : []);
-                        const firstMedia = imageUrls.length > 0 ? imageUrls[0] : 'https://via.placeholder.com/200';
-                        const mediaType = getMediaType(firstMedia);
-
                         const { downPayment, weeklyPayment } = calculateCreditDetails(product.price);
 
                         return (
                             <div key={product.id} className="product-card">
-                                {mediaType.type === 'youtube' && mediaType.id ? (
-                                    <iframe
-                                        width="100%"
-                                        height="200"
-                                        src={`https://www.youtube.com/embed/${mediaType.id}`}
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                        title={product.name}
-                                    ></iframe>
-                                ) : mediaType.type === 'vimeo' && mediaType.id ? (
-                                    <iframe
-                                        src={`https://player.vimeo.com/video/${mediaType.id}`}
-                                        width="100%"
-                                        height="200"
-                                        frameBorder="0"
-                                        allow="autoplay; fullscreen; picture-in-picture"
-                                        allowFullScreen
-                                        title={product.name}
-                                    ></iframe>
-                                ) : mediaType.type === 'vidnoz' && mediaType.id ? (
-                                    <iframe
-                                        src={`https://share.vidnoz.com/embed/${mediaType.id}`}
-                                        width="100%"
-                                        height="200"
-                                        frameBorder="0"
-                                        allow="autoplay; fullscreen; picture-in-picture"
-                                        allowFullScreen
-                                        title={product.name}
-                                    ></iframe>
-                                ) : (
-                                    <img src={firstMedia} alt={product.name} />
-                                )}
-                                <h2>{product.name}</h2>
-                                <p className="product-description">{product.description}</p>
-                                <p className="product-price">Precio: ${product.price ? product.price.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A'}</p>
-                                {product.price > 0 && (
-                                    <div className="credit-info">
-                                        <p>Enganche: <strong>${downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></p>
-                                        <p>Pago Semanal: <strong>${weeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (17 semanas)</strong></p>
-                                    </div>
-                                )}
-                                <a
-                                    href="https://wa.me/525665489522"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="contact-button"
-                                >
-                                    Contactar para comprar
-                                </a>
+                                <Carousel mediaUrls={imageUrls} alt={product.name} />
+                                <div className="product-info-container">
+                                    <h2>{product.name}</h2>
+                                    <p className="product-description">{product.description}</p>
+                                    <p className="product-price">Precio: ${product.price ? product.price.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A'}</p>
+                                    {product.price > 0 && (
+                                        <div className="credit-info">
+                                            <p>Enganche: <strong>${downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></p>
+                                            <p>Pago Semanal: <strong>${weeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (17 semanas)</strong></p>
+                                        </div>
+                                    )}
+                                    <a
+                                        href="https://wa.me/525665489522"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="contact-button"
+                                    >
+                                        Contactar para comprar
+                                    </a>
+                                </div>
                             </div>
                         );
                     })
