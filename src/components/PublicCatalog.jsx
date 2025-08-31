@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -13,7 +13,6 @@ function PublicCatalog() {
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-
     const [showFilters, setShowFilters] = useState(false);
 
     const PROMOTIONAL_VIDEO_URL = "https://youtu.be/2iFqF30g8s8";
@@ -84,69 +83,6 @@ function PublicCatalog() {
         return { type: 'image' };
     };
 
-    const Carousel = ({ mediaUrls, alt }) => {
-        if (!mediaUrls || mediaUrls.length === 0) {
-            return (
-                <div className="media-placeholder">
-                    <img src="https://via.placeholder.com/300x200?text=No+Media" alt="No disponible" />
-                </div>
-            );
-        }
-
-        return (
-            <div className="media-carousel-container">
-                <div className="media-carousel">
-                    {mediaUrls.map((url, index) => {
-                        const media = getMediaType(url);
-                        if (media.type === 'youtube' && media.id) {
-                            return (
-                                <div key={index} className="media-slide">
-                                    <iframe
-                                        src={`https://www.youtube.com/embed/${media.id}`}
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                        title={`${alt} - Video ${index + 1}`}
-                                    ></iframe>
-                                </div>
-                            );
-                        } else if (media.type === 'vimeo' && media.id) {
-                            return (
-                                <div key={index} className="media-slide">
-                                    <iframe
-                                        src={`https://player.vimeo.com/video/${media.id}`}
-                                        frameBorder="0"
-                                        allow="autoplay; fullscreen; picture-in-picture"
-                                        allowFullScreen
-                                        title={`${alt} - Video ${index + 1}`}
-                                    ></iframe>
-                                </div>
-                            );
-                        } else if (media.type === 'vidnoz' && media.id) {
-                            return (
-                                <div key={index} className="media-slide">
-                                    <iframe
-                                        src={`https://share.vidnoz.com/embed/${media.id}`}
-                                        frameBorder="0"
-                                        allow="autoplay; fullscreen; picture-in-picture"
-                                        allowFullScreen
-                                        title={`${alt} - Video ${index + 1}`}
-                                    ></iframe>
-                                </div>
-                            );
-                        } else {
-                            return (
-                                <div key={index} className="media-slide">
-                                    <img src={url} alt={`${alt} - Imagen ${index + 1}`} />
-                                </div>
-                            );
-                        }
-                    })}
-                </div>
-            </div>
-        );
-    };
-
     if (loading) {
         return (
             <div className="public-catalog">
@@ -167,6 +103,81 @@ function PublicCatalog() {
 
     const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
     const promotionalMediaDetails = getMediaType(PROMOTIONAL_VIDEO_URL);
+
+    // --- Componente de tarjeta de producto con lógica de mostrar/ocultar ---
+    const ProductCardWithToggle = ({ product }) => {
+        const [showDetails, setShowDetails] = useState(false); // Estado para mostrar/ocultar detalles
+
+        const toggleDetails = () => {
+            setShowDetails(!showDetails);
+        };
+
+        const imageUrls = Array.isArray(product.imageUrls) ? product.imageUrls : (typeof product.imageUrls === 'string' && product.imageUrls ? product.imageUrls.split(/[\n,]/).map(url => url.trim()).filter(Boolean) : []);
+        const firstMedia = imageUrls.length > 0 ? imageUrls[0] : 'https://via.placeholder.com/200';
+        const mediaType = getMediaType(firstMedia);
+        const { downPayment, weeklyPayment } = calculateCreditDetails(product.price);
+
+        return (
+            <div className="product-card">
+                <div className="product-media-container" onClick={toggleDetails}>
+                    {mediaType.type === 'youtube' && mediaType.id ? (
+                        <iframe
+                            width="100%"
+                            height="200"
+                            src={`https://www.youtube.com/embed/${mediaType.id}`}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            title={product.name}
+                        ></iframe>
+                    ) : mediaType.type === 'vimeo' && mediaType.id ? (
+                        <iframe
+                            src={`https://player.vimeo.com/video/${mediaType.id}`}
+                            width="100%"
+                            height="200"
+                            frameBorder="0"
+                            allow="autoplay; fullscreen; picture-in-picture"
+                            allowFullScreen
+                            title={product.name}
+                        ></iframe>
+                    ) : mediaType.type === 'vidnoz' && mediaType.id ? (
+                        <iframe
+                            src={`https://share.vidnoz.com/embed/${mediaType.id}`}
+                            width="100%"
+                            height="200"
+                            frameBorder="0"
+                            allow="autoplay; fullscreen; picture-in-picture"
+                            allowFullScreen
+                            title={product.name}
+                        ></iframe>
+                    ) : (
+                        <img src={firstMedia} alt={product.name} />
+                    )}
+                </div>
+                {showDetails && (
+                    <div className="product-info-container">
+                        <h2>{product.name}</h2>
+                        <p className="product-description">{product.description}</p>
+                        <p className="product-price">Precio: ${product.price ? product.price.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A'}</p>
+                        {product.price > 0 && (
+                            <div className="credit-info">
+                                <p>Enganche: <strong>${downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></p>
+                                <p>Pago Semanal: <strong>${weeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (17 semanas)</strong></p>
+                            </div>
+                        )}
+                        <a
+                            href="https://wa.me/525665489522"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="contact-button"
+                        >
+                            Contactar para comprar
+                        </a>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div className="public-catalog">
@@ -263,35 +274,7 @@ function PublicCatalog() {
                 {products.length === 0 ? (
                     <p>No hay productos disponibles en el catálogo que coincidan con los criterios.</p>
                 ) : (
-                    products.map(product => {
-                        const imageUrls = Array.isArray(product.imageUrls) ? product.imageUrls : (typeof product.imageUrls === 'string' && product.imageUrls ? product.imageUrls.split(/[\n,]/).map(url => url.trim()).filter(Boolean) : []);
-                        const { downPayment, weeklyPayment } = calculateCreditDetails(product.price);
-
-                        return (
-                            <div key={product.id} className="product-card">
-                                <Carousel mediaUrls={imageUrls} alt={product.name} />
-                                <div className="product-info-container">
-                                    <h2>{product.name}</h2>
-                                    <p className="product-description">{product.description}</p>
-                                    <p className="product-price">Precio: ${product.price ? product.price.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A'}</p>
-                                    {product.price > 0 && (
-                                        <div className="credit-info">
-                                            <p>Enganche: <strong>${downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></p>
-                                            <p>Pago Semanal: <strong>${weeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (17 semanas)</strong></p>
-                                        </div>
-                                    )}
-                                    <a
-                                        href="https://wa.me/525665489522"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="contact-button"
-                                    >
-                                        Contactar para comprar
-                                    </a>
-                                </div>
-                            </div>
-                        );
-                    })
+                    products.map(product => <ProductCardWithToggle key={product.id} product={product} />)
                 )}
             </div>
             {totalPages > 1 && (
