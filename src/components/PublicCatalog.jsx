@@ -9,13 +9,14 @@ function PublicCatalog() {
     const [sortBy, setSortBy] = useState('name');
     const [order, setOrder] = useState('asc');
     const [category, setCategory] = useState('');
-
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
 
-    // --- MODIFICACIÓN: Ahora es UNA SOLA URL promocional ---
+    // --- AÑADIDO: Estado para controlar la visibilidad de los filtros ---
+    const [showFilters, setShowFilters] = useState(false);
+
     const PROMOTIONAL_VIDEO_URL = "https://youtu.be/2iFqF30g8s8";
 
     const calculateCreditDetails = (price) => {
@@ -103,15 +104,12 @@ function PublicCatalog() {
     }
 
     const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
-
-    // Obtenemos los detalles del medio para la ÚNICA URL promocional
     const promotionalMediaDetails = getMediaType(PROMOTIONAL_VIDEO_URL);
 
     return (
         <div className="public-catalog">
             <h1>Nuestro Catálogo de Celulares</h1>
 
-            {/* --- MODIFICACIÓN: Renderizado para UNA SOLA URL promocional --- */}
             {PROMOTIONAL_VIDEO_URL && (
                 <div className="promotional-media-container" style={{ margin: '30px auto', maxWidth: '800px' }}>
                     {promotionalMediaDetails.type === 'youtube' && promotionalMediaDetails.id ? (
@@ -159,7 +157,13 @@ function PublicCatalog() {
 
             <p className="catalog-intro">Descubre las últimas novedades y ofertas en celulares y accesorios.</p>
 
-            <div className="catalog-controls">
+            {/* --- Nuevo botón para alternar la visibilidad de los filtros --- */}
+            <button className="filter-button" onClick={() => setShowFilters(!showFilters)}>
+                {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+            </button>
+            
+            {/* --- Contenedor de filtros con clase dinámica para animar --- */}
+            <div className={`filters-container ${showFilters ? 'open' : ''}`}>
                 <div className="control-group">
                     <label htmlFor="sortBy">Ordenar por:</label>
                     <select id="sortBy" value={sortBy} onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}>
@@ -200,7 +204,6 @@ function PublicCatalog() {
                     <p>No hay productos disponibles en el catálogo que coincidan con los criterios.</p>
                 ) : (
                     products.map(product => {
-                        // Asegúrate de que imageUrls sea un array y toma la primera URL
                         const imageUrls = Array.isArray(product.imageUrls) ? product.imageUrls : (typeof product.imageUrls === 'string' && product.imageUrls ? product.imageUrls.split(/[\n,]/).map(url => url.trim()).filter(Boolean) : []);
                         const firstMedia = imageUrls.length > 0 ? imageUrls[0] : 'https://via.placeholder.com/200';
                         const mediaType = getMediaType(firstMedia);
@@ -251,7 +254,6 @@ function PublicCatalog() {
                                         <p>Pago Semanal: <strong>${weeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (17 semanas)</strong></p>
                                     </div>
                                 )}
-
                                 <a
                                     href="https://wa.me/525665489522"
                                     target="_blank"
@@ -260,7 +262,6 @@ function PublicCatalog() {
                                 >
                                     Contactar para comprar
                                 </a>
-
                             </div>
                         );
                     })
