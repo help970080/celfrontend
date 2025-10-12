@@ -3,43 +3,51 @@
 /* --- ESTILOS QUE SE APLICAN SOLO AL IMPRIMIR --- */
 @media print {
 
-    /* --- INICIO DE LA CORRECCIÓN --- */
-    /* 1. Oculta todo en la página por defecto */
+    /* 1) Oculta todo por defecto en impresión */
     body * {
         visibility: hidden;
     }
 
-    /* 2. Hace visible únicamente el contenedor del recibo y todo su contenido */
-    .receipt-container, .receipt-container * {
+    /* 2) Muestra únicamente el contenedor del recibo y su contenido */
+    .receipt-container,
+    .receipt-container * {
         visibility: visible;
     }
 
-    /* 3. Posiciona el contenedor del recibo en la esquina superior izquierda de la página de impresión */
+    /* 3) Ajustes del contenedor del ticket para rollo 80mm (SIN posicionamiento absoluto) */
     .receipt-container {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
+        /* Evitar cortes por posicionamiento absoluto */
+        /* (ANTES: position:absolute; left:0; top:0; width:100%) */
+        display: block;
+        width: 80mm;
+        max-width: 80mm;
         margin: 0;
         padding: 0;
         border: none;
         box-shadow: none;
+        background: #fff !important;
+
+        /* Permitir que el contenido fluya naturalmente a lo largo del rollo */
+        page-break-inside: auto;
+        /* Evitar que se “coma” la última línea al final del ticket */
+        padding-bottom: 5mm;
+        /* No fijar altura ni recortes */
+        /* height: auto;  (implícito) */
+        /* overflow: visible; (implícito) */
     }
-    /* --- FIN DE LA CORRECCIÓN --- */
 
-
-    /* Oculta los elementos que marcamos explícitamente para no imprimir */
+    /* Oculta elementos marcados explícitamente para no imprimir */
     .no-print {
         display: none !important;
     }
 
-    /* Define el tamaño del papel de la impresora térmica */
+    /* Tamaño del papel térmico (80mm) y márgenes reducidos */
     @page {
-        size: 80mm auto; /* 'auto' para la altura */
+        size: 80mm auto; /* 'auto' para altura variable (rollo) */
         margin: 3mm;
     }
 
-    /* Estilos específicos para el contenido del ticket (se mantienen) */
+    /* Tipografía/estilos específicos del ticket */
     .receipt-header h2 {
         font-size: 14pt;
         text-align: center;
@@ -60,15 +68,17 @@
         padding: 0;
         margin: 5px 0;
     }
-    /* Se asegura de que la fuente sea negra y el tamaño base sea consistente */
-    body, .receipt-container {
+
+    /* Fuente y color consistentes en impresión */
+    body,
+    .receipt-container {
         color: #000;
         font-family: 'Courier New', Courier, monospace;
         font-size: 10pt;
     }
 }
 
-/* --- ESTILOS PARA LA VISTA EN PANTALLA (No cambian) --- */
+/* --- ESTILOS PARA LA VISTA EN PANTALLA (sin cambios) --- */
 .receipt-container {
     width: 302px; /* Ancho para simular un ticket en pantalla */
     padding: 15px;
