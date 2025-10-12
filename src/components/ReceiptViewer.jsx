@@ -15,6 +15,14 @@ dayjs.extend(timezone);
 const TIMEZONE = 'America/Mexico_City';
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
+/** Detector simple de dispositivo (para decidir si forzamos WhatsApp Web en desktop) */
+const isMobileDevice = () => {
+  if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+    return navigator.userAgentData.mobile;
+  }
+  return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
+};
+
 function ReceiptViewer({
   saleId,
   onClose,
@@ -115,12 +123,13 @@ function ReceiptViewer({
     }
   };
 
-  // WhatsApp: si hay pagos, comparte como "Recibo de abono"; si no, "Recibo de venta".
-  // En móviles con Web Share API + archivos, adjunta el PDF; en escritorio, descarga + texto.
+  // WhatsApp: en móviles con Web Share API + archivos, adjunta el PDF;
+  // en desktop, descarga el PDF y FORZA WhatsApp Web con el texto (no se puede adjuntar auto en web).
   const handleShareWhatsApp = async () => {
     if (!sale?.client?.phone) {
       return toast.error('Cliente sin teléfono registrado.');
     }
+
     const phoneE164 = toE164(sale.client.phone);
     const payment = getPaymentToShare(sale);
 
@@ -141,7 +150,8 @@ Monto Total: $${fmt(sale?.totalAmount)}`;
       const fileName = payment ? `recibo_abono_${payment.id}.pdf` : `recibo_venta_${sale?.id || saleId}.pdf`;
       const file = new File([blob], fileName, { type: 'application/pdf' });
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      // Caso 1: MÓVIL con Web Share API y soporte de archivos → adjunta PDF
+      if (isMobileDevice() && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: payment ? `Recibo de abono #${payment.id}` : `Recibo de venta #${sale?.id || saleId}`,
           text: message,
@@ -151,19 +161,30 @@ Monto Total: $${fmt(sale?.totalAmount)}`;
         return;
       }
 
-      // Escritorio / sin Web Share: descargar y abrir WA con texto
+      // Caso 2: DESKTOP (o sin soporte de Web Share con archivos)
+      // 1) Descarga el PDF para que el usuario lo adjunte manualmente
       pdf.save(fileName);
+
+      // 2) Forzar WhatsApp Web (si hay teléfono, directo al chat; si no, a la pantalla general)
       const url = phoneE164
-        ? `https://wa.me/${encodeURIComponent(phoneE164)}?text=${encodeURIComponent(message)}`
-        : `https://wa.me/?text=${encodeURIComponent(message)}`;
+        ? `https://web.whatsapp.com/send?phone=${encodeURIComponent(phoneE164)}&text=${encodeURIComponent(message)}`
+        : `https://web.whatsapp.com/`;
+
+      // Abrir en nueva pestaña; si el bloqueador lo impide, el usuario debe permitir pop-ups para tu dominio
       window.open(url, '_blank', 'noopener,noreferrer');
-      toast.info('PDF descargado. Abriendo WhatsApp con el mensaje.');
+
+      // 3) Guía para el usuario
+      toast.info('Se descargó el PDF. En WhatsApp Web pega/envía el mensaje y adjunta el PDF descargado.');
     } catch (err) {
       console.error(err);
       toast.error('No se pudo preparar el recibo. Abriendo WhatsApp con texto.');
-      const url = phoneE164
-        ? `https://wa.me/${encodeURIComponent(phoneE164)}?text=${encodeURIComponent(message)}`
-        : `https://wa.me/?text=${encodeURIComponent(message)}`;
+      const url = isMobileDevice()
+        ? (phoneE164
+            ? `https://wa.me/${encodeURIComponent(phoneE164)}?text=${encodeURIComponent(message)}`
+            : `https://wa.me/?text=${encodeURIComponent(message)}`)
+        : (phoneE164
+            ? `https://web.whatsapp.com/send?phone=${encodeURIComponent(phoneE164)}&text=${encodeURIComponent(message)}`
+            : `https://web.whatsapp.com/`);
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
