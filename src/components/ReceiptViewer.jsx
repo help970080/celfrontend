@@ -15,7 +15,6 @@ dayjs.extend(timezone);
 const TIMEZONE = 'America/Mexico_City';
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-/** Detector simple de dispositivo (para decidir si forzamos WhatsApp Web en desktop) */
 const isMobileDevice = () => {
   if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
     return navigator.userAgentData.mobile;
@@ -27,7 +26,6 @@ function ReceiptViewer({
   saleId,
   onClose,
   authenticatedFetch,
-  /** Opcional: si lo pasas, el mensaje/archivo se hará respecto a este pago, no al "último" */
   paymentId,
 }) {
   const [sale, setSale] = useState(null);
@@ -35,12 +33,13 @@ function ReceiptViewer({
   const [error, setError] = useState(null);
   const receiptRef = useRef(null);
 
-  const appName = 'CelExpress Pro Powered by Leonardo Luna';
+  const appName = 'CelExpress Pro';
   const businessInfo = {
     name: 'Celexpress Tu Tienda de Celulares',
     address: 'Morelos Sn.col.Centro Juchitepec,EdoMex',
     phone: '56 66548 9522',
     email: 'contacto@tuempresa.com',
+    deposit: 'Deposita en OXXO a la cuenta 4152 3137 4220 8650',
   };
 
   const toE164 = (rawPhone) => {
@@ -82,7 +81,6 @@ function ReceiptViewer({
     return [...list].sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))[0];
   };
 
-  // Genera PDF a 80mm de ancho con alto proporcional al contenido de receiptRef
   const generatePdfFromDom = async () => {
     const node = receiptRef.current;
     if (!node) throw new Error('No se encontró el contenedor del recibo.');
@@ -123,8 +121,6 @@ function ReceiptViewer({
     }
   };
 
-  // WhatsApp: en móviles con Web Share API + archivos, adjunta el PDF;
-  // en desktop, descarga el PDF y FORZA WhatsApp Web con el texto (no se puede adjuntar auto en web).
   const handleShareWhatsApp = async () => {
     if (!sale?.client?.phone) {
       return toast.error('Cliente sin teléfono registrado.');
@@ -132,7 +128,6 @@ function ReceiptViewer({
 
     const phoneE164 = toE164(sale.client.phone);
     const payment = getPaymentToShare(sale);
-
     const fmt = (n) =>
       Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -140,9 +135,17 @@ function ReceiptViewer({
       ? `¡Hola ${sale.client.name || 'cliente'}! Tu RECIBO DE ABONO #${payment.id} de ${appName}.
 Fecha: ${dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}
 Monto del abono: $${fmt(payment.amount)}
-Saldo pendiente: $${fmt(sale.balanceDue)}`
+Saldo pendiente: $${fmt(sale.balanceDue)}
+
+${businessInfo.deposit}
+
+Cualquier duda, responde a este mensaje.`
       : `¡Hola ${sale.client.name || 'cliente'}! Tu RECIBO DE VENTA #${sale?.id || saleId} de ${appName}.
-Monto Total: $${fmt(sale?.totalAmount)}`;
+Monto Total: $${fmt(sale?.totalAmount)}
+
+${businessInfo.deposit}
+
+Cualquier duda, responde a este mensaje.`;
 
     try {
       const pdf = await generatePdfFromDom();
@@ -150,7 +153,6 @@ Monto Total: $${fmt(sale?.totalAmount)}`;
       const fileName = payment ? `recibo_abono_${payment.id}.pdf` : `recibo_venta_${sale?.id || saleId}.pdf`;
       const file = new File([blob], fileName, { type: 'application/pdf' });
 
-      // Caso 1: MÓVIL con Web Share API y soporte de archivos → adjunta PDF
       if (isMobileDevice() && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: payment ? `Recibo de abono #${payment.id}` : `Recibo de venta #${sale?.id || saleId}`,
@@ -161,20 +163,12 @@ Monto Total: $${fmt(sale?.totalAmount)}`;
         return;
       }
 
-      // Caso 2: DESKTOP (o sin soporte de Web Share con archivos)
-      // 1) Descarga el PDF para que el usuario lo adjunte manualmente
       pdf.save(fileName);
-
-      // 2) Forzar WhatsApp Web (si hay teléfono, directo al chat; si no, a la pantalla general)
       const url = phoneE164
         ? `https://web.whatsapp.com/send?phone=${encodeURIComponent(phoneE164)}&text=${encodeURIComponent(message)}`
         : `https://web.whatsapp.com/`;
-
-      // Abrir en nueva pestaña; si el bloqueador lo impide, el usuario debe permitir pop-ups para tu dominio
       window.open(url, '_blank', 'noopener,noreferrer');
-
-      // 3) Guía para el usuario
-      toast.info('Se descargó el PDF. En WhatsApp Web pega/envía el mensaje y adjunta el PDF descargado.');
+      toast.info('Se descargó el PDF. En WhatsApp Web envía el mensaje y adjunta el PDF descargado.');
     } catch (err) {
       console.error(err);
       toast.error('No se pudo preparar el recibo. Abriendo WhatsApp con texto.');
@@ -276,15 +270,15 @@ Monto Total: $${fmt(sale?.totalAmount)}`;
             </div>
           )}
 
+          <p className="receipt-footer-text" style={{ textAlign: 'center', fontWeight: 'bold' }}>
+            {businessInfo.deposit}
+          </p>
           <p className="receipt-footer-text" style={{ textAlign: 'center' }}>
             ¡Gracias por tu compra!
           </p>
         </div>
 
-        <div
-          className="receipt-actions no-print"
-          style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}
-        >
+        <div className="receipt-actions no-print" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
           <button onClick={handleGeneratePdf}>Descargar PDF</button>
           <button onClick={handlePrintThermal}>Imprimir Ticket</button>
           <button onClick={handleShareWhatsApp}>Compartir WhatsApp</button>
@@ -296,9 +290,7 @@ Monto Total: $${fmt(sale?.totalAmount)}`;
   return ReactDOM.createPortal(
     <div className="receipt-modal-overlay">
       <div className="receipt-modal-content">
-        <button className="close-button no-print" onClick={onClose}>
-          &times;
-        </button>
+        <button className="close-button no-print" onClick={onClose}>&times;</button>
         <h3>Recibo de Venta #{saleId}</h3>
         {renderContent()}
       </div>
