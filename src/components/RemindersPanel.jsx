@@ -1,4 +1,4 @@
-// Archivo: src/components/RemindersPanel.jsx
+// src/components/RemindersPanel.jsx
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
@@ -32,10 +32,10 @@ const MXN = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFr
 export default function RemindersPanel({ authenticatedFetch }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('ALTO'); // 'ALTO' | 'BAJO'
+  const [tab, setTab] = useState('ALTO'); // 'ALTO' | 'BAJO' | 'POR_VENCER'
 
   const business = useMemo(() => ({
-    appName: 'CelExpress Pro', // sin "Powered by ..."
+    appName: 'CelExpress Pro',
     depositLegend: 'Deposita en OXXO a la cuenta 4152 3137 4220 8650',
   }), []);
 
@@ -55,6 +55,21 @@ export default function RemindersPanel({ authenticatedFetch }) {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // -------- Contadores por severidad --------
+  const counts = useMemo(() => {
+    const c = { ALTO: 0, BAJO: 0, POR_VENCER: 0 };
+    for (const r of Array.isArray(rows) ? rows : []) {
+      const key = (r?.severity || '').toUpperCase();
+      if (c[key] !== undefined) c[key] += 1;
+    }
+    return c;
+  }, [rows]);
+
+  const totalConSaldo = useMemo(
+    () => counts.ALTO + counts.BAJO + counts.POR_VENCER,
+    [counts]
+  );
+
   const filtered = rows.filter(r => r.severity === tab);
 
   const makeMessage = (row) => {
@@ -65,12 +80,12 @@ export default function RemindersPanel({ authenticatedFetch }) {
     const fechaLimite = row.sale?.nextDueDate
       ? dayjs(row.sale.nextDueDate).tz(TIMEZONE).format('DD/MM/YYYY')
       : 'próxima fecha';
-    const dias = row.daysLate || 0;
+    const diasAtraso = row.daysLate || 0;
 
     if (row.severity === 'ALTO') {
       return `Hola ${name}.
 Seguimos sin recibir tu pago de la venta #${ventaId}.
-• Días de atraso: ${dias}
+• Días de atraso: ${diasAtraso}
 • Monto a pagar: $${semanal}
 • Saldo pendiente: $${saldo}
 
@@ -80,8 +95,8 @@ ${business.depositLegend}
 Si ya pagaste, ignora este mensaje y compártenos tu comprobante. Gracias.`;
     }
 
-    // BAJO
-    return `¡Hola ${name}!
+    if (row.severity === 'BAJO') {
+      return `¡Hola ${name}!
 Te recordamos tu pago de la venta #${ventaId}.
 • Monto a pagar: $${semanal}
 • Saldo pendiente: $${saldo}
@@ -90,6 +105,19 @@ Te recordamos tu pago de la venta #${ventaId}.
 ${business.depositLegend}
 
 Cualquier duda, responde a este mensaje. Gracias 🙌`;
+    }
+
+    // POR_VENCER
+    const diasRestantes = Math.abs(Math.min(0, row.daysLate)); // daysLeft (positivo)
+    return `¡Hola ${name}!
+Tu próxima fecha de pago de la venta #${ventaId} es el ${fechaLimite}.
+• Abono semanal: $${semanal}
+• Saldo pendiente: $${saldo}
+• Restan: ${diasRestantes} día(s)
+
+${business.depositLegend}
+
+Te esperamos para mantener tu cuenta al día.`;
   };
 
   const openWhatsApp = (row) => {
@@ -98,30 +126,53 @@ Cualquier duda, responde a este mensaje. Gracias 🙌`;
     let url;
 
     if (isMobileDevice()) {
-      // móvil
       url = phone
         ? `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`
         : `https://wa.me/?text=${encodeURIComponent(text)}`;
     } else {
-      // desktop → forzar WhatsApp Web
       url = phone
         ? `https://web.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}`
         : `https://web.whatsapp.com/`;
     }
+
     const win = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!win) toast.info('Permite ventanas emergentes para continuar con WhatsApp Web.');
+    if (!win) toast.info('Permite ventanas emergentes para continuar con WhatsApp.');
   };
+
+  // ---- Botón de pestaña con contador ----
+  const badgeStyle = {
+    marginLeft: 6,
+    fontSize: 12,
+    padding: '2px 6px',
+    borderRadius: 8,
+    background: '#f1f3f5',
+  };
+
+  const TabButton = ({ value, label, count }) => (
+    <button
+      className={tab === value ? 'btn btn-primary' : 'btn'}
+      onClick={() => setTab(value)}
+      title={`${label} (${count})`}
+    >
+      {label}
+      <span style={badgeStyle}>{count}</span>
+    </button>
+  );
 
   return (
     <div className="card">
       <div className="card-header" style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <h3 style={{ margin: 0 }}>Recordatorios de pago</h3>
-          <small>Segmentados por grado de atraso (ALTO / BAJO)</small>
+          <small>
+            Segmentados por grado de atraso (ALTO / BAJO / POR VENCER).{' '}
+            <strong>Total con saldo:</strong> {totalConSaldo}
+          </small>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className={tab === 'ALTO' ? 'btn btn-primary' : 'btn'} onClick={() => setTab('ALTO')}>ALTO</button>
-          <button className={tab === 'BAJO' ? 'btn btn-primary' : 'btn'} onClick={() => setTab('BAJO')}>BAJO</button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <TabButton value="ALTO" label="ALTO" count={counts.ALTO} />
+          <TabButton value="BAJO" label="BAJO" count={counts.BAJO} />
+          <TabButton value="POR_VENCER" label="POR VENCER" count={counts.POR_VENCER} />
           <button className="btn" onClick={fetchData}>Actualizar</button>
         </div>
       </div>
@@ -130,7 +181,7 @@ Cualquier duda, responde a este mensaje. Gracias 🙌`;
         {loading ? (
           <p>Cargando…</p>
         ) : filtered.length === 0 ? (
-          <p>No hay clientes con atraso {tab.toLowerCase()} en este momento.</p>
+          <p>No hay clientes en el grupo “{tab.replace('_',' ')}”.</p>
         ) : (
           <div className="table-responsive">
             <table className="table">
@@ -147,13 +198,17 @@ Cualquier duda, responde a este mensaje. Gracias 🙌`;
               </thead>
               <tbody>
                 {filtered.map((r) => (
-                  <tr key={`${r.client.id}-${r.sale.id}`}>
+                  <tr key={`${r.client.id}-${r.sale.id}-${r.severity}`}>
                     <td>
                       {[r.client.name, r.client.lastName].filter(Boolean).join(' ')}<br />
                       <small>{r.client.phone || 'Sin teléfono'}</small>
                     </td>
                     <td>#{r.sale.id}</td>
-                    <td>{r.daysLate}</td>
+                    <td>
+                      {r.severity === 'POR_VENCER'
+                        ? '—'
+                        : r.daysLate}
+                    </td>
                     <td>${MXN.format(r.sale.weeklyPaymentAmount || 0)}</td>
                     <td>${MXN.format(r.sale.balanceDue || 0)}</td>
                     <td>{r.sale.nextDueDate ? dayjs(r.sale.nextDueDate).tz(TIMEZONE).format('DD/MM/YYYY') : '-'}</td>
@@ -166,6 +221,7 @@ Cualquier duda, responde a este mensaje. Gracias 🙌`;
                 ))}
               </tbody>
             </table>
+
             <p style={{ marginTop: 8 }}>
               <small>Consejo: evita mandar muchos mensajes seguidos; deja unos segundos entre envíos para no parecer spam.</small>
             </p>
