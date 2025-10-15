@@ -70,8 +70,10 @@ export default function RemindersPanel({ authenticatedFetch }) {
     [counts]
   );
 
+  // Filtro por pestaña
   const filtered = rows.filter(r => r.severity === tab);
 
+  // ---- Mensaje WhatsApp (POR_VENCER usa el MISMO que BAJO) ----
   const makeMessage = (row) => {
     const name = [row.client?.name, row.client?.lastName].filter(Boolean).join(' ') || 'cliente';
     const ventaId = row.sale?.id;
@@ -95,8 +97,8 @@ ${business.depositLegend}
 Si ya pagaste, ignora este mensaje y compártenos tu comprobante. Gracias.`;
     }
 
-    if (row.severity === 'BAJO') {
-      return `¡Hola ${name}!
+    // BAJO y POR_VENCER -> mismo texto amable
+    return `¡Hola ${name}!
 Te recordamos tu pago de la venta #${ventaId}.
 • Monto a pagar: $${semanal}
 • Saldo pendiente: $${saldo}
@@ -105,19 +107,6 @@ Te recordamos tu pago de la venta #${ventaId}.
 ${business.depositLegend}
 
 Cualquier duda, responde a este mensaje. Gracias 🙌`;
-    }
-
-    // POR_VENCER
-    const diasRestantes = Math.abs(Math.min(0, row.daysLate)); // daysLeft (positivo)
-    return `¡Hola ${name}!
-Tu próxima fecha de pago de la venta #${ventaId} es el ${fechaLimite}.
-• Abono semanal: $${semanal}
-• Saldo pendiente: $${saldo}
-• Restan: ${diasRestantes} día(s)
-
-${business.depositLegend}
-
-Te esperamos para mantener tu cuenta al día.`;
   };
 
   const openWhatsApp = (row) => {
@@ -204,11 +193,7 @@ Te esperamos para mantener tu cuenta al día.`;
                       <small>{r.client.phone || 'Sin teléfono'}</small>
                     </td>
                     <td>#{r.sale.id}</td>
-                    <td>
-                      {r.severity === 'POR_VENCER'
-                        ? '—'
-                        : r.daysLate}
-                    </td>
+                    <td>{r.severity === 'POR_VENCER' ? '—' : r.daysLate}</td>
                     <td>${MXN.format(r.sale.weeklyPaymentAmount || 0)}</td>
                     <td>${MXN.format(r.sale.balanceDue || 0)}</td>
                     <td>{r.sale.nextDueDate ? dayjs(r.sale.nextDueDate).tz(TIMEZONE).format('DD/MM/YYYY') : '-'}</td>
