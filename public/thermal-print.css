@@ -1,83 +1,127 @@
-/* public/thermal-print.css */
+/* ===== Ticket térmico — alto contraste para impresión ===== */
 
-/* --- ESTILOS QUE SE APLICAN SOLO AL IMPRIMIR --- */
-@media print {
-
-  /* 0) Garantizar que los contenedores raíz no recorten el contenido */
-  html, body, #root {
-    height: auto !important;
-    overflow: visible !important;
-    background: #fff !important;
-  }
-
-  /* 1) Ocultar TODO excepto el recibo y sus descendientes.
-     Esto evita el problema de 'visibility' con ancestros ocultos. */
-  body *:not(.receipt-container):not(.receipt-container *) {
-    display: none !important;
-  }
-
-  /* 2) Contenedor del ticket (sin posicionamiento absoluto) */
-  .receipt-container {
-    display: block;
-    width: 80mm;
-    max-width: 80mm;
-    margin: 0;
-    padding: 0;
-    border: none;
-    box-shadow: none;
-    background: #fff !important;
-
-    /* Dejar fluir natural en rollo */
-    page-break-inside: auto;
-    padding-bottom: 6mm; /* pequeño colchón para no “comer” la última línea */
-  }
-
-  /* 3) Elementos marcados como no imprimibles (por si los usas en tu app) */
-  .no-print {
-    display: none !important;
-  }
-
-  /* 4) Config de página para impresora térmica de 80mm */
-  @page {
-    size: 80mm auto; /* altura variable (rollo continuo) */
-    margin: 3mm;
-  }
-
-  /* 5) Tipografía/estilos específicos del ticket */
-  .receipt-header h2 {
-    font-size: 14pt;
-    text-align: center;
-    margin: 5px 0;
-  }
-  .receipt-header p {
-    text-align: center;
-    margin: 2px 0;
-    font-size: 9pt;
-  }
-  .receipt-details hr {
-    border: 0;
-    border-top: 1px dashed #000;
-    margin: 5px 0;
-  }
-  .receipt-product-list {
-    list-style-type: none;
-    padding: 0;
-    margin: 5px 0;
-  }
-
-  /* 6) Fuente y color (monoespaciada, legible en térmica) */
-  body, .receipt-container {
-    color: #000;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 10pt;
-  }
+/* Forzar tipografía que imprime más oscuro (Arial suele salir más “negro” en térmica) */
+:root {
+  --receipt-font: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --mono-font: "Courier New", Courier, monospace;
 }
 
-/* --- ESTILOS PARA LA VISTA EN PANTALLA (se mantienen) --- */
+/* Vista normal */
 .receipt-container {
-  width: 302px; /* ancho para simular ticket en pantalla */
-  padding: 15px;
-  background: #ffffff;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--receipt-font);
+  color: #111;            /* más oscuro en pantalla */
+  font-size: 12.5px;      /* ligeramente mayor */
+  line-height: 1.25;      /* más compacto para térmica */
+}
+
+/* Encabezados */
+.receipt-container h1,
+.receipt-container h2,
+.receipt-container h3,
+.receipt-container h4,
+.receipt-container h5,
+.receipt-container h6 {
+  margin: 0 0 6px 0;
+  color: #000;
+  font-weight: 800;       /* muy marcado */
+  letter-spacing: 0.2px;
+}
+
+/* Cuerpos y listas */
+.receipt-container p,
+.receipt-container li,
+.receipt-container td,
+.receipt-container th {
+  color: #000;            /* negro puro */
+  font-weight: 600;       /* más “tinta” */
+}
+
+/* Lista de productos en monoespaciado para mejor lectura de cantidades */
+.receipt-product-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-family: var(--mono-font);
+  font-size: 12.5px;
+}
+.receipt-product-list li {
+  margin: 2px 0;
+  white-space: pre-wrap;
+}
+
+/* Separadores más visibles sin gris claro */
+.receipt-container hr {
+  border: 0;
+  border-top: 2px solid #000; /* más grueso y 100% negro */
+  margin: 8px 0;
+}
+
+/* Totales destacados */
+.receipt-totals h2 {
+  font-size: 18px;
+  font-weight: 900;
+  margin: 2px 0 0;
+}
+
+/* Pie */
+.receipt-footer-text {
+  color: #000;
+  font-weight: 700;
+}
+
+/* Botones fuera de impresión */
+.no-print { display: block; }
+
+/* ===== Reglas específicas de impresión ===== */
+@media print {
+  html, body {
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Tamaño del rollo 80mm y sin márgenes del navegador */
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  .receipt-container {
+    width: 80mm;
+    max-width: 80mm;
+    padding: 6px 8px;     /* bordes mínimos para que no corte */
+    color: #000 !important;
+    font-family: var(--receipt-font);
+    font-size: 12.5px;
+    line-height: 1.25;
+  }
+
+  /* Todo texto negro y más grueso */
+  .receipt-container,
+  .receipt-container * {
+    color: #000 !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+
+  /* Encabezados aún más oscuros */
+  .receipt-container h1,
+  .receipt-container h2,
+  .receipt-container h3,
+  .receipt-container h4,
+  .receipt-container h5,
+  .receipt-container h6 {
+    font-weight: 900 !important;
+  }
+
+  /* Quitar lo que no es del ticket */
+  .no-print { display: none !important; }
+
+  /* Evitar cortes raros */
+  .receipt-container, .receipt-container * {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
 }
