@@ -1,14 +1,9 @@
-// src/components/RemindersPanel.jsx
-import { useEffect, useMemo, useState, useCallback } from 'react';
-import dayjs from 'dayjs';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
+// Archivo: src/components/RemindersPanel.jsx
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
+import dayjs from 'dayjs';
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
-const TIMEZONE = 'America/Mexico_City';
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
 const isMobileDevice = () => {
@@ -18,217 +13,180 @@ const isMobileDevice = () => {
   return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
 };
 
-const toE164 = (rawPhone) => {
-  if (!rawPhone) return '';
-  const cleaned = String(rawPhone).replace(/[^\d+]/g, '');
-  if (!cleaned) return '';
-  if (cleaned.startsWith('+')) return cleaned;
-  if (cleaned.startsWith('52')) return `+${cleaned}`;
-  return `+52${cleaned}`;
-};
-
-// Función segura para formatear números
+// Función segura para formatear números como moneda (CRÍTICO para evitar TypeError)
 const formatMXN = (value) => {
-  if (value === null || value === undefined || value === '') return '0.00';
-  const num = Number(value);
+  const num = Number(value || 0);
   if (!Number.isFinite(num)) return '0.00';
-  return new Intl.NumberFormat('es-MX', { 
+  return num.toLocaleString('es-MX', { 
     minimumFractionDigits: 2, 
     maximumFractionDigits: 2 
-  }).format(num);
+  });
 };
 
-export default function RemindersPanel({ authenticatedFetch }) {
-  const [rows, setRows] = useState([]);
+const toE164 = (rawPhone) => {
+    if (!rawPhone) return '';
+    // Limpia y asegura el código de país +52 (México) si falta
+    const cleaned = String(rawPhone).replace(/[^\d]/g, '');
+    if (cleaned.startsWith('52')) return `+${cleaned}`;
+    return `+52${cleaned}`;
+};
+
+
+function RemindersPanel({ authenticatedFetch }) {
+  const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('ALTO'); // 'ALTO' | 'BAJO' | 'POR_VENCER'
+  const [error, setError] = useState(null);
 
-  const business = useMemo(() => ({
-    appName: 'CelExpress Pro',
-    depositLegend: 'Deposita en OXXO a la cuenta 4152 3137 4220 8650',
-  }), []);
-
-  const fetchData = useCallback(async () => {
+  const fetchReminders = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await authenticatedFetch(`${API_BASE_URL}/api/reminders/overdue?_=${Date.now()}`, { cache: 'no-store' });
-      const data = await res.json();
-      setRows(Array.isArray(data) ? data : []);
-    } catch (e) {
-      console.error(e);
-      toast.error('No se pudieron obtener los recordatorios.');
+      // Esta ruta ya debe devolver datos seguros (cero en lugar de null)
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/reminders/overdue`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+      }
+      const data = await response.json();
+      setReminders(data);
+    } catch (err) {
+      console.error('Error al obtener recordatorios:', err);
+      setError(err.message || 'No se pudieron cargar los recordatorios.');
+      setReminders([]);
+      toast.error('Error al cargar recordatorios.');
     } finally {
       setLoading(false);
     }
   }, [authenticatedFetch]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchReminders();
+  }, [fetchReminders]);
 
-  // -------- Contadores por severidad --------
-  const counts = useMemo(() => {
-    const c = { ALTO: 0, BAJO: 0, POR_VENCER: 0 };
-    for (const r of Array.isArray(rows) ? rows : []) {
-      const key = (r?.severity || '').toUpperCase();
-      if (c[key] !== undefined) c[key] += 1;
-    }
-    return c;
-  }, [rows]);
-
-  const totalConSaldo = useMemo(
-    () => counts.ALTO + counts.BAJO + counts.POR_VENCER,
-    [counts]
-  );
-
-  // Filtro por pestaña
-  const filtered = rows.filter(r => r.severity === tab);
-
-  // ---- Mensaje WhatsApp (POR_VENCER usa el MISMO que BAJO) ----
   const makeMessage = (row) => {
-    const name = [row.client?.name, row.client?.lastName].filter(Boolean).join(' ') || 'cliente';
-    const ventaId = row.sale?.id || 'N/A';
-    const saldo = formatMXN(row.sale?.balanceDue);
-    const semanal = formatMXN(row.sale?.weeklyPaymentAmount);
-    const fechaLimite = row.sale?.nextDueDate
-      ? dayjs(row.sale.nextDueDate).tz(TIMEZONE).format('DD/MM/YYYY')
-      : 'próxima fecha';
-    const diasAtraso = row.daysLate || 0;
+    const name = row.client?.name || 'Cliente';
+    const balance = formatMXN(row.sale?.balanceDue);
+    const weeklyPayment = formatMXN(row.sale?.weeklyPaymentAmount);
+    const daysLate = row.daysLate || 0;
+    const paymentFreq = row.sale?.paymentFrequency || 'semanal';
 
-    if (row.severity === 'ALTO') {
-      return `Hola ${name}.
-Seguimos sin recibir tu pago de la venta #${ventaId}.
-• Días de atraso: ${diasAtraso}
-• Monto a pagar: $${semanal}
-• Saldo pendiente: $${saldo}
+    let message = `¡Hola ${name}! Te escribimos de CelExpress Pro.\n\n`;
 
-Para evitar cargos o acciones de cobro, realiza tu depósito hoy:
-${business.depositLegend}
+    switch (row.severity) {
+      case 'ALTO':
+        message += `⚠️ *URGENTE*: Tu crédito presenta ${daysLate} días de atraso y un saldo pendiente de $${balance}. Por favor, realiza tu pago a la brevedad para evitar acciones de cobranza.
+• Monto de tu cuota (${paymentFreq}): $${weeklyPayment}
+• ¡Regulariza tu cuenta hoy mismo!`;
+        break;
+      case 'BAJO':
+        message += `Tu cuenta tiene un pequeño atraso (${daysLate} días).
+• El monto de tu cuota (${paymentFreq}) es de $${weeklyPayment}.
+• Tu saldo actual es $${balance}. ¡Agradecemos tu pronto pago!`;
+        break;
+      case 'POR_VENCER':
+        message += `Recordatorio amistoso: Tu pago de crédito vence *pronto*.
+• Cuota: $${weeklyPayment}
+• Saldo pendiente: $${balance}
+• ¡No olvides pagar a tiempo para mantener tu buen historial!`;
+        break;
+      default:
+        message += `Tu saldo pendiente es $${balance}. Cuota sugerida: $${weeklyPayment}.`;
+    }
+    return message;
+  };
 
-Si ya pagaste, ignora este mensaje y compártenos tu comprobante. Gracias.`;
+  const handleSendMessage = (row) => {
+    const phoneE164 = toE164(row.client?.phone);
+    if (!phoneE164) {
+      toast.error('Cliente sin número de teléfono válido.');
+      return;
+    }
+    const message = makeMessage(row);
+
+    const url = isMobileDevice()
+      ? `https://wa.me/${encodeURIComponent(phoneE164)}?text=${encodeURIComponent(message)}`
+      : `https://web.whatsapp.com/send?phone=${encodeURIComponent(phoneE164)}&text=${encodeURIComponent(message)}`;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+    toast.info(`Abriendo WhatsApp para ${row.client?.name || 'cliente'}.`);
+  };
+
+  const renderRemindersTable = (list, severity) => {
+    if (!list.length) {
+      return <p>No hay clientes en esta categoría.</p>;
     }
 
-    // BAJO y POR_VENCER -> mismo texto amable
-    return `¡Hola ${name}!
-Te recordamos tu pago de la venta #${ventaId}.
-• Monto a pagar: $${semanal}
-• Saldo pendiente: $${saldo}
-• Fecha límite: ${fechaLimite}
-
-${business.depositLegend}
-
-Cualquier duda, responde a este mensaje. Gracias 🙌`;
+    return (
+      <table className="reminders-table client-table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Teléfono</th>
+            <th>Venta ID</th>
+            <th>Cuota ({severity === 'POR_VENCER' ? 'Sug.' : 'Venc.'})</th>
+            <th>Saldo Pendiente</th>
+            <th>Días Atraso</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.map((r) => (
+            <tr key={r.sale?.id || r.client?.id}>
+              <td>
+                {r.client?.name} {r.client?.lastName}
+              </td>
+              <td>{r.client?.phone}</td>
+              <td>{r.sale?.id || 'N/A'}</td>
+              {/* Uso seguro de formatMXN */}
+              <td>${formatMXN(r.sale?.weeklyPaymentAmount)}</td> 
+              <td>${formatMXN(r.sale?.balanceDue)}</td>
+              <td>{r.daysLate || 0}</td>
+              <td>
+                <button 
+                    onClick={() => handleSendMessage(r)} 
+                    className={`btn btn-sm btn-${severity === 'ALTO' ? 'danger' : (severity === 'BAJO' ? 'warning' : 'success')}`}
+                    style={{backgroundColor: '#25D366', color: 'white', border: 'none'}}
+                >
+                    Enviar WA
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
   };
 
-  const openWhatsApp = (row) => {
-    const phone = toE164(row.client?.phone || '');
-    const text = makeMessage(row);
-    let url;
+  const highRisk = reminders.filter((r) => r.severity === 'ALTO');
+  const lowRisk = reminders.filter((r) => r.severity === 'BAJO');
+  const dueSoon = reminders.filter((r) => r.severity === 'POR_VENCER');
 
-    if (isMobileDevice()) {
-      url = phone
-        ? `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`
-        : `https://wa.me/?text=${encodeURIComponent(text)}`;
-    } else {
-      url = phone
-        ? `https://web.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}`
-        : `https://web.whatsapp.com/`;
-    }
-
-    const win = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!win) toast.info('Permite ventanas emergentes para continuar con WhatsApp.');
-  };
-
-  // ---- Botón de pestaña con contador ----
-  const badgeStyle = {
-    marginLeft: 6,
-    fontSize: 12,
-    padding: '2px 6px',
-    borderRadius: 8,
-    background: '#f1f3f5',
-  };
-
-  const TabButton = ({ value, label, count }) => (
-    <button
-      className={tab === value ? 'btn btn-primary' : 'btn'}
-      onClick={() => setTab(value)}
-      title={`${label} (${count})`}
-    >
-      {label}
-      <span style={badgeStyle}>{count}</span>
-    </button>
-  );
+  if (loading) return <p>Cargando panel de recordatorios...</p>;
+  if (error) return <p className="error-message">Error al cargar recordatorios: {error}</p>;
 
   return (
-    <div className="card">
-      <div className="card-header" style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <h3 style={{ margin: 0 }}>Recordatorios de pago</h3>
-          <small>
-            Segmentados por grado de atraso (ALTO / BAJO / POR VENCER).{' '}
-            <strong>Total con saldo:</strong> {totalConSaldo}
-          </small>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <TabButton value="ALTO" label="ALTO" count={counts.ALTO} />
-          <TabButton value="BAJO" label="BAJO" count={counts.BAJO} />
-          <TabButton value="POR_VENCER" label="POR VENCER" count={counts.POR_VENCER} />
-          <button className="btn" onClick={fetchData}>Actualizar</button>
-        </div>
+    <div className="reminders-panel">
+      <h3>Panel de Recordatorios y Cobranza</h3>
+      <p>Gestión automatizada de recordatorios vía WhatsApp. Haz clic para enviar el mensaje predefinido.</p>
+      
+      <hr />
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>🔴 Riesgo ALTO (Pago Vencido, Mayor Saldo o Atraso) - {highRisk.length} clientes</h4>
+        {renderRemindersTable(highRisk, 'ALTO')}
       </div>
 
-      <div className="card-content">
-        {loading ? (
-          <p>Cargando…</p>
-        ) : filtered.length === 0 ? (
-          <p>No hay clientes en el grupo "{tab.replace('_',' ')}".</p>
-        ) : (
-          <div className="table-responsive">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Cliente</th>
-                  <th>Venta</th>
-                  <th>Días atraso</th>
-                  <th>Semanal</th>
-                  <th>Saldo</th>
-                  <th>Próx. fecha</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r) => {
-                  // Validación defensiva para evitar errores
-                  if (!r || !r.client || !r.sale) {
-                    return null;
-                  }
-                  
-                  return (
-                    <tr key={`${r.client.id}-${r.sale.id}-${r.severity}`}>
-                      <td>
-                        {[r.client.name, r.client.lastName].filter(Boolean).join(' ')}<br />
-                        <small>{r.client.phone || 'Sin teléfono'}</small>
-                      </td>
-                      <td>#{r.sale.id}</td>
-                      <td>{r.severity === 'POR_VENCER' ? '—' : r.daysLate || 0}</td>
-                      <td>${formatMXN(r.sale.weeklyPaymentAmount)}</td>
-                      <td>${formatMXN(r.sale.balanceDue)}</td>
-                      <td>{r.sale.nextDueDate ? dayjs(r.sale.nextDueDate).tz(TIMEZONE).format('DD/MM/YYYY') : '-'}</td>
-                      <td>
-                        <button className="btn btn-success" onClick={() => openWhatsApp(r)}>
-                          WhatsApp
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      <div style={{ marginBottom: '20px' }}>
+        <h4>🟡 Riesgo BAJO (Atraso Menor) - {lowRisk.length} clientes</h4>
+        {renderRemindersTable(lowRisk, 'BAJO')}
+      </div>
 
-            <p style={{ marginTop: 8 }}>
-              <small>Consejo: evita mandar muchos mensajes seguidos; deja unos segundos entre envíos para no parecer spam.</small>
-            </p>
-          </div>
-        )}
+      <div style={{ marginBottom: '20px' }}>
+        <h4>🟢 Por Vencer (Recordatorio Amistoso) - {dueSoon.length} clientes</h4>
+        {renderRemindersTable(dueSoon, 'POR_VENCER')}
       </div>
     </div>
   );
 }
+
+export default RemindersPanel;
