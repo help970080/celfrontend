@@ -27,7 +27,16 @@ const toE164 = (rawPhone) => {
   return `+52${cleaned}`;
 };
 
-const MXN = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// Función segura para formatear números
+const formatMXN = (value) => {
+  if (value === null || value === undefined || value === '') return '0.00';
+  const num = Number(value);
+  if (!Number.isFinite(num)) return '0.00';
+  return new Intl.NumberFormat('es-MX', { 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  }).format(num);
+};
 
 export default function RemindersPanel({ authenticatedFetch }) {
   const [rows, setRows] = useState([]);
@@ -76,9 +85,9 @@ export default function RemindersPanel({ authenticatedFetch }) {
   // ---- Mensaje WhatsApp (POR_VENCER usa el MISMO que BAJO) ----
   const makeMessage = (row) => {
     const name = [row.client?.name, row.client?.lastName].filter(Boolean).join(' ') || 'cliente';
-    const ventaId = row.sale?.id;
-    const saldo = MXN.format(row.sale?.balanceDue || 0);
-    const semanal = MXN.format(row.sale?.weeklyPaymentAmount || 0);
+    const ventaId = row.sale?.id || 'N/A';
+    const saldo = formatMXN(row.sale?.balanceDue);
+    const semanal = formatMXN(row.sale?.weeklyPaymentAmount);
     const fechaLimite = row.sale?.nextDueDate
       ? dayjs(row.sale.nextDueDate).tz(TIMEZONE).format('DD/MM/YYYY')
       : 'próxima fecha';
@@ -170,7 +179,7 @@ Cualquier duda, responde a este mensaje. Gracias 🙌`;
         {loading ? (
           <p>Cargando…</p>
         ) : filtered.length === 0 ? (
-          <p>No hay clientes en el grupo “{tab.replace('_',' ')}”.</p>
+          <p>No hay clientes en el grupo "{tab.replace('_',' ')}".</p>
         ) : (
           <div className="table-responsive">
             <table className="table">
@@ -186,24 +195,31 @@ Cualquier duda, responde a este mensaje. Gracias 🙌`;
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r) => (
-                  <tr key={`${r.client.id}-${r.sale.id}-${r.severity}`}>
-                    <td>
-                      {[r.client.name, r.client.lastName].filter(Boolean).join(' ')}<br />
-                      <small>{r.client.phone || 'Sin teléfono'}</small>
-                    </td>
-                    <td>#{r.sale.id}</td>
-                    <td>{r.severity === 'POR_VENCER' ? '—' : r.daysLate}</td>
-                    <td>${MXN.format(r.sale.weeklyPaymentAmount || 0)}</td>
-                    <td>${MXN.format(r.sale.balanceDue || 0)}</td>
-                    <td>{r.sale.nextDueDate ? dayjs(r.sale.nextDueDate).tz(TIMEZONE).format('DD/MM/YYYY') : '-'}</td>
-                    <td>
-                      <button className="btn btn-success" onClick={() => openWhatsApp(r)}>
-                        WhatsApp
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((r) => {
+                  // Validación defensiva para evitar errores
+                  if (!r || !r.client || !r.sale) {
+                    return null;
+                  }
+                  
+                  return (
+                    <tr key={`${r.client.id}-${r.sale.id}-${r.severity}`}>
+                      <td>
+                        {[r.client.name, r.client.lastName].filter(Boolean).join(' ')}<br />
+                        <small>{r.client.phone || 'Sin teléfono'}</small>
+                      </td>
+                      <td>#{r.sale.id}</td>
+                      <td>{r.severity === 'POR_VENCER' ? '—' : r.daysLate || 0}</td>
+                      <td>${formatMXN(r.sale.weeklyPaymentAmount)}</td>
+                      <td>${formatMXN(r.sale.balanceDue)}</td>
+                      <td>{r.sale.nextDueDate ? dayjs(r.sale.nextDueDate).tz(TIMEZONE).format('DD/MM/YYYY') : '-'}</td>
+                      <td>
+                        <button className="btn btn-success" onClick={() => openWhatsApp(r)}>
+                          WhatsApp
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
 
