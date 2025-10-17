@@ -1,8 +1,9 @@
-// Archivo: src/components/CollectionLogForm.jsx
+// Archivo: src/components/CollectionLogForm.jsx (CORREGIDO)
 
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
+import ReactDOM from 'react-dom'; // *** NUEVA IMPORTACIÓN ***
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -46,7 +47,6 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
             nextActionDate: nextActionDate || null, // Se envía null si no hay fecha
         };
 
-        // NOTA IMPORTANTE: Esta ruta POST /api/collections/log DEBE ser implementada en el backend.
         try {
             const response = await authenticatedFetch(`${API_BASE_URL}/api/collections/log`, {
                 method: 'POST',
@@ -70,7 +70,7 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
         }
     };
 
-    return (
+    const modalContent = (
         <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: '500px' }}>
                 <button className="close-button" onClick={onClose}>&times;</button>
@@ -78,6 +78,7 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
                 
                 <p><strong>Cliente:</strong> {saleData.client?.name} {saleData.client?.lastName}</p>
                 <p><strong>Venta ID:</strong> #{saleData.sale?.id}</p>
+                {/* Aseguramos el blindaje para el saldo */}
                 <p><strong>Saldo:</strong> ${Number(saleData.sale?.balanceDue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                 
                 <hr/>
@@ -115,6 +116,13 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
                 </form>
             </div>
         </div>
+    );
+
+    // *** USO DE CREATE PORTAL ***
+    // Esto asegura que el modal se muestre sobre todo el contenido
+    return ReactDOM.createPortal(
+        modalContent,
+        document.getElementById('modal-root') || document.body // Usa 'modal-root' si existe, si no, usa el body
     );
 }
 
