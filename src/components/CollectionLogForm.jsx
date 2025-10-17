@@ -1,6 +1,6 @@
-// Archivo: src/components/CollectionLogForm.jsx (VERSION FINAL CORREGIDA)
+// Archivo: src/components/CollectionLogForm.jsx (Sintaxis Corregida)
 
-import React, { useState } => from 'react';
+import React, { useState } from 'react'; // <--- LA SINTAXIS DEBE SER ASÍ
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 import ReactDOM from 'react-dom'; 
@@ -19,7 +19,7 @@ const logResults = [
 ];
 
 function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
-    // ELIMINAMOS la lectura de localStorage.getItem('userId') aquí.
+    // ELIMINAMOS la lectura de localStorage.getItem('userId') aquí, ya que el backend la obtiene del token.
 
     const [result, setResult] = useState(logResults[0].value);
     const [notes, setNotes] = useState('');
@@ -32,7 +32,7 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
         setLoading(true);
         setError(null);
 
-        // VALIDACIÓN SIMPLIFICADA: Solo verificamos que los datos esenciales de la VENTA existan.
+        // Validación simplificada: solo verificamos que los datos esenciales de la VENTA existan.
         if (!saleData || !saleData.sale?.id) {
             setError('Error: ID de venta faltante.');
             setLoading(false);
@@ -56,7 +56,6 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                // Si el backend devuelve 401/403, este mensaje se activará
                 throw new Error(errorData.message || `Error HTTP: ${response.status}`); 
             }
 
@@ -64,7 +63,6 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
             onClose(); 
         } catch (err) {
             console.error("Error al registrar gestión:", err);
-            // El error debe ser más claro si el problema es la sesión (401)
             setError(err.message || "Error al registrar la gestión. Verifique su sesión o el backend.");
             toast.error(`Error: ${err.message}`);
         } finally {
