@@ -1,4 +1,4 @@
-// Archivo: components/ReportsDashboard.jsx
+// Archivo: components/ReportsDashboard.jsx (CORREGIDO)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import dayjs from 'dayjs';
@@ -41,7 +41,7 @@ function ReportsDashboard({ authenticatedFetch }) {
     const [loadingAgentCollections, setLoadingAgentCollections] = useState(false);
     const [errorAgentCollections, setErrorAgentCollections] = useState(null);
 
-    // --- NUEVO ESTADO PARA EL REPORTE DE PROYECCIONES ---
+    // --- ESTADOS PARA EL REPORTE DE PROYECCIONES ---
     const [projectedIncomeReport, setProjectedIncomeReport] = useState(null);
     const [loadingProjectedIncome, setLoadingProjectedIncome] = useState(false);
     const [errorProjectedIncome, setErrorProjectedIncome] = useState(null);
@@ -173,15 +173,41 @@ function ReportsDashboard({ authenticatedFetch }) {
         }
     }, [authenticatedFetch, accumulatedPeriod, accStartDate, accEndDate]);
 
-    // --- NUEVA FUNCIÓN: Obtener reporte de ingresos proyectados ---
+    // --- FUNCIÓN CORREGIDA: Obtener reporte de ingresos proyectados ---
     const fetchProjectedIncomeReport = useCallback(async () => {
         setLoadingProjectedIncome(true);
         setErrorProjectedIncome(null);
         try {
             let url = `${API_BASE_URL}/api/reports/projected-vs-real-income?period=${projPeriod}`;
-            if (projStartDate && projEndDate) {
-                url += `&startDate=${encodeURIComponent(projStartDate)}&endDate=${encodeURIComponent(projEndDate)}`;
+            
+            let finalStartDate = projStartDate;
+            let finalEndDate = projEndDate;
+
+            // LÓGICA DE CORRECCIÓN: Si las fechas están vacías, calculamos el rango completo del período
+            if (!projStartDate || !projEndDate) {
+                const now = dayjs().tz(TIMEZONE);
+                switch (projPeriod) {
+                    case 'month':
+                        finalStartDate = now.startOf('month').format('YYYY-MM-DD');
+                        finalEndDate = now.endOf('month').format('YYYY-MM-DD');
+                        break;
+                    case 'week':
+                        finalStartDate = now.startOf('week').format('YYYY-MM-DD');
+                        finalEndDate = now.endOf('week').format('YYYY-MM-DD');
+                        break;
+                    case 'day': 
+                    default:
+                        finalStartDate = now.startOf('day').format('YYYY-MM-DD');
+                        finalEndDate = now.endOf('day').format('YYYY-MM-DD');
+                        break;
+                }
             }
+            
+            // Adjuntamos las fechas calculadas (o ingresadas por el usuario) al URL
+            if (finalStartDate && finalEndDate) {
+                url += `&startDate=${encodeURIComponent(finalStartDate)}&endDate=${encodeURIComponent(finalEndDate)}`;
+            }
+
             const response = await authenticatedFetch(url);
             if (!response.ok) {
                 const errorData = await response.json();
@@ -202,8 +228,8 @@ function ReportsDashboard({ authenticatedFetch }) {
         fetchClientStatusDashboard();
         fetchAccumulatedReports();
         fetchAgentCollections();
-        fetchProjectedIncomeReport(); // NEW: Call new report fetch
-    }, [fetchSummaryAndPendingCredits, fetchDailyReports, fetchClientStatusDashboard, fetchAccumulatedReports, fetchAgentCollections, fetchProjectedIncomeReport]); // Add new report fetch to dependencies
+        fetchProjectedIncomeReport(); 
+    }, [fetchSummaryAndPendingCredits, fetchDailyReports, fetchClientStatusDashboard, fetchAccumulatedReports, fetchAgentCollections, fetchProjectedIncomeReport]); 
 
     const handleRangeDateChange = (e, type) => {
         if (type === 'start') setStartDate(e.target.value);
@@ -226,7 +252,7 @@ function ReportsDashboard({ authenticatedFetch }) {
         fetchAgentCollections();
     }, [accumulatedPeriod, accStartDate, accEndDate, fetchAccumulatedReports, fetchAgentCollections]);
 
-    // NEW: Handlers for projected income report
+    // Handlers para el reporte proyectado
     const handleProjPeriodChange = (e) => setProjPeriod(e.target.value);
     const handleProjDateRangeChange = (e, type) => {
         if (type === 'start') setProjStartDate(e.target.value);
@@ -247,7 +273,8 @@ function ReportsDashboard({ authenticatedFetch }) {
                 <div className="summary-cards">
                     <div className="summary-card">
                         <h3>Saldo Pendiente Total</h3>
-                        <p>${summary.totalBalanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        {/* BLINDAJE APLICADO */}
+                        <p>${Number(summary.totalBalanceDue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     <div className="summary-card">
                         <h3>Créditos Activos</h3>
@@ -255,7 +282,8 @@ function ReportsDashboard({ authenticatedFetch }) {
                     </div>
                     <div className="summary-card">
                         <h3>Pagos Recibidos Total</h3>
-                        <p>${summary.totalPaymentsReceived.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        {/* BLINDAJE APLICADO */}
+                        <p>${Number(summary.totalPaymentsReceived || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     <div className="summary-card">
                         <h3>Total Clientes</h3>
@@ -358,7 +386,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                                             <td>{sale.id}</td>
                                             <td>{clientName}</td>
                                             <td>{soldProductsDisplay}</td>
-                                            {/* BLINDAJE: Aseguramos que el monto sea un número */}
+                                            {/* BLINDAJE */}
                                             <td>${Number(sale.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                                             <td>{sale.isCredit ? 'Crédito' : 'Contado'}</td>
                                             <td>{dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</td>
@@ -378,7 +406,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                                 <tr>
                                     <th>ID Pago</th>
                                     <th>ID Venta</th>
-                                    <th>Cliente</th> {/* CORRECCIÓN APLICADA */}
+                                    <th>Cliente</th> 
                                     <th>Monto Pagado</th>
                                     <th>Método</th>
                                     <th>Notas</th>
@@ -392,8 +420,8 @@ function ReportsDashboard({ authenticatedFetch }) {
                                         <tr key={payment.id}>
                                             <td>{payment.id}</td>
                                             <td>{payment.sale ? payment.sale.id : 'N/A'}</td>
-                                            <td>{clientName}</td> {/* CORRECCIÓN APLICADA */}
-                                            {/* BLINDAJE: Aseguramos que el monto sea un número */}
+                                            <td>{clientName}</td> 
+                                            {/* BLINDAJE */}
                                             <td>${Number(payment.amount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td> 
                                             <td>{payment.paymentMethod || 'N/A'}</td>
                                             <td>{payment.notes || 'N/A'}</td>
@@ -525,7 +553,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                 </div>
             )}
 
-            {/* --- NUEVA SECCIÓN: Ingresos Proyectados vs. Reales --- */}
+            {/* --- SECCIÓN: Ingresos Proyectados vs. Reales (CORREGIDA) --- */}
             <h2 style={{ marginTop: '40px' }}>Ingresos Proyectados vs. Reales (Créditos)</h2>
             <div className="accumulated-controls"> {/* Reutilizamos la clase de controles */}
                 <label htmlFor="projPeriod">Período:</label>
@@ -557,7 +585,7 @@ function ReportsDashboard({ authenticatedFetch }) {
             ) : errorProjectedIncome ? (
                 <p className="error-message">Error: {errorProjectedIncome}</p>
             ) : projectedIncomeReport ? (
-                <div className="summary-cards"> {/* Reutilizamos la clase de cards de resumen */}
+                <div className="summary-cards"> 
                     <div className="summary-card">
                         <h3>Ingreso Proyectado</h3>
                         {/* BLINDAJE */}
@@ -586,7 +614,7 @@ function ReportsDashboard({ authenticatedFetch }) {
             ) : (
                 <p>No hay datos disponibles para el reporte de ingresos proyectados.</p>
             )}
-            {/* --- FIN NUEVA SECCIÓN --- */}
+            {/* --- FIN SECCIÓN --- */}
 
             <h2 style={{ marginTop: '40px' }}>Créditos con Saldo Pendiente</h2>
             {pendingCredits.length === 0 ? (
