@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/React-toastify.css';
+import 'react-toastify/dist/ReactToastify.css';
 
 import ProductAdminPanel from './components/ProductAdminPanel';
 import ClientAdminPanel from './components/ClientAdminPanel';
@@ -155,7 +155,7 @@ function App() {
 
             {token && <Route path="/admin" element={<Navigate to="/admin/sales" />} />}
             {clientToken && <Route path="/portal" element={<Navigate to="/portal/dashboard" />} />}
-            <Route path="*" element={<Navigate to="/" />} />}
+            <Route path="*" element={<Navigate to="/" />} /> {/* 🚨 Corrección de sintaxis: se eliminó el carácter extra '}' */}
           </Routes>
         </main>
       </div>
