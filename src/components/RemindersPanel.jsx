@@ -1,8 +1,10 @@
-// Archivo: src/components/RemindersPanel.jsx
+// Archivo: src/components/RemindersPanel.jsx (CORREGIDO)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
+// Importamos el nuevo componente de gestión de cobranza
+import CollectionLogForm from './CollectionLogForm'; 
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -36,12 +38,16 @@ function RemindersPanel({ authenticatedFetch }) {
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // *** NUEVOS ESTADOS PARA GESTIÓN ***
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [selectedSaleToLog, setSelectedSaleToLog] = useState(null); 
+  // *** FIN NUEVOS ESTADOS ***
 
   const fetchReminders = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Esta ruta ya debe devolver datos seguros (cero en lugar de null)
       const response = await authenticatedFetch(`${API_BASE_URL}/api/reminders/overdue`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -111,6 +117,45 @@ function RemindersPanel({ authenticatedFetch }) {
     toast.info(`Abriendo WhatsApp para ${row.client?.name || 'cliente'}.`);
   };
 
+  // --- HANDLERS PARA EL MODAL DE GESTIÓN ---
+  const handleOpenLogModal = (saleData) => {
+    setSelectedSaleToLog(saleData);
+    setShowLogModal(true);
+  };
+  
+  const handleCloseLogModal = () => {
+    setSelectedSaleToLog(null);
+    setShowLogModal(false);
+    fetchReminders(); // Recargar los recordatorios después de registrar una gestión
+  };
+  
+  const handleExportLog = async () => {
+    try {
+        toast.info('Generando archivo Excel con el registro de gestiones...');
+        // NOTA: Esta ruta GET /api/collections/export-log DEBE ser implementada en el backend.
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/collections/export-log`); 
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `registro_gestiones_${dayjs().format('YYYYMMDD')}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        toast.success('Archivo de gestiones exportado con éxito!');
+    } catch (err) {
+        console.error('Error al exportar gestiones a Excel:', err);
+        toast.error(`Error al exportar: ${err.message || 'Error desconocido. Verifique la ruta del backend.'}`);
+    }
+  };
+  // --- FIN HANDLERS ---
+
   const renderRemindersTable = (list, severity) => {
     if (!list.length) {
       return <p>No hay clientes en esta categoría.</p>;
@@ -126,7 +171,8 @@ function RemindersPanel({ authenticatedFetch }) {
             <th>Cuota ({severity === 'POR_VENCER' ? 'Sug.' : 'Venc.'})</th>
             <th>Saldo Pendiente</th>
             <th>Días Atraso</th>
-            <th>Acción</th>
+            <th>Última Gestión</th> {/* COLUMNA AÑADIDA */}
+            <th>Acción WA</th>
           </tr>
         </thead>
         <tbody>
@@ -141,6 +187,18 @@ function RemindersPanel({ authenticatedFetch }) {
               <td>${formatMXN(r.sale?.weeklyPaymentAmount)}</td> 
               <td>${formatMXN(r.sale?.balanceDue)}</td>
               <td>{r.daysLate || 0}</td>
+              
+              {/* *** BOTÓN REGISTRAR GESTIÓN *** */}
+              <td>
+                <button 
+                  onClick={() => handleOpenLogModal(r)} 
+                  className="btn btn-sm btn-info action-button"
+                  style={{ backgroundColor: '#007bff', color: 'white', border: 'none' }}
+                >
+                  Registrar Gestión
+                </button>
+              </td>
+              
               <td>
                 <button 
                     onClick={() => handleSendMessage(r)} 
@@ -169,6 +227,13 @@ function RemindersPanel({ authenticatedFetch }) {
       <h3>Panel de Recordatorios y Cobranza</h3>
       <p>Gestión automatizada de recordatorios vía WhatsApp. Haz clic para enviar el mensaje predefinido.</p>
       
+      {/* BOTÓN DE EXPORTACIÓN */}
+      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+        <button className="action-button export-button" onClick={handleExportLog}>
+          Exportar Registro de Gestión (Excel)
+        </button>
+      </div>
+      
       <hr />
 
       <div style={{ marginBottom: '20px' }}>
@@ -185,6 +250,15 @@ function RemindersPanel({ authenticatedFetch }) {
         <h4>🟢 Por Vencer (Recordatorio Amistoso) - {dueSoon.length} clientes</h4>
         {renderRemindersTable(dueSoon, 'POR_VENCER')}
       </div>
+      
+      {/* MODAL DE REGISTRO DE GESTIÓN */}
+      {showLogModal && selectedSaleToLog && (
+          <CollectionLogForm
+              saleData={selectedSaleToLog}
+              onClose={handleCloseLogModal}
+              authenticatedFetch={authenticatedFetch}
+          />
+      )}
     </div>
   );
 }
