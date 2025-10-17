@@ -39,15 +39,16 @@ function RemindersPanel({ authenticatedFetch }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // *** NUEVOS ESTADOS PARA GESTIÓN ***
+  // *** ESTADOS PARA GESTIÓN ***
   const [showLogModal, setShowLogModal] = useState(false);
   const [selectedSaleToLog, setSelectedSaleToLog] = useState(null); 
-  // *** FIN NUEVOS ESTADOS ***
+  // *** FIN ESTADOS ***
 
   const fetchReminders = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
+      // Esta ruta ahora trae el historial de gestión gracias a la corrección en el backend
       const response = await authenticatedFetch(`${API_BASE_URL}/api/reminders/overdue`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -132,7 +133,6 @@ function RemindersPanel({ authenticatedFetch }) {
   const handleExportLog = async () => {
     try {
         toast.info('Generando archivo Excel con el registro de gestiones...');
-        // NOTA: Esta ruta GET /api/collections/export-log DEBE ser implementada en el backend.
         const response = await authenticatedFetch(`${API_BASE_URL}/api/collections/export-log`); 
         
         if (!response.ok) {
@@ -156,10 +156,52 @@ function RemindersPanel({ authenticatedFetch }) {
   };
   // --- FIN HANDLERS ---
 
+  // Función para determinar el estilo del botón Registrar Gestión
+  const getGestionButtonStyle = (lastManagement) => {
+      if (!lastManagement) {
+          // Si no hay gestión, destacar para registrar la primera
+          return { backgroundColor: '#007bff', color: 'white', border: 'none' };
+      }
+      // Ejemplo: si el resultado es Promesa, se podría poner amarillo/naranja
+      if (lastManagement.result === 'PROMISE') { 
+          return { backgroundColor: '#ffc107', color: 'black', border: 'none' };
+      }
+      // Si ya tiene una gestión reciente, se puede poner en gris
+      return { backgroundColor: '#6c757d', color: 'white', border: 'none' }; 
+  }
+
   const renderRemindersTable = (list, severity) => {
     if (!list.length) {
       return <p>No hay clientes en esta categoría.</p>;
     }
+
+    // Función auxiliar para mostrar el resultado de la gestión
+    const renderLastManagement = (lastManagement) => {
+        if (!lastManagement) {
+            return <span style={{ color: '#dc3545', fontWeight: 'bold' }}>SIN GESTIÓN</span>;
+        }
+        const date = dayjs(lastManagement.date).format('DD/MM/YY');
+        const result = lastManagement.result || 'N/A';
+        const collector = lastManagement.collector || 'N/A';
+
+        // Mapeo simple del resultado a un texto más legible
+        const resultTextMap = {
+            'PROMISE': 'Promesa 🤝',
+            'PAID': 'Pagó (Revisar)',
+            'NO_ANSWER': 'No Contesta 📵',
+            'WRONG_NUMBER': 'N° Mal',
+            'REFUSAL': 'Rechazó 😡',
+            'LOCATED': 'Ubicado',
+            'CONTACT_SUCCESS': 'Contacto OK',
+        };
+        const displayResult = resultTextMap[result] || result;
+
+        return (
+            <div title={`Por: ${collector}`}>
+                {date} - **{displayResult}**
+            </div>
+        );
+    };
 
     return (
       <table className="reminders-table client-table">
@@ -168,10 +210,10 @@ function RemindersPanel({ authenticatedFetch }) {
             <th>Cliente</th>
             <th>Teléfono</th>
             <th>Venta ID</th>
-            <th>Cuota ({severity === 'POR_VENCER' ? 'Sug.' : 'Venc.'})</th>
+            <th>Cuota (Venc.)</th>
             <th>Saldo Pendiente</th>
             <th>Días Atraso</th>
-            <th>Última Gestión</th> {/* COLUMNA AÑADIDA */}
+            <th>ÚLTIMA GESTIÓN</th> {/* COLUMNA AHORA SE LLENARÁ */}
             <th>Acción WA</th>
           </tr>
         </thead>
@@ -188,12 +230,13 @@ function RemindersPanel({ authenticatedFetch }) {
               <td>${formatMXN(r.sale?.balanceDue)}</td>
               <td>{r.daysLate || 0}</td>
               
-              {/* *** BOTÓN REGISTRAR GESTIÓN *** */}
-              <td>
+              {/* *** COLUMNA MOSTRANDO EL ESTADO DE LA GESTIÓN *** */}
+              <td title={`Última Gestión: ${r.lastManagement?.result || 'Ninguna'}`}>
+                {renderLastManagement(r.lastManagement)}
                 <button 
                   onClick={() => handleOpenLogModal(r)} 
                   className="btn btn-sm btn-info action-button"
-                  style={{ backgroundColor: '#007bff', color: 'white', border: 'none' }}
+                  style={getGestionButtonStyle(r.lastManagement)}
                 >
                   Registrar Gestión
                 </button>
