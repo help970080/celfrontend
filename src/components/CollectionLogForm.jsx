@@ -1,9 +1,9 @@
-// Archivo: src/components/CollectionLogForm.jsx (CORREGIDO)
+// Archivo: src/components/CollectionLogForm.jsx (VERSION FINAL CORREGIDA)
 
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
-import ReactDOM from 'react-dom'; // *** NUEVA IMPORTACIÓN ***
+import ReactDOM from 'react-dom'; 
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -19,8 +19,8 @@ const logResults = [
 ];
 
 function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
-    // Obtenemos el ID del usuario logueado para registrar quién hizo la gestión
-    const collectorId = parseInt(localStorage.getItem('userId'), 10);
+    // CORRECCIÓN: Usamos 0 como valor por defecto si no se encuentra un userId.
+    const collectorId = parseInt(localStorage.getItem('userId'), 10) || 0;
 
     const [result, setResult] = useState(logResults[0].value);
     const [notes, setNotes] = useState('');
@@ -33,18 +33,19 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
         setLoading(true);
         setError(null);
 
-        if (!saleData || !saleData.sale?.id || !collectorId) {
-            setError('Datos de venta o gestor faltantes.');
+        // CORRECCIÓN DE VALIDACIÓN: Aseguramos que el ID del gestor es válido (> 0)
+        if (!saleData || !saleData.sale?.id || collectorId <= 0) {
+            setError('Error: ID de usuario (Gestor) no encontrado. Por favor, inicia sesión de nuevo.');
             setLoading(false);
             return;
         }
 
         const logData = {
             saleId: saleData.sale.id,
-            collectorId: collectorId,
+            collectorId: collectorId, // Este valor ahora es > 0
             result: result,
             notes: notes,
-            nextActionDate: nextActionDate || null, // Se envía null si no hay fecha
+            nextActionDate: nextActionDate || null,
         };
 
         try {
@@ -60,10 +61,10 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
             }
 
             toast.success('Gestión de cobranza registrada con éxito.');
-            onClose(); // Cierra el modal y recarga el panel de recordatorios
+            onClose(); 
         } catch (err) {
             console.error("Error al registrar gestión:", err);
-            setError(err.message || "Error al registrar la gestión. Asegúrate que la ruta POST del backend esté funcionando.");
+            setError(err.message || "Error al registrar la gestión. Verifica tu conexión o el backend.");
             toast.error(`Error: ${err.message}`);
         } finally {
             setLoading(false);
@@ -76,14 +77,17 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
                 <button className="close-button" onClick={onClose}>&times;</button>
                 <h3>Registrar Gestión de Cobranza</h3>
                 
+                {/* Muestra el error si existe */}
+                {error && <p className="error-message" style={{textAlign: 'center'}}>{error}</p>}
+
                 <p><strong>Cliente:</strong> {saleData.client?.name} {saleData.client?.lastName}</p>
                 <p><strong>Venta ID:</strong> #{saleData.sale?.id}</p>
-                {/* Aseguramos el blindaje para el saldo */}
                 <p><strong>Saldo:</strong> ${Number(saleData.sale?.balanceDue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
                 
                 <hr/>
                 <form onSubmit={handleSubmit}>
-                    {error && <p className="error-message">{error}</p>}
+                    {/* El mensaje de error ahora se maneja arriba, pero lo dejamos por si hay otro punto de fallo */}
+                    {/* {error && <p className="error-message">{error}</p>} */} 
 
                     <div className="form-group">
                         <label htmlFor="result">Resultado de la Gestión:</label>
@@ -106,7 +110,7 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
                             id="nextActionDate" 
                             value={nextActionDate} 
                             onChange={(e) => setNextActionDate(e.target.value)} 
-                            min={dayjs().format('YYYY-MM-DD')} // No permitir fechas pasadas
+                            min={dayjs().format('YYYY-MM-DD')} 
                         />
                     </div>
 
@@ -118,11 +122,9 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
         </div>
     );
 
-    // *** USO DE CREATE PORTAL ***
-    // Esto asegura que el modal se muestre sobre todo el contenido
     return ReactDOM.createPortal(
         modalContent,
-        document.getElementById('modal-root') || document.body // Usa 'modal-root' si existe, si no, usa el body
+        document.getElementById('modal-root') || document.body 
     );
 }
 
