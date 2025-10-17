@@ -1,6 +1,6 @@
 // Archivo: src/components/CollectionLogForm.jsx (VERSION FINAL CORREGIDA)
 
-import React, { useState } from 'react';
+import React, { useState } => from 'react';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 import ReactDOM from 'react-dom'; 
@@ -19,8 +19,7 @@ const logResults = [
 ];
 
 function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
-    // CORRECCIÓN: Usamos 0 como valor por defecto si no se encuentra un userId.
-    const collectorId = parseInt(localStorage.getItem('userId'), 10) || 0;
+    // ELIMINAMOS la lectura de localStorage.getItem('userId') aquí.
 
     const [result, setResult] = useState(logResults[0].value);
     const [notes, setNotes] = useState('');
@@ -33,16 +32,16 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
         setLoading(true);
         setError(null);
 
-        // CORRECCIÓN DE VALIDACIÓN: Aseguramos que el ID del gestor es válido (> 0)
-        if (!saleData || !saleData.sale?.id || collectorId <= 0) {
-            setError('Error: ID de usuario (Gestor) no encontrado. Por favor, inicia sesión de nuevo.');
+        // VALIDACIÓN SIMPLIFICADA: Solo verificamos que los datos esenciales de la VENTA existan.
+        if (!saleData || !saleData.sale?.id) {
+            setError('Error: ID de venta faltante.');
             setLoading(false);
             return;
         }
 
         const logData = {
             saleId: saleData.sale.id,
-            collectorId: collectorId, // Este valor ahora es > 0
+            // YA NO ENVIAMOS collectorId
             result: result,
             notes: notes,
             nextActionDate: nextActionDate || null,
@@ -57,14 +56,16 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+                // Si el backend devuelve 401/403, este mensaje se activará
+                throw new Error(errorData.message || `Error HTTP: ${response.status}`); 
             }
 
             toast.success('Gestión de cobranza registrada con éxito.');
             onClose(); 
         } catch (err) {
             console.error("Error al registrar gestión:", err);
-            setError(err.message || "Error al registrar la gestión. Verifica tu conexión o el backend.");
+            // El error debe ser más claro si el problema es la sesión (401)
+            setError(err.message || "Error al registrar la gestión. Verifique su sesión o el backend.");
             toast.error(`Error: ${err.message}`);
         } finally {
             setLoading(false);
@@ -77,7 +78,6 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
                 <button className="close-button" onClick={onClose}>&times;</button>
                 <h3>Registrar Gestión de Cobranza</h3>
                 
-                {/* Muestra el error si existe */}
                 {error && <p className="error-message" style={{textAlign: 'center'}}>{error}</p>}
 
                 <p><strong>Cliente:</strong> {saleData.client?.name} {saleData.client?.lastName}</p>
@@ -86,9 +86,6 @@ function CollectionLogForm({ saleData, onClose, authenticatedFetch }) {
                 
                 <hr/>
                 <form onSubmit={handleSubmit}>
-                    {/* El mensaje de error ahora se maneja arriba, pero lo dejamos por si hay otro punto de fallo */}
-                    {/* {error && <p className="error-message">{error}</p>} */} 
-
                     <div className="form-group">
                         <label htmlFor="result">Resultado de la Gestión:</label>
                         <select id="result" value={result} onChange={(e) => setResult(e.target.value)} required>
