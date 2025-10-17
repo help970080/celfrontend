@@ -358,7 +358,8 @@ function ReportsDashboard({ authenticatedFetch }) {
                                             <td>{sale.id}</td>
                                             <td>{clientName}</td>
                                             <td>{soldProductsDisplay}</td>
-                                            <td>${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                            {/* BLINDAJE: Aseguramos que el monto sea un número */}
+                                            <td>${Number(sale.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                                             <td>{sale.isCredit ? 'Crédito' : 'Contado'}</td>
                                             <td>{dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</td>
                                         </tr>
@@ -377,7 +378,7 @@ function ReportsDashboard({ authenticatedFetch }) {
                                 <tr>
                                     <th>ID Pago</th>
                                     <th>ID Venta</th>
-                                    <th>Cliente</th>
+                                    <th>Cliente</th> {/* CORRECCIÓN APLICADA */}
                                     <th>Monto Pagado</th>
                                     <th>Método</th>
                                     <th>Notas</th>
@@ -391,7 +392,9 @@ function ReportsDashboard({ authenticatedFetch }) {
                                         <tr key={payment.id}>
                                             <td>{payment.id}</td>
                                             <td>{payment.sale ? payment.sale.id : 'N/A'}</td>
-                                            <td>${payment.amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                            <td>{clientName}</td> {/* CORRECCIÓN APLICADA */}
+                                            {/* BLINDAJE: Aseguramos que el monto sea un número */}
+                                            <td>${Number(payment.amount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td> 
                                             <td>{payment.paymentMethod || 'N/A'}</td>
                                             <td>{payment.notes || 'N/A'}</td>
                                             <td>{dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}</td>
@@ -451,7 +454,8 @@ function ReportsDashboard({ authenticatedFetch }) {
                                 {accumulatedSales.map((item, index) => (
                                     <tr key={index}>
                                         <td>{item[accumulatedPeriod]}</td>
-                                        <td>${item.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                        {/* BLINDAJE */}
+                                        <td>${Number(item.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                                         <td>{item.count}</td>
                                     </tr>
                                 ))}
@@ -475,7 +479,8 @@ function ReportsDashboard({ authenticatedFetch }) {
                                 {accumulatedPayments.map((item, index) => (
                                     <tr key={index}>
                                         <td>{item[accumulatedPeriod]}</td>
-                                        <td>${item.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                        {/* BLINDAJE */}
+                                        <td>${Number(item.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                                         <td>{item.count}</td>
                                     </tr>
                                 ))}
@@ -509,7 +514,8 @@ function ReportsDashboard({ authenticatedFetch }) {
                                     <tr key={index}>
                                         <td>{dayjs(item[accumulatedPeriod]).format('DD/MM/YYYY')}</td>
                                         <td>{item.collectorName}</td>
-                                        <td>${parseFloat(item.totalAmount).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                        {/* BLINDAJE */}
+                                        <td>${Number(item.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                                         <td>{item.count}</td>
                                     </tr>
                                 ))}
@@ -554,22 +560,26 @@ function ReportsDashboard({ authenticatedFetch }) {
                 <div className="summary-cards"> {/* Reutilizamos la clase de cards de resumen */}
                     <div className="summary-card">
                         <h3>Ingreso Proyectado</h3>
-                        <p>${projectedIncomeReport.totalProjectedIncome.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        {/* BLINDAJE */}
+                        <p>${Number(projectedIncomeReport.totalProjectedIncome || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     <div className="summary-card">
                         <h3>Ingreso Real Recibido</h3>
-                        <p>${projectedIncomeReport.totalRealIncome.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        {/* BLINDAJE */}
+                        <p>${Number(projectedIncomeReport.totalRealIncome || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     <div className="summary-card">
                         <h3>Monto Atrasado</h3>
                         <p style={{ color: projectedIncomeReport.totalOverdueAmount > 0 ? '#dc3545' : 'inherit' }}>
-                            ${projectedIncomeReport.totalOverdueAmount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {/* BLINDAJE */}
+                            ${Number(projectedIncomeReport.totalOverdueAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                     </div>
                     <div className="summary-card">
                         <h3>Monto en Adelanto</h3>
                         <p style={{ color: projectedIncomeReport.totalAdvanceAmount > 0 ? '#28a745' : 'inherit' }}>
-                            ${projectedIncomeReport.totalAdvanceAmount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {/* BLINDAJE */}
+                            ${Number(projectedIncomeReport.totalAdvanceAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                     </div>
                 </div>
@@ -613,12 +623,14 @@ function ReportsDashboard({ authenticatedFetch }) {
                                     <td>{sale.id}</td>
                                     <td>{clientName}</td>
                                     <td>{soldProductsDisplay}</td>
-                                    <td>${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                                    <td>${sale.downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                    {/* BLINDAJE */}
+                                    <td>${Number(sale.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                    <td>${Number(sale.downPayment || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                                     <td className={sale.balanceDue > 0 ? 'highlight-balance' : ''}>
-                                        ${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                        {/* BLINDAJE */}
+                                        ${Number(sale.balanceDue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                     </td>
-                                    <td>{sale.isCredit ? `$${sale.weeklyPaymentAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : 'N/A'}</td>
+                                    <td>{sale.isCredit ? `$${Number(sale.weeklyPaymentAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : 'N/A'}</td>
                                     <td>{paymentsMade}</td>
                                     <td>{remainingPayments >= 0 ? remainingPayments : 'N/A'}</td>
                                     <td><span className={`status-badge status-${sale.status}`}>{sale.status.replace('_', ' ')}</span></td>

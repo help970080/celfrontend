@@ -1,4 +1,4 @@
-// Archivo: components/ClientStatementViewer.jsx
+// Archivo: components/ClientStatementViewer.jsx (CORREGIDO)
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'; 
 import { useParams } from 'react-router-dom';
@@ -20,7 +20,8 @@ function ClientStatementViewer({ authenticatedFetch }) {
     const { clientId } = useParams();
     const [client, setClient] = useState(null);
     const [sales, setSales] = useState([]);
-    const [totalClientBalanceDue, setTotalClientBalanceDue] = useState(0);
+    // INICIALIZACIÓN SEGURA: Se inicializa con 0
+    const [totalClientBalanceDue, setTotalClientBalanceDue] = useState(0); 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const statementRef = useRef(); 
@@ -44,11 +45,14 @@ function ClientStatementViewer({ authenticatedFetch }) {
             }
             const data = await response.json();
             setClient(data.client);
-            setSales(data.sales);
-            setTotalClientBalanceDue(data.totalClientBalanceDue);
+            setSales(data.sales || []); // Asegurar que sea un array
+            // SE REMUEVE: setTotalClientBalanceDue(data.totalClientBalanceDue); // Esta propiedad no existe en el backend
+            
         } catch (err) {
             console.error("Error al obtener estado de cuenta:", err);
             setError(err.message || "No se pudo cargar el estado de cuenta.");
+            setClient(null);
+            setSales([]);
         } finally {
             setLoading(false);
         }
@@ -58,7 +62,19 @@ function ClientStatementViewer({ authenticatedFetch }) {
         fetchClientStatement();
     }, [fetchClientStatement]);
     
-    // ... (resto de funciones como handleGeneratePdf, etc. no cambian) ...
+    // CORRECCIÓN CLAVE: Calcular el saldo total en el frontend después de cargar las ventas
+    useEffect(() => {
+        if (sales && sales.length > 0) {
+            // Utilizamos el patrón (sale.balanceDue || 0) para sumar solo números
+            const total = sales.reduce((acc, sale) => acc + (sale.balanceDue || 0), 0);
+            setTotalClientBalanceDue(total);
+        } else {
+            setTotalClientBalanceDue(0);
+        }
+    }, [sales]);
+
+
+    // ... (El resto de funciones se mantienen igual, solo se modifica el JSX)
     const handleGeneratePdf = async () => {
         if (!statementRef.current) {
             toast.error("No se pudo capturar el contenido del estado de cuenta.");
@@ -85,15 +101,19 @@ function ClientStatementViewer({ authenticatedFetch }) {
                 heightLeft -= pageHeight;
             }
 
-            pdf.save(`estado_cuenta_${client.name.replace(/\s/g, '_')}_${client.lastName.replace(/\s/g, '_')}.pdf`);
+            const clientName = client?.name?.replace(/\s/g, '_') || 'desconocido';
+            const clientLastName = client?.lastName?.replace(/\s/g, '_') || 'desconocido';
+            pdf.save(`estado_cuenta_${clientName}_${clientLastName}.pdf`);
+
             toast.success("Estado de cuenta PDF generado con éxito!");
         } catch (error) {
             console.error("Error al generar PDF del estado de cuenta:", error);
             toast.error("Error al generar el estado de cuenta PDF.");
         }
     };
+    
     const handleShareWhatsApp = () => {
-        const clientPhone = client ? client.phone : '';
+        const clientPhone = client?.phone; 
         if (!clientPhone) {
             toast.error("El cliente no tiene un número de teléfono registrado.");
             return;
@@ -102,8 +122,9 @@ function ClientStatementViewer({ authenticatedFetch }) {
         window.open(`https://wa.me/${clientPhone}?text=${encodeURIComponent(message)}`, '_blank');
         toast.info("Se abrió WhatsApp con el mensaje. Adapta el mensaje si es necesario.");
     };
+    
     const handleShareSMS = () => {
-        const clientPhone = client ? client.phone : '';
+        const clientPhone = client?.phone; 
         if (!clientPhone) {
             toast.error("El cliente no tiene un número de teléfono registrado.");
             return;
@@ -138,11 +159,10 @@ function ClientStatementViewer({ authenticatedFetch }) {
                 <div className="statement-client-info">
                     <h3>Datos del Cliente</h3>
                     <p><strong>Nombre:</strong> {client.name} {client.lastName}</p>
-                    {/* --- INICIO DE LA CORRECCIÓN --- */}
-                    <p><strong>Teléfono:</strong> <a href={`tel:${client.phone}`}>{client.phone}</a></p>
-                    {/* --- FIN DE LA CORRECCIÓN --- */}
+                    <p><strong>Teléfono:</strong> <a href={`tel:${client.phone || ''}`}>{client.phone || 'N/A'}</a></p>
                     <p><strong>Email:</strong> {client.email || 'N/A'}</p>
-                    <p><strong>Dirección:</strong> {`${client.address}, ${client.city || 'N/A'}, ${client.state || 'N/A'}, ${client.zipCode || 'N/A'}`}</p>
+                    {/* BLINDAJE: uso de || 'N/A' y encadenamiento opcional */}
+                    <p><strong>Dirección:</strong> {`${client.address || 'N/A'}, ${client.city || 'N/A'}, ${client.state || 'N/A'}, ${client.zipCode || 'N/A'}`}</p>
                     <p><strong>ID Identificación:</strong> {client.identificationId || 'N/A'}</p>
                     <hr />
                 </div>
@@ -151,6 +171,7 @@ function ClientStatementViewer({ authenticatedFetch }) {
                 <div className="summary-cards">
                     <div className="summary-card">
                         <h3>Saldo Pendiente Total</h3>
+                        {/* USO SEGURO: totalClientBalanceDue es ahora seguro gracias al useEffect */}
                         <p>${totalClientBalanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     <div className="summary-card">
@@ -159,7 +180,8 @@ function ClientStatementViewer({ authenticatedFetch }) {
                     </div>
                     <div className="summary-card">
                         <h3>Total Pagos (Este Cliente)</h3>
-                        <p>{sales.reduce((acc, sale) => acc + (sale.payments ? sale.payments.length : 0), 0)}</p>
+                        {/* USO SEGURO: se asegura la lectura del length de payments */}
+                        <p>{sales.reduce((acc, sale) => acc + ((sale.payments?.length) || 0), 0)}</p>
                     </div>
                 </div>
                 <hr />
@@ -169,8 +191,9 @@ function ClientStatementViewer({ authenticatedFetch }) {
                     sales.map(sale => (
                         <div key={sale.id} className="sale-movement-card">
                             <h4>Venta #{sale.id} - {dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY')}</h4>
-                            {/* ... (resto del JSX de la tarjeta de venta no cambia) ... */}
-                            <p><strong>Monto Venta:</strong> ${sale.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
+                            
+                            {/* BLINDAJE: Uso de || 0 para valores numéricos */}
+                            <p><strong>Monto Venta:</strong> ${((sale.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 }))}</p>
                             <p><strong>Tipo:</strong> {sale.isCredit ? 'Crédito' : 'Contado'}</p>
                             <p><strong>Producto(s):</strong></p>
                             <ul className="statement-product-list"> 
@@ -184,10 +207,10 @@ function ClientStatementViewer({ authenticatedFetch }) {
                             </ul>
                             {sale.isCredit && (
                                 <>
-                                    <p><strong>Enganche:</strong> ${sale.downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
-                                    <p><strong>Saldo Venta Actual:</strong> ${sale.balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
-                                    <p><strong>Pago Semanal:</strong> ${sale.weeklyPaymentAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} ({sale.numberOfPayments} pagos)</p>
-                                    <p><strong>Tasa Interés:</strong> {sale.interestRate * 100}%</p>
+                                    <p><strong>Enganche:</strong> ${((sale.downPayment || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 }))}</p>
+                                    <p><strong>Saldo Venta Actual:</strong> ${((sale.balanceDue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 }))}</p>
+                                    <p><strong>Pago Semanal:</strong> ${((sale.weeklyPaymentAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 }))} ({sale.numberOfPayments} pagos)</p>
+                                    <p><strong>Tasa Interés:</strong> {((sale.interestRate || 0) * 100).toFixed(2)}%</p> 
                                 </>
                             )}
                             {sale.payments && sale.payments.length > 0 && (
@@ -196,7 +219,7 @@ function ClientStatementViewer({ authenticatedFetch }) {
                                     <ul>
                                         {sale.payments.map(payment => (
                                             <li key={payment.id}>
-                                                {dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')} - ${payment.amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} ({payment.paymentMethod}) - {payment.notes || ''}
+                                                {dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')} - ${((payment.amount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 }))} ({payment.paymentMethod}) - {payment.notes || ''}
                                             </li>
                                         ))}
                                     </ul>
