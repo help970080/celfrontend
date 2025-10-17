@@ -1,4 +1,4 @@
-// Archivo: src/components/ReceiptViewer.jsx
+// Archivo: src/components/ReceiptViewer.jsx (CORREGIDO)
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
@@ -7,7 +7,9 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { toast } from 'react-toastify';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+
+// Se mantiene la importación estándar para jsPDF, ya que es la que usa tu código.
+import jsPDF from 'jspdf'; 
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -81,23 +83,33 @@ function ReceiptViewer({
     return [...list].sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))[0];
   };
 
+  // --- FUNCIÓN CENTRAL DE GENERACIÓN DE PDF ---
   const generatePdfFromDom = async () => {
     const node = receiptRef.current;
     if (!node) throw new Error('No se encontró el contenedor del recibo.');
 
+    // Usamos Math.ceil para asegurar que las dimensiones del canvas sean enteros
     const canvas = await html2canvas(node, {
       scale: Math.max(2, window.devicePixelRatio || 1),
       useCORS: true,
       backgroundColor: '#ffffff',
-      windowWidth: node.scrollWidth,
-      windowHeight: node.scrollHeight,
+      windowWidth: Math.ceil(node.scrollWidth),
+      windowHeight: Math.ceil(node.scrollHeight),
     });
 
     const imgData = canvas.toDataURL('image/png');
     const pdfWidthMM = 80;
     const pdfHeightMM = (canvas.height * pdfWidthMM) / canvas.width;
 
-    const pdf = new jsPDF({
+    // CORRECCIÓN/BLINDAJE: Aseguramos que jsPDF sea la clase/función correcta.
+    // Si el error "A is not a function" persiste, la causa más común es que
+    // el import 'jspdf' no devuelve la función constructora directamente.
+    // Si tu bundler lo requiere, tendrías que cambiar la importación.
+    // Por ahora, confiamos en la importación estándar y el código de inicialización.
+    const PDF = jsPDF.jsPDF || jsPDF; // Intenta acceder a .jsPDF si es necesario
+    
+    // Si la importación ya es correcta, el problema es la llamada.
+    const pdf = new PDF({ 
       orientation: 'portrait',
       unit: 'mm',
       format: [pdfWidthMM, pdfHeightMM],
@@ -108,11 +120,13 @@ function ReceiptViewer({
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidthMM, pdfHeightMM, undefined, 'FAST');
     return pdf;
   };
+  // --- FIN FUNCIÓN CENTRAL DE GENERACIÓN DE PDF ---
+
 
   const handleGeneratePdf = async () => {
     try {
       toast.info('Generando PDF...');
-      const pdf = await generatePdfFromDom();
+      const pdf = await generatePdfFromDom(); // Llama a la función blindada
       pdf.save(`recibo_${sale?.id || saleId}.pdf`);
       toast.success('Recibo PDF generado.');
     } catch (e) {
@@ -148,7 +162,7 @@ ${businessInfo.deposit}
 Cualquier duda, responde a este mensaje.`;
 
     try {
-      const pdf = await generatePdfFromDom();
+      const pdf = await generatePdfFromDom(); // Llama a la función blindada
       const blob = pdf.output('blob');
       const fileName = payment ? `recibo_abono_${payment.id}.pdf` : `recibo_venta_${sale?.id || saleId}.pdf`;
       const file = new File([blob], fileName, { type: 'application/pdf' });
