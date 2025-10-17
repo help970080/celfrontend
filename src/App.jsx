@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import 'react-toastify/dist/React-toastify.css';
 
 import ProductAdminPanel from './components/ProductAdminPanel';
 import ClientAdminPanel from './components/ClientAdminPanel';
@@ -19,7 +19,8 @@ import ClientLogin from './components/ClientLogin';
 import ClientPortalDashboard from './components/ClientPortalDashboard';
 import RouteTracker from './components/RouteTracker';
 
-import './App.css';
+// 🚨 CORRECCIÓN CLAVE: Agregamos un parámetro de versión para romper la caché del bundler/CDN.
+import './App.css?v=20251017B'; 
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -154,7 +155,7 @@ function App() {
 
             {token && <Route path="/admin" element={<Navigate to="/admin/sales" />} />}
             {clientToken && <Route path="/portal" element={<Navigate to="/portal/dashboard" />} />}
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={<Navigate to="/" />} />}
           </Routes>
         </main>
       </div>
