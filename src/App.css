@@ -1132,3 +1132,104 @@ button[type="submit"]:disabled {
   0%, 100% { opacity: 0.3; transform: translateY(-50%) translateX(0); }
   50% { opacity: 0.6; transform: translateY(-50%) translateX(10px); }
 }
+/* ===== FIX CRÍTICO: BOTONES DE ELIMINACIÓN ===== */
+
+/* Asegurar que TODOS los botones de acción sean clickeables */
+.action-buttons,
+.action-buttons button,
+.delete-button {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Fix específico para botones de eliminar en tablas */
+.sale-table .delete-button,
+.client-table .delete-button,
+.user-table .delete-button {
+  background: var(--danger) !important;
+  color: white !important;
+  padding: 0.5rem 1rem !important;
+  border: none !important;
+  border-radius: var(--radius-sm) !important;
+  cursor: pointer !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  transition: var(--transition) !important;
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 100 !important;
+  min-width: 85px !important;
+}
+
+.sale-table .delete-button:hover,
+.client-table .delete-button:hover,
+.user-table .delete-button:hover {
+  background: var(--danger-dark) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* Asegurar que las celdas de acciones NO bloqueen eventos */
+.sale-table td:last-child,
+.client-table td:last-child,
+.user-table td:last-child {
+  position: relative !important;
+  z-index: 1 !important;
+  overflow: visible !important;
+}
+
+/* Remover cualquier overlay que pueda estar bloqueando */
+.table-responsive::after {
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+.table-responsive::before {
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+/* Fix para el contenedor de botones de acción */
+.action-buttons {
+  display: flex !important;
+  gap: 0.5rem !important;
+  min-width: 180px !important;
+  flex-wrap: nowrap !important;
+  position: relative !important;
+  z-index: 10 !important;
+  pointer-events: auto !important;
+}
+
+/* Asegurar que los tr y td no bloqueen eventos */
+.sale-table tbody tr,
+.client-table tbody tr,
+.user-table tbody tr {
+  position: relative !important;
+  z-index: auto !important;
+}
+
+.sale-table tbody tr:hover,
+.client-table tbody tr:hover,
+.user-table tbody tr:hover {
+  z-index: auto !important;
+}
+
+/* IMPORTANTE: Remover transform en hover de las filas ya que puede causar problemas de z-index */
+.client-table tbody tr:hover, 
+.sale-table tbody tr:hover, 
+.daily-table tbody tr:hover,
+.pending-credits-table tbody tr:hover, 
+.user-table tbody tr:hover {
+  background: var(--light);
+  transform: none !important; /* CAMBIO CLAVE: Remover el scale que causaba problemas */
+}
+
+/* Debug: Hacer visible el área clickeable */
+.delete-button {
+  outline: 2px dashed transparent;
+}
+
+.delete-button:hover {
+  outline-color: rgba(239, 68, 68, 0.3);
+}
