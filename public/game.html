@@ -281,7 +281,7 @@
 
         function spawnPhone(timestamp) {
             if (timestamp - lastSpawn > spawnRate) {
-                const isBad = Math.random() < 0.2; // 20% teléfonos rotos
+                const isBad = Math.random() < 0.2;
                 phones.push({
                     x: Math.random() * (canvas.width - 40) + 20,
                     y: -50,
@@ -294,7 +294,6 @@
                 });
                 lastSpawn = timestamp;
                 
-                // Aumentar dificultad
                 if (score > 0 && score % 10 === 0) {
                     spawnRate = Math.max(600, spawnRate - 50);
                     difficulty += 0.2;
@@ -303,7 +302,6 @@
         }
 
         function updateBasket() {
-            // Controles de teclado
             if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
                 basket.x -= basket.speed;
             }
@@ -311,12 +309,10 @@
                 basket.x += basket.speed;
             }
 
-            // Control de mouse/touch
             if (mouseX > 0) {
                 basket.x += (mouseX - basket.x - basket.width / 2) * 0.15;
             }
 
-            // Límites
             basket.x = Math.max(0, Math.min(canvas.width - basket.width, basket.x));
         }
 
@@ -326,7 +322,6 @@
                 phone.y += phone.speed;
                 phone.rotation += phone.rotSpeed;
 
-                // Verificar colisión con canasta
                 if (phone.y + phone.height >= basket.y &&
                     phone.y <= basket.y + basket.height &&
                     phone.x + phone.width >= basket.x &&
@@ -349,7 +344,6 @@
                     continue;
                 }
 
-                // Eliminar si sale de pantalla
                 if (phone.y > canvas.height) {
                     if (!phone.isBad) {
                         lives--;
@@ -409,11 +403,9 @@
         }
 
         function draw() {
-            // Limpiar canvas
             ctx.fillStyle = '#f0f4ff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Dibujar canasta
             ctx.fillStyle = '#667eea';
             ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
             ctx.fillStyle = '#4c5fd7';
@@ -421,7 +413,6 @@
             ctx.fillRect(basket.x, basket.y, 5, basket.height);
             ctx.fillRect(basket.x + basket.width - 5, basket.y, 5, basket.height);
 
-            // Dibujar teléfonos
             phones.forEach(phone => {
                 ctx.save();
                 ctx.translate(phone.x + phone.width / 2, phone.y + phone.height / 2);
@@ -449,7 +440,6 @@
                 ctx.restore();
             });
 
-            // Dibujar partículas
             if (window.particles) {
                 window.particles.forEach(p => {
                     ctx.save();
