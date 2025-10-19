@@ -44,7 +44,7 @@
   .ad-btn.enabled{cursor:pointer;opacity:1;background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff}
   .ad-btn.enabled:active{transform:translateY(1px)}
 
-  /* CLAVE: al ocultarse no tapa ni captura eventos */
+  /* Al ocultarse no tapa ni captura eventos */
   .hidden{display:none !important}
 </style>
 </head>
@@ -106,7 +106,7 @@
   let running = false;
   let score = 0, lives = 3;
   const basket = { x:0, y:0, w:130, h:30, speed:11 };
-  let items = [], particles = [];   // ← ÚNICA declaración (corregido)
+  let items = [], particles = [];
   const keys = {};
   let mouseX = 0;
 
@@ -181,23 +181,30 @@
   }
 
   function hideOverlayAndStart(){
-    adOverlay.classList.add('hidden');                 // oculto total
+    // Oculta completamente la publicidad
+    adOverlay.classList.add('hidden');
     adOverlay.setAttribute('aria-hidden','true');
     try{ adOverlay.setAttribute('inert',''); }catch(_){}
 
+    // ✅ Si venimos de Game Over (vidas 0 o menos), reinicia antes de iniciar
+    if (lives <= 0) resetGame();
+
+    // Arranca el loop
     if (!running){
-      running = true; startBtn.textContent='PAUSAR'; canvas.focus();
+      running = true;
+      startBtn.textContent = 'PAUSAR';
+      canvas.focus();
       if (raf) cancelAnimationFrame(raf);
       raf = requestAnimationFrame(loop);
     }
   }
   /* ---------------------------------- */
 
-  // Mostrar intro SOLO cuando la página terminó de cargar
+  // Mostrar intro SOLO cuando termine de cargar
   window.addEventListener('load', () => showOverlay('intro', 5));
 
   function toggleStart(){
-    // Si la publicidad aún está visible, primero ocúltala y arranca
+    // Si la publicidad aún está visible, primero ocúltala e inicia
     if (!adOverlay.classList.contains('hidden')) { hideOverlayAndStart(); return; }
     if (running){
       running=false; if (raf) cancelAnimationFrame(raf), raf=null; startBtn.textContent='INICIAR';
