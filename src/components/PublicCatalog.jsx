@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import './PublicCatalog.css'; // Importaremos un CSS específico
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
