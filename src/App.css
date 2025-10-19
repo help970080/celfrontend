@@ -503,7 +503,7 @@ button[type="submit"]:disabled {
 
 /* ===== TABLAS ===== */
 /* Contenedor con scroll horizontal */
-.table-container {
+.table-responsive {
   width: 100%;
   overflow-x: auto;
   overflow-y: visible;
@@ -511,33 +511,71 @@ button[type="submit"]:disabled {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   background: white;
+  position: relative;
 }
 
-/* Scrollbar personalizada */
-.table-container::-webkit-scrollbar {
-  height: 12px;
+/* Scrollbar personalizada más visible */
+.table-responsive::-webkit-scrollbar {
+  height: 14px;
+  background: var(--gray-100);
 }
 
-.table-container::-webkit-scrollbar-track {
+.table-responsive::-webkit-scrollbar-track {
   background: var(--gray-100);
   border-radius: var(--radius);
+  margin: 0 10px;
 }
 
-.table-container::-webkit-scrollbar-thumb {
+.table-responsive::-webkit-scrollbar-thumb {
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   border-radius: var(--radius);
+  border: 2px solid var(--gray-100);
+  transition: var(--transition);
 }
 
-.table-container::-webkit-scrollbar-thumb:hover {
+.table-responsive::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, var(--primary-dark), var(--secondary));
+  border: 2px solid var(--gray-200);
+}
+
+/* Indicador de scroll (opcional pero útil) */
+.table-responsive::after {
+  content: '← Desliza para ver más →';
+  position: sticky;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1) 20%, rgba(102, 126, 234, 0.15));
+  color: var(--primary);
+  padding: 8px 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: right;
+  border-radius: 0 0 var(--radius) 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.table-responsive:hover::after {
+  opacity: 1;
+}
+
+/* Ocultar indicador cuando se llega al final */
+.table-responsive.scrolled-end::after {
+  opacity: 0;
 }
 
 .client-table, .sale-table, .daily-table, .pending-credits-table, .user-table {
   width: 100%;
-  min-width: 900px; /* Ancho mínimo para evitar que se comprima demasiado */
+  min-width: 1200px; /* Ancho mínimo para la tabla de ventas */
   border-collapse: separate;
   border-spacing: 0;
   background: white;
+}
+
+/* Tabla de ventas necesita más espacio */
+.sale-table {
+  min-width: 1400px;
 }
 
 .client-table th, .sale-table th, .daily-table th, .pending-credits-table th, .user-table th {
@@ -570,6 +608,7 @@ button[type="submit"]:disabled {
 .client-table td, .sale-table td, .daily-table td, .pending-credits-table td, .user-table td {
   padding: 1rem;
   border-bottom: 1px solid var(--gray-200);
+  white-space: nowrap; /* Evita que el texto se rompa en múltiples líneas */
 }
 
 .client-table tbody tr, .sale-table tbody tr, .daily-table tbody tr,
