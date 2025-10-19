@@ -502,15 +502,42 @@ button[type="submit"]:disabled {
 }
 
 /* ===== TABLAS ===== */
+/* Contenedor con scroll horizontal */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  margin-top: 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  background: white;
+}
+
+/* Scrollbar personalizada */
+.table-container::-webkit-scrollbar {
+  height: 12px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: var(--radius);
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-radius: var(--radius);
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--primary-dark), var(--secondary));
+}
+
 .client-table, .sale-table, .daily-table, .pending-credits-table, .user-table {
   width: 100%;
+  min-width: 900px; /* Ancho mínimo para evitar que se comprima demasiado */
   border-collapse: separate;
   border-spacing: 0;
-  margin-top: 2rem;
   background: white;
-  border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: var(--shadow);
 }
 
 .client-table th, .sale-table th, .daily-table th, .pending-credits-table th, .user-table th {
