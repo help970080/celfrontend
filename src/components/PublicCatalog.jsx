@@ -10,7 +10,7 @@ function PublicCatalog() {
     const [order, setOrder] = useState('asc');
     const [category, setCategory] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(12); // Más productos por página
+    const [itemsPerPage, setItemsPerPage] = useState(12);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
     const [showFilters, setShowFilters] = useState(false);
@@ -126,32 +126,68 @@ function PublicCatalog() {
             {PROMOTIONAL_VIDEO_URL && (
                 <div className="promotional-section">
                     {promotionalMediaDetails.type === 'youtube' && promotionalMediaDetails.id ? (
-                        <iframe
-                            className="promotional-video"
-                            src={`https://www.youtube.com/embed/${promotionalMediaDetails.id}?autoplay=0&mute=0&loop=0`}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            title="Video Promocional"
-                        ></iframe>
+                        <a
+                            href={PROMOTIONAL_VIDEO_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="promotional-video-link"
+                        >
+                            <img 
+                                src={`https://img.youtube.com/vi/${promotionalMediaDetails.id}/maxresdefault.jpg`}
+                                alt="Video Promocional"
+                                className="promotional-video"
+                                onError={(e) => {
+                                    e.target.src = `https://img.youtube.com/vi/${promotionalMediaDetails.id}/hqdefault.jpg`;
+                                }}
+                            />
+                            <div className="promotional-play-button">
+                                <svg viewBox="0 0 68 48" width="80" height="60">
+                                    <path d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,.13,34,0,34,0S12.21,.13,6.9,1.55 C3.97,2.33,2.27,4.81,1.48,7.74C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z" fill="#f00"></path>
+                                    <path d="M 45,24 27,14 27,34" fill="#fff"></path>
+                                </svg>
+                            </div>
+                        </a>
                     ) : promotionalMediaDetails.type === 'vimeo' && promotionalMediaDetails.id ? (
-                        <iframe
-                            className="promotional-video"
-                            src={`https://player.vimeo.com/video/${promotionalMediaDetails.id}?autoplay=0&loop=0`}
-                            frameBorder="0"
-                            allow="autoplay; fullscreen; picture-in-picture"
-                            allowFullScreen
-                            title="Video Promocional"
-                        ></iframe>
+                        <a
+                            href={PROMOTIONAL_VIDEO_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="promotional-video-link"
+                        >
+                            <img 
+                                src={`https://vumbnail.com/${promotionalMediaDetails.id}.jpg`}
+                                alt="Video Promocional"
+                                className="promotional-video"
+                                onError={(e) => {
+                                    e.target.src = 'https://via.placeholder.com/800x450/667eea/ffffff?text=Video+Promocional';
+                                }}
+                            />
+                            <div className="promotional-play-button vimeo">
+                                <svg viewBox="0 0 24 24" width="80" height="80" fill="#00adef">
+                                    <circle cx="12" cy="12" r="10" fill="#00adef"/>
+                                    <path d="M10 8l6 4-6 4V8z" fill="#fff"/>
+                                </svg>
+                            </div>
+                        </a>
                     ) : promotionalMediaDetails.type === 'vidnoz' && promotionalMediaDetails.id ? (
-                        <iframe
-                            className="promotional-video"
-                            src={`https://share.vidnoz.com/embed/${promotionalMediaDetails.id}`}
-                            frameBorder="0"
-                            allow="autoplay; fullscreen; picture-in-picture"
-                            allowFullScreen
-                            title="Video Promocional"
-                        ></iframe>
+                        <a
+                            href={PROMOTIONAL_VIDEO_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="promotional-video-link"
+                        >
+                            <img 
+                                src="https://via.placeholder.com/800x450/667eea/ffffff?text=Video+Promocional"
+                                alt="Video Promocional"
+                                className="promotional-video"
+                            />
+                            <div className="promotional-play-button">
+                                <svg viewBox="0 0 24 24" width="80" height="80" fill="#667eea">
+                                    <circle cx="12" cy="12" r="10" fill="#667eea"/>
+                                    <path d="M10 8l6 4-6 4V8z" fill="#fff"/>
+                                </svg>
+                            </div>
+                        </a>
                     ) : (
                         <img
                             src={PROMOTIONAL_VIDEO_URL || 'https://via.placeholder.com/800x450'}
@@ -229,29 +265,65 @@ function PublicCatalog() {
                                 {/* Imagen/Video */}
                                 <div className="product-media">
                                     {mediaType.type === 'youtube' && mediaType.id ? (
-                                        <iframe
-                                            src={`https://www.youtube.com/embed/${mediaType.id}`}
-                                            frameBorder="0"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                            allowFullScreen
-                                            title={product.name}
-                                        ></iframe>
+                                        <a
+                                            href={firstMedia}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="video-thumbnail-link"
+                                        >
+                                            <img 
+                                                src={`https://img.youtube.com/vi/${mediaType.id}/maxresdefault.jpg`}
+                                                alt={product.name}
+                                                onError={(e) => {
+                                                    e.target.src = `https://img.youtube.com/vi/${mediaType.id}/hqdefault.jpg`;
+                                                }}
+                                            />
+                                            <div className="play-button-overlay">
+                                                <svg viewBox="0 0 68 48" width="68" height="48">
+                                                    <path d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,.13,34,0,34,0S12.21,.13,6.9,1.55 C3.97,2.33,2.27,4.81,1.48,7.74C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z" fill="#f00"></path>
+                                                    <path d="M 45,24 27,14 27,34" fill="#fff"></path>
+                                                </svg>
+                                            </div>
+                                        </a>
                                     ) : mediaType.type === 'vimeo' && mediaType.id ? (
-                                        <iframe
-                                            src={`https://player.vimeo.com/video/${mediaType.id}`}
-                                            frameBorder="0"
-                                            allow="autoplay; fullscreen; picture-in-picture"
-                                            allowFullScreen
-                                            title={product.name}
-                                        ></iframe>
+                                        <a
+                                            href={firstMedia}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="video-thumbnail-link"
+                                        >
+                                            <img 
+                                                src={`https://vumbnail.com/${mediaType.id}.jpg`}
+                                                alt={product.name}
+                                                onError={(e) => {
+                                                    e.target.src = 'https://via.placeholder.com/400x300/667eea/ffffff?text=Video+Vimeo';
+                                                }}
+                                            />
+                                            <div className="play-button-overlay vimeo">
+                                                <svg viewBox="0 0 24 24" width="60" height="60" fill="#00adef">
+                                                    <circle cx="12" cy="12" r="10" fill="#00adef"/>
+                                                    <path d="M10 8l6 4-6 4V8z" fill="#fff"/>
+                                                </svg>
+                                            </div>
+                                        </a>
                                     ) : mediaType.type === 'vidnoz' && mediaType.id ? (
-                                        <iframe
-                                            src={`https://share.vidnoz.com/embed/${mediaType.id}`}
-                                            frameBorder="0"
-                                            allow="autoplay; fullscreen; picture-in-picture"
-                                            allowFullScreen
-                                            title={product.name}
-                                        ></iframe>
+                                        <a
+                                            href={firstMedia}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="video-thumbnail-link"
+                                        >
+                                            <img 
+                                                src="https://via.placeholder.com/400x300/667eea/ffffff?text=Video+Vidnoz"
+                                                alt={product.name}
+                                            />
+                                            <div className="play-button-overlay">
+                                                <svg viewBox="0 0 24 24" width="60" height="60" fill="#667eea">
+                                                    <circle cx="12" cy="12" r="10" fill="#667eea"/>
+                                                    <path d="M10 8l6 4-6 4V8z" fill="#fff"/>
+                                                </svg>
+                                            </div>
+                                        </a>
                                     ) : (
                                         <img src={firstMedia} alt={product.name} />
                                     )}
