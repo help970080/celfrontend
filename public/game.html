@@ -50,10 +50,60 @@
       position:absolute; right:10px; bottom:10px; z-index:4;
       background:rgba(0,0,0,.55); color:#fff; font-size:12px; padding:7px 10px; border-radius:10px;
     }
+
+    /* Publicidad previa con cuenta regresiva */
+    #adOverlay {
+      position:absolute; inset:0; z-index:10;
+      background: radial-gradient(1200px 600px at 50% -200px, rgba(255,255,255,.95), rgba(0,0,0,.75));
+      display:flex; align-items:center; justify-content:center; padding:18px;
+    }
+    .ad-card {
+      width:min(680px, 92%); color:#1b1b1b;
+      background:rgba(255,255,255,.95);
+      border:1px solid rgba(0,0,0,.08); border-radius:18px;
+      box-shadow:0 24px 80px rgba(0,0,0,.25), 0 2px 0 rgba(255,255,255,.6) inset;
+      padding:22px 20px;
+      backdrop-filter: blur(6px);
+      text-align:center;
+    }
+    .ad-title { font-weight:900; font-size:28px; color:#252a72; letter-spacing:.3px; }
+    .ad-sub { margin-top:6px; font-size:15px; color:#4d4d6a; }
+    .ad-grid {
+      margin:16px auto 14px; display:grid; gap:10px;
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .ad-item {
+      border-radius:12px; padding:14px 10px; color:#fff; font-weight:900; font-size:18px;
+      box-shadow:0 10px 24px rgba(0,0,0,.15); text-shadow:0 1px 0 rgba(0,0,0,.2);
+    }
+    .dhl { background:#ffcc00; color:#1a1a1a; }
+    .estafeta { background:#e30613; }
+    .ups { background:#351c15; color:#f2a900; }
+
+    .ad-note { font-size:13px; color:#5a5f96; margin-top:4px; }
+    .ad-cta {
+      margin-top:14px; display:flex; gap:10px; justify-content:center; align-items:center;
+    }
+    .count-pill {
+      background:#eef1ff; border:1px solid #d7dcff; color:#2e348a;
+      padding:8px 12px; border-radius:999px; font-weight:800; font-size:14px;
+      min-width:110px;
+    }
+    .ad-btn {
+      border:0; border-radius:12px; padding:12px 18px; font-weight:900; font-size:15px;
+      background:linear-gradient(135deg,#8ec5fc,#e0c3fc); color:#272557; cursor:not-allowed; opacity:.65;
+      box-shadow:0 10px 28px rgba(0,0,0,.18);
+      transition:opacity .2s ease, transform .12s ease;
+    }
+    .ad-btn.enabled { cursor:pointer; opacity:1; background:linear-gradient(135deg,#f093fb,#f5576c); color:#fff; }
+    .ad-btn.enabled:active { transform:translateY(1px); }
+
+    .hidden { display:none; }
   </style>
 </head>
 <body>
   <div id="gameContainer">
+    <!-- HUD -->
     <div id="hud" role="toolbar" aria-label="Controles del juego">
       <div class="pill">📦 Puntuación: <span id="score">0</span></div>
       <div class="pill">❤️ Vidas: <span id="lives">3</span></div>
@@ -62,31 +112,65 @@
       <button id="restartBtn" class="btn btn-restart" type="button">Reiniciar</button>
     </div>
 
+    <!-- Canvas -->
     <canvas id="gameCanvas" tabindex="0" aria-label="Área del juego"></canvas>
     <div id="help">← → o arrastra con el mouse/touch</div>
+
+    <!-- Publicidad previa con cuenta regresiva -->
+    <div id="adOverlay" role="dialog" aria-modal="true" aria-labelledby="ad-title">
+      <div class="ad-card">
+        <div id="ad-title" class="ad-title">Paquetería • Crédito • Envíos</div>
+        <div class="ad-sub">DHL • ESTAFETA • UPS • Semanas y crédito disponibles</div>
+
+        <div class="ad-grid" role="list">
+          <div class="ad-item dhl" role="listitem">DHL</div>
+          <div class="ad-item estafeta" role="listitem">ESTAFETA</div>
+          <div class="ad-item ups" role="listitem">UPS</div>
+        </div>
+
+        <div class="ad-note">Lee esto antes de jugar: atrapa marcas y palabras positivas; evita “MOROSO” y “PAQUETE ROTO”.</div>
+
+        <div class="ad-cta">
+          <div id="countdown" class="count-pill">Empieza en 5s</div>
+          <button id="adStartBtn" class="ad-btn" disabled>JUGAR AHORA</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // --- Configuración de "paqueterías" ---
-    const COMPANIES = [
-      { name: 'DHL',      bg: '#ffcc00', fg: '#1a1a1a' },
-      { name: 'ESTAFETA', bg: '#e30613', fg: '#ffffff' },
-      { name: 'UPS',      bg: '#351c15', fg: '#f2a900' }
+    // --- ÍTEMS BUENOS ---
+    const GOOD_ITEMS = [
+      { name:'DHL',      bg:'#ffcc00', fg:'#1a1a1a' },
+      { name:'ESTAFETA', bg:'#e30613', fg:'#ffffff' },
+      { name:'UPS',      bg:'#351c15', fg:'#f2a900' },
+      { name:'LAVADORA', bg:'#12b886', fg:'#ffffff' },
+      { name:'CREDITO',  bg:'#2563eb', fg:'#ffffff' },
+      { name:'SEMANA',   bg:'#7c3aed', fg:'#ffffff' },
     ];
-    const BAD_RATE = 0.18; // 18% "paquete roto"
+
+    // --- ÍTEMS MALOS (castigo) ---
+    const BAD_ITEMS = [
+      { name:'MOROSO',      bg:'#111827', fg:'#ffffff', emoji:'⛔' },
+      { name:'PAQUETE ROTO',bg:'#ff4757', fg:'#ffffff', emoji:'💥' },
+    ];
+
+    const BAD_RATE = 0.22; // un poco más frecuente el castigo
 
     // Estado
     let running = false;
     let score = 0, lives = 3;
-    const basket = { x:0, y:0, w:120, h:28, speed:10 };
-    let items = [];       // caídas (paqueterías o paquete roto)
+    const basket = { x:0, y:0, w:130, h:30, speed:11 }; // más rápido
+    let items = [];       // caídas (buenos/malos)
     let particles = [];
     const keys = {};
     let mouseX = 0;
-    let lastSpawn = 0, spawnRate = 1000, difficulty = 1;
+
+    // Más velocidad/dificultad
+    let lastSpawn = 0, spawnRate = 850, difficulty = 1; // aparece más seguido
     let raf = null;
 
     // UI
@@ -95,6 +179,12 @@
     const startBtn = document.getElementById('startBtn');
     const restartBtn = document.getElementById('restartBtn');
 
+    // Publicidad
+    const adOverlay = document.getElementById('adOverlay');
+    const adStartBtn = document.getElementById('adStartBtn');
+    const countdownEl = document.getElementById('countdown');
+
+    // Tamaño canvas
     function resize() {
       canvas.width = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
@@ -112,18 +202,60 @@
 
     startBtn.addEventListener('click', toggleStart);
     restartBtn.addEventListener('click', resetGame);
+    adStartBtn.addEventListener('click', closeAdAndStart);
+
+    // Publicidad al cargar
+    showAdWithDelay(5);
+
+    function showAdWithDelay(seconds){
+      adOverlay.classList.remove('hidden');
+      let left = seconds;
+      countdownEl.textContent = `Empieza en ${left}s`;
+      adStartBtn.disabled = true;
+      adStartBtn.classList.remove('enabled');
+
+      const t = setInterval(() => {
+        left--;
+        if (left > 0) {
+          countdownEl.textContent = `Empieza en ${left}s`;
+        } else {
+          clearInterval(t);
+          countdownEl.textContent = 'Listo';
+          adStartBtn.disabled = false;
+          adStartBtn.classList.add('enabled');
+          adStartBtn.focus();
+        }
+      }, 1000);
+    }
+
+    function closeAdAndStart(){
+      adOverlay.classList.add('hidden');
+      if (!running) {
+        running = true;
+        startBtn.textContent = 'PAUSAR';
+        canvas.focus();
+        if (raf) cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(loop);
+      }
+    }
 
     function toggleStart(){
-      if (running) { running = false; if (raf) cancelAnimationFrame(raf), raf=null; startBtn.textContent = 'INICIAR'; }
-      else { if (lives<=0) resetGame(); running = true; startBtn.textContent = 'PAUSAR'; canvas.focus();
-             if (raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); }
+      if (!adOverlay.classList.contains('hidden')) return; // no iniciar si no cerró la publicidad
+
+      if (running) {
+        running = false; if (raf) cancelAnimationFrame(raf), raf=null; startBtn.textContent = 'INICIAR';
+      } else {
+        if (lives<=0) resetGame();
+        running = true; startBtn.textContent = 'PAUSAR'; canvas.focus();
+        if (raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
+      }
     }
 
     function resetGame(){
       running = false;
       if (raf) cancelAnimationFrame(raf), raf=null;
       score = 0; lives = 3; items = []; particles = [];
-      difficulty = 1; spawnRate = 1000; lastSpawn = 0;
+      difficulty = 1; spawnRate = 850; lastSpawn = 0;
       basket.x = canvas.width/2 - basket.w/2; mouseX = basket.x + basket.w/2;
       updateHUD(); startBtn.textContent = 'INICIAR'; draw();
     }
@@ -136,26 +268,27 @@
         const isBad = Math.random() < BAD_RATE;
         let payload;
         if (isBad){
-          payload = { type:'bad', label:'PAQUETE ROTO', bg:'#ff4757', fg:'#ffffff', emoji:'💥' };
+          const bad = BAD_ITEMS[Math.floor(Math.random()*BAD_ITEMS.length)];
+          payload = { type:'bad', label:bad.name, bg:bad.bg, fg:bad.fg, emoji:bad.emoji };
         } else {
-          const c = COMPANIES[Math.floor(Math.random()*COMPANIES.length)];
-          payload = { type:'good', label:c.name, bg:c.bg, fg:c.fg };
+          const g = GOOD_ITEMS[Math.floor(Math.random()*GOOD_ITEMS.length)];
+          payload = { type:'good', label:g.name, bg:g.bg, fg:g.fg };
         }
         items.push({
-          x: Math.random()*(canvas.width - 140) + 70, // margen
+          x: Math.random()*(canvas.width - 160) + 80,
           y: -60,
-          w: 140,
-          h: 46,
-          v: 2 + difficulty * 0.6,
-          rot: (Math.random()-0.5)*0.06,
+          w: 150,
+          h: 48,
+          v: 3.2 + difficulty * 0.8,                 // MÁS RÁPIDO
+          rot: (Math.random()-0.5)*0.08,
           payload
         });
         lastSpawn = ts;
 
-        // sube dificultad con el puntaje
-        if (score>0 && score%10===0){
-          spawnRate = Math.max(550, spawnRate - 40);
-          difficulty += 0.2;
+        // Subida de dificultad más agresiva (cada 7 puntos)
+        if (score>0 && score%7===0){
+          spawnRate = Math.max(450, spawnRate - 40);  // aparece más seguido
+          difficulty += 0.25;
         }
       }
     }
@@ -163,7 +296,7 @@
     function updateBasket(){
       if (keys['ArrowLeft'] || keys['a'] || keys['A']) basket.x -= basket.speed;
       if (keys['ArrowRight']|| keys['d'] || keys['D']) basket.x += basket.speed;
-      if (mouseX>0) basket.x += (mouseX - (basket.x + basket.w/2)) * 0.18;
+      if (mouseX>0) basket.x += (mouseX - (basket.x + basket.w/2)) * 0.20;
       basket.x = Math.max(0, Math.min(canvas.width - basket.w, basket.x));
     }
 
@@ -172,7 +305,7 @@
         const it = items[i];
         it.y += it.v;
 
-        // colisión simple (AABB)
+        // colisión
         if (it.y + it.h >= basket.y && it.y <= basket.y + basket.h &&
             it.x + it.w >= basket.x && it.x <= basket.x + basket.w){
           if (it.payload.type === 'bad'){ lives--; boom(it.x,it.y); }
@@ -182,7 +315,7 @@
           continue;
         }
 
-        // se fue
+        // fuera
         if (it.y > canvas.height){
           if (it.payload.type === 'good'){ lives--; updateHUD(); if (lives<=0){ running=false; startBtn.textContent='INICIAR'; } }
           items.splice(i,1);
@@ -191,14 +324,12 @@
     }
 
     // Partículas
-    function spark(x,y){ for(let i=0;i<5;i++){ const a=2*Math.PI*i/5; particles.push({x,y,vx:Math.cos(a)*3,vy:Math.sin(a)*3,life:20,type:'star'});} }
-    function boom(x,y){ for(let i=0;i<8;i++){ const a=2*Math.PI*i/8; particles.push({x,y,vx:Math.cos(a)*4,vy:Math.sin(a)*4,life:15,type:'expl'});} }
+    function spark(x,y){ for(let i=0;i<6;i++){ const a=2*Math.PI*i/6; particles.push({x,y,vx:Math.cos(a)*3.4,vy:Math.sin(a)*3.4,life:20,type:'star'});} }
+    function boom(x,y){ for(let i=0;i<9;i++){ const a=2*Math.PI*i/9; particles.push({x,y,vx:Math.cos(a)*4.5,vy:Math.sin(a)*4.5,life:15,type:'expl'});} }
     function updParticles(){ for(let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.x+=p.vx; p.y+=p.vy; if(--p.life<=0) particles.splice(i,1);} }
 
     // Dibujo
-    function drawBackground(){
-      ctx.fillStyle='#f0f4ff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    }
+    function drawBackground(){ ctx.fillStyle='#f0f4ff'; ctx.fillRect(0,0,canvas.width,canvas.height); }
     function drawBasket(){
       ctx.fillStyle='#667eea'; ctx.fillRect(basket.x,basket.y,basket.w,basket.h);
       ctx.fillStyle='#4c5fd7'; ctx.fillRect(basket.x,basket.y,basket.w,6);
