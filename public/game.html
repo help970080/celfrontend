@@ -1,507 +1,336 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atrapa los Celulares</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atrapa los Celulares</title>
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            overflow: hidden;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+  <!-- CSP amplia para iframes en Render/Vite -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' data: blob:;
+                 img-src 'self' data: blob:;
+                 script-src 'self' 'unsafe-inline' 'unsafe-eval';
+                 style-src 'self' 'unsafe-inline';
+                 connect-src 'self';
+                 frame-ancestors *;">
 
-        #gameContainer {
-            width: 90%;
-            max-width: 800px;
-            height: 600px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        #gameCanvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        #ui {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            z-index: 10;
-            pointer-events: none;
-        }
-
-        .promo-banner {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.95), rgba(118, 75, 162, 0.95));
-            color: white;
-            padding: 8px 15px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: bold;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            max-width: 280px;
-            animation: slideIn 0.5s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .promo-banner div {
-            margin: 2px 0;
-        }
-
-        .stat {
-            background: rgba(102, 126, 234, 0.9);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 15px;
-            font-size: 20px;
-            font-weight: bold;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        #startScreen, #gameOverScreen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 20;
-            overflow-y: auto;
-            padding: 20px 10px;
-        }
-
-        h1 {
-            color: white;
-            font-size: 48px;
-            margin-bottom: 20px;
-            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        p {
-            color: white;
-            font-size: 20px;
-            margin: 10px 0;
-            text-align: center;
-            max-width: 500px;
-        }
-
-        button {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            border: none;
-            padding: 15px 50px;
-            font-size: 24px;
-            border-radius: 50px;
-            cursor: pointer;
-            margin-top: 30px;
-            box-shadow: 0 10px 30px rgba(245, 87, 108, 0.4);
-            transition: all 0.3s ease;
-            font-weight: bold;
-            pointer-events: all;
-        }
-
-        button:hover {
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 15px 40px rgba(245, 87, 108, 0.6);
-        }
-
-        button:active {
-            transform: translateY(-2px);
-        }
-
-        #finalScore {
-            font-size: 36px;
-            color: #f5576c;
-            margin: 20px 0;
-            font-weight: bold;
-        }
-
-        .emoji {
-            font-size: 60px;
-            margin-bottom: 10px;
-            animation: bounce 1s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-
-        .hidden {
-            display: none;
-        }
-    </style>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      overflow:hidden; height:100vh; display:flex; justify-content:center; align-items:center;
+    }
+    #gameContainer {
+      width: 90%; max-width: 800px; height: 600px;
+      background: rgba(255,255,255,0.95); border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      position: relative; overflow: hidden;
+    }
+    #gameCanvas { width:100%; height:100%; display:block; outline:none; }
+    #ui {
+      position:absolute; top:20px; left:20px; right:20px;
+      display:flex; justify-content:space-between; align-items:flex-start;
+      z-index:10; pointer-events:none;
+    }
+    .promo-banner {
+      background: linear-gradient(135deg, rgba(102,126,234,.95), rgba(118,75,162,.95));
+      color:#fff; padding:8px 15px; border-radius:10px; font-size:13px; font-weight:700;
+      box-shadow: 0 5px 15px rgba(0,0,0,.3); text-align:center; max-width:280px;
+      animation: slideIn .5s ease-out;
+    }
+    @keyframes slideIn { from{ transform:translateY(-50px); opacity:0 } to{ transform:translateY(0); opacity:1 } }
+    .stat {
+      background: rgba(102,126,234,.9); color:#fff; padding:10px 20px; border-radius:15px;
+      font-size:20px; font-weight:700; box-shadow: 0 5px 15px rgba(0,0,0,.2);
+    }
+    #startScreen, #gameOverScreen {
+      position:absolute; inset:0; background:rgba(0,0,0,.85);
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      z-index:20; overflow-y:auto; padding:20px 10px;
+    }
+    h1 { color:#fff; font-size:48px; margin-bottom:20px; text-shadow:0 5px 15px rgba(0,0,0,.3); }
+    p { color:#fff; font-size:20px; margin:10px 0; text-align:center; max-width:500px; }
+    button {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color:#fff; border:none;
+      padding:15px 50px; font-size:24px; border-radius:50px; cursor:pointer; margin-top:30px;
+      box-shadow:0 10px 30px rgba(245,87,108,.4); transition:all .3s ease; font-weight:700;
+      pointer-events:auto;
+    }
+    button:hover { transform: translateY(-5px) scale(1.05); box-shadow:0 15px 40px rgba(245,87,108,.6); }
+    button:active { transform: translateY(-2px); }
+    #finalScore { font-size:36px; color:#f5576c; margin:20px 0; font-weight:700; }
+    .emoji { font-size:60px; margin-bottom:10px; animation:bounce 1s infinite; }
+    @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
+    .hidden { display:none; }
+  </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <canvas id="gameCanvas"></canvas>
-        
-        <div id="ui">
-            <div>
-                <div class="stat">📱 <span id="score">0</span></div>
-                <div class="stat" style="margin-top: 10px;">❤️ <span id="lives">3</span></div>
-            </div>
-            <div class="promo-banner">
-                <div style="font-size: 12px;">📱 Celulares a Crédito</div>
-                <div style="font-size: 13px; margin-top: 4px; color: #ffd700;"><strong>+ 📦 Paquetería</strong></div>
-                <div style="font-size: 10px; margin-top: 3px;">DHL • ESTAFETA • UPS</div>
-            </div>
-        </div>
+  <div id="gameContainer">
+    <canvas id="gameCanvas" tabindex="0" aria-label="Área del juego"></canvas>
 
-        <div id="startScreen">
-            <div class="emoji">📱</div>
-            <h1 style="font-size: 36px; margin-bottom: 10px;">¡Atrapa los Celulares!</h1>
-            <p style="font-size: 16px; margin: 5px 0;">Mueve la canasta con las flechas ← → o arrastra con el mouse</p>
-            <p style="font-size: 16px; margin: 5px 0;">Atrapa los celulares buenos 📱 y evita los rotos 💥</p>
-            <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 15px; margin: 15px 20px; backdrop-filter: blur(10px); max-width: 500px;">
-                <p style="font-size: 18px; margin: 8px 0; color: #ffd700;">🆕 <strong>¡NUEVO SERVICIO!</strong></p>
-                <p style="font-size: 16px; margin: 6px 0;">📱 Venta de Celulares a Crédito</p>
-                <p style="font-size: 16px; margin: 6px 0; color: #4facfe;">📦 <strong>AHORA TAMBIÉN:</strong></p>
-                <p style="font-size: 15px; margin: 5px 0;">Envío de Paquetería y Mensajería</p>
-                <p style="font-size: 14px; margin: 5px 0;">🚚 DHL • ESTAFETA • UPS</p>
-                <p style="font-size: 13px; margin: 5px 0; font-style: italic;">¡Tu aliado para envíos en todo México!</p>
-            </div>
-            <button onclick="startGame()" style="margin-top: 15px;">JUGAR AHORA</button>
-        </div>
-
-        <div id="gameOverScreen" class="hidden">
-            <div class="emoji">🎮</div>
-            <h1>¡Juego Terminado!</h1>
-            <div id="finalScore">0</div>
-            <div style="background: rgba(102, 126, 234, 0.2); padding: 25px; border-radius: 15px; margin: 25px; backdrop-filter: blur(10px); border: 2px solid rgba(255,255,255,0.3);">
-                <p style="font-size: 24px; margin: 15px 0; color: #ffd700;">🆕 ¡NUEVO SERVICIO!</p>
-                <p style="font-size: 19px; margin: 12px 0; color: #fff;">📱 Venta de Celulares a Crédito</p>
-                <p style="font-size: 22px; margin: 15px 0; color: #4facfe;"><strong>📦 + PAQUETERÍA Y MENSAJERÍA</strong></p>
-                <p style="font-size: 17px; margin: 12px 0; color: #fff;">Envía tus paquetes con nosotros por:</p>
-                <p style="font-size: 19px; margin: 10px 0; color: #ffd700;">🚚 DHL • ESTAFETA • UPS</p>
-                <p style="font-size: 15px; margin: 10px 0; color: #fff;">¡2 servicios en 1 solo lugar!</p>
-            </div>
-            <button onclick="restartGame()">JUGAR DE NUEVO</button>
-        </div>
+    <div id="ui">
+      <div>
+        <div class="stat">📱 <span id="score">0</span></div>
+        <div class="stat" style="margin-top:10px;">❤️ <span id="lives">3</span></div>
+      </div>
+      <div class="promo-banner">
+        <div style="font-size:12px;">📱 Celulares a Crédito</div>
+        <div style="font-size:13px; margin-top:4px; color:#ffd700;"><strong>+ 📦 Paquetería</strong></div>
+        <div style="font-size:10px; margin-top:3px;">DHL • ESTAFETA • UPS</div>
+      </div>
     </div>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        let gameRunning = false;
-        let score = 0;
-        let lives = 3;
-        let basket = { x: 0, y: 0, width: 80, height: 60, speed: 8 };
-        let phones = [];
-        let keys = {};
-        let mouseX = 0;
-        let lastSpawn = 0;
-        let spawnRate = 1200;
-        let difficulty = 1;
+    <div id="startScreen" role="dialog" aria-modal="true">
+      <div class="emoji">📱</div>
+      <h1 style="font-size:36px; margin-bottom:10px;">¡Atrapa los Celulares!</h1>
+      <p style="font-size:16px; margin:5px 0;">Mueve la canasta con ← →, o arrastra con el mouse/touch</p>
+      <p style="font-size:16px; margin:5px 0;">Atrapa los buenos 📱 y evita los rotos 💥</p>
+      <div style="background:rgba(255,255,255,.15); padding:15px; border-radius:15px; margin:15px 20px; backdrop-filter: blur(10px); max-width:500px;">
+        <p style="font-size:18px; margin:8px 0; color:#ffd700;">🆕 <strong>¡NUEVO SERVICIO!</strong></p>
+        <p style="font-size:16px; margin:6px 0;">📱 Venta de Celulares a Crédito</p>
+        <p style="font-size:16px; margin:6px 0; color:#4facfe;">📦 <strong>AHORA TAMBIÉN:</strong></p>
+        <p style="font-size:15px; margin:5px 0;">Envío de Paquetería y Mensajería</p>
+        <p style="font-size:14px; margin:5px 0;">🚚 DHL • ESTAFETA • UPS</p>
+        <p style="font-size:13px; margin:5px 0; font-style:italic;">¡Tu aliado para envíos en todo México!</p>
+      </div>
+      <button id="playBtn" type="button" aria-label="Jugar ahora">JUGAR AHORA</button>
+      <p style="font-size:14px; opacity:.9; margin-top:10px;">Sugerencia: también puedes presionar <strong>Enter</strong> o hacer clic en cualquier parte.</p>
+    </div>
 
-        function resizeCanvas() {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-            basket.y = canvas.height - basket.height - 20;
-            // Aseguramos que el canasto inicie centrado al redimensionar
-            basket.x = canvas.width / 2 - basket.width / 2;
-        }
+    <div id="gameOverScreen" class="hidden" role="dialog" aria-modal="true">
+      <div class="emoji">🎮</div>
+      <h1>¡Juego Terminado!</h1>
+      <div id="finalScore">0</div>
+      <div style="background: rgba(102,126,234,.2); padding:25px; border-radius:15px; margin:25px; backdrop-filter: blur(10px); border:2px solid rgba(255,255,255,.3);">
+        <p style="font-size:24px; margin:15px 0; color:#ffd700;">🆕 ¡NUEVO SERVICIO!</p>
+        <p style="font-size:19px; margin:12px 0; color:#fff;">📱 Venta de Celulares a Crédito</p>
+        <p style="font-size:22px; margin:15px 0; color:#4facfe;"><strong>📦 + PAQUETERÍA Y MENSAJERÍA</strong></p>
+        <p style="font-size:17px; margin:12px 0; color:#fff;">Envía tus paquetes con nosotros por:</p>
+        <p style="font-size:19px; margin:10px 0; color:#ffd700;">🚚 DHL • ESTAFETA • UPS</p>
+        <p style="font-size:15px; margin:10px 0; color:#fff;">¡2 servicios en 1 solo lugar!</p>
+      </div>
+      <button id="restartBtn" type="button" aria-label="Jugar de nuevo">JUGAR DE NUEVO</button>
+    </div>
+  </div>
 
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
-        // Controles
-        document.addEventListener('keydown', (e) => {
-            keys[e.key] = true;
+    // Estado
+    let gameRunning = false;
+    let score = 0;
+    let lives = 3;
+    const basket = { x: 0, y: 0, width: 80, height: 60, speed: 8 };
+    let phones = [];
+    const keys = {};
+    let mouseX = 0;
+    let lastSpawn = 0;
+    let spawnRate = 1200;
+    let difficulty = 1;
+    let particles = [];
+    let rafId = null;
+
+    // UI
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const playBtn = document.getElementById('playBtn');
+    const restartBtn = document.getElementById('restartBtn');
+
+    // Tamaño canvas
+    function resizeCanvas() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      basket.y = canvas.height - basket.height - 20;
+      basket.x = canvas.width / 2 - basket.width / 2;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Controles
+    document.addEventListener('keydown', (e) => { keys[e.key] = true; if (e.key === 'Enter') startGame(); });
+    document.addEventListener('keyup',   (e) => { keys[e.key] = false; });
+    canvas.addEventListener('mousemove', (e) => { const r = canvas.getBoundingClientRect(); mouseX = e.clientX - r.left; });
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); const r = canvas.getBoundingClientRect(); mouseX = e.touches[0].clientX - r.left; }, {passive:false});
+
+    // Arranque con botón / clic global dentro del contenedor
+    playBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+    document.getElementById('gameContainer').addEventListener('pointerdown', () => {
+      if (!gameRunning && !gameOverScreen.classList.contains('hidden')) return; // si está en Game Over, esperar botón
+      if (!gameRunning) startGame();
+    });
+
+    function startGame() {
+      // Ocultar pantallas, resetear estado
+      startScreen.classList.add('hidden');
+      gameOverScreen.classList.add('hidden');
+
+      gameRunning = true;
+      score = 0;
+      lives = 3;
+      phones = [];
+      particles = [];
+      difficulty = 1;
+      spawnRate = 1200;
+      lastSpawn = 0;
+
+      basket.x = canvas.width / 2 - basket.width / 2;
+      mouseX = basket.x + basket.width / 2;
+
+      updateUI();
+
+      // Evitar loops duplicados
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(gameLoop);
+
+      // focus para teclado dentro del iframe
+      canvas.focus();
+    }
+
+    function updateUI() {
+      document.getElementById('score').textContent = score;
+      document.getElementById('lives').textContent = lives;
+    }
+
+    function spawnPhone(ts) {
+      if (ts - lastSpawn > spawnRate) {
+        const isBad = Math.random() < 0.2;
+        phones.push({
+          x: Math.random() * (canvas.width - 40) + 20,
+          y: -50,
+          width: 40, height: 60,
+          speed: 2 + difficulty * 0.5,
+          isBad,
+          rotation: 0,
+          rotSpeed: (Math.random() - 0.5) * 0.1
         });
+        lastSpawn = ts;
 
-        document.addEventListener('keyup', (e) => {
-            keys[e.key] = false;
-        });
+        if (score > 0 && score % 10 === 0) {
+          spawnRate = Math.max(600, spawnRate - 50);
+          difficulty += 0.2;
+        }
+      }
+    }
 
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            mouseX = e.clientX - rect.left;
-        });
+    function updateBasket() {
+      if (keys['ArrowLeft'] || keys['a'] || keys['A']) basket.x -= basket.speed;
+      if (keys['ArrowRight'] || keys['d'] || keys['D']) basket.x += basket.speed;
+      if (mouseX > 0) basket.x += (mouseX - (basket.x + basket.width / 2)) * 0.15;
+      basket.x = Math.max(0, Math.min(canvas.width - basket.width, basket.x));
+    }
 
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            mouseX = e.touches[0].clientX - rect.left;
-        });
+    function updatePhones() {
+      for (let i = phones.length - 1; i >= 0; i--) {
+        const p = phones[i];
+        p.y += p.speed;
+        p.rotation += p.rotSpeed;
 
-        // 🟢 FUNCIÓN DE INICIO CORREGIDA
-        function startGame() {
-            // Oculta ambas pantallas para asegurar que el canvas es visible
-            document.getElementById('startScreen').classList.add('hidden');
-            document.getElementById('gameOverScreen').classList.add('hidden'); 
-            
-            gameRunning = true;
-            score = 0;
-            lives = 3;
-            phones = [];
-            difficulty = 1;
-            spawnRate = 1200;
-
-            // Reiniciamos la posición del canasto y el control del ratón
-            basket.x = canvas.width / 2 - basket.width / 2;
-            mouseX = basket.x + basket.width / 2;
-            
-            updateUI();
-            
-            // Inicia el bucle del juego si no está corriendo
-            if (!window.gameLoopRequest) {
-                 gameLoop();
-            }
+        // colisión
+        if (p.y + p.height >= basket.y && p.y <= basket.y + basket.height &&
+            p.x + p.width >= basket.x && p.x <= basket.x + basket.width) {
+          if (p.isBad) { lives--; createExplosion(p.x, p.y); }
+          else { score++; createStars(p.x, p.y); }
+          phones.splice(i, 1);
+          updateUI();
+          if (lives <= 0) return gameOver();
+          continue;
         }
 
-        // 🟢 FUNCIÓN DE REINICIO CORREGIDA
-        function restartGame() {
-            startGame(); 
+        // salió de pantalla
+        if (p.y > canvas.height) {
+          if (!p.isBad) { lives--; updateUI(); if (lives <= 0) return gameOver(); }
+          phones.splice(i, 1);
         }
+      }
+    }
 
-        function updateUI() {
-            document.getElementById('score').textContent = score;
-            document.getElementById('lives').textContent = lives;
+    function createStars(x, y) {
+      for (let i = 0; i < 5; i++) {
+        const ang = (Math.PI * 2 * i) / 5;
+        particles.push({ x, y, vx: Math.cos(ang)*3, vy: Math.sin(ang)*3, life:20, type:'star' });
+      }
+    }
+    function createExplosion(x, y) {
+      for (let i = 0; i < 8; i++) {
+        const ang = (Math.PI * 2 * i) / 8;
+        particles.push({ x, y, vx: Math.cos(ang)*4, vy: Math.sin(ang)*4, life:15, type:'explosion' });
+      }
+    }
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = '#f0f4ff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // canasta
+      ctx.fillStyle = '#667eea';
+      ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+      ctx.fillStyle = '#4c5fd7';
+      ctx.fillRect(basket.x, basket.y, basket.width, 10);
+      ctx.fillRect(basket.x, basket.y, 5, basket.height);
+      ctx.fillRect(basket.x + basket.width - 5, basket.y, 5, basket.height);
+
+      // celulares
+      for (const ph of phones) {
+        ctx.save();
+        ctx.translate(ph.x + ph.width/2, ph.y + ph.height/2);
+        ctx.rotate(ph.rotation);
+        if (ph.isBad) {
+          ctx.fillStyle = '#ff4757';
+          ctx.fillRect(-ph.width/2, -ph.height/2, ph.width, ph.height);
+          ctx.fillStyle = '#fff'; ctx.font = '30px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('💥', 0, 0);
+        } else {
+          ctx.fillStyle = '#2d3436';
+          ctx.fillRect(-ph.width/2, -ph.height/2, ph.width, ph.height);
+          ctx.fillStyle = '#4facfe';
+          ctx.fillRect(-ph.width/2 + 3, -ph.height/2 + 8, ph.width - 6, ph.height - 16);
+          ctx.fillStyle = '#fff'; ctx.font = '24px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('📱', 0, 0);
         }
+        ctx.restore();
+      }
 
-        function spawnPhone(timestamp) {
-            if (timestamp - lastSpawn > spawnRate) {
-                const isBad = Math.random() < 0.2;
-                phones.push({
-                    x: Math.random() * (canvas.width - 40) + 20,
-                    y: -50,
-                    width: 40,
-                    height: 60,
-                    speed: 2 + difficulty * 0.5,
-                    isBad: isBad,
-                    rotation: 0,
-                    rotSpeed: (Math.random() - 0.5) * 0.1
-                });
-                lastSpawn = timestamp;
-                
-                if (score > 0 && score % 10 === 0) {
-                    spawnRate = Math.max(600, spawnRate - 50);
-                    difficulty += 0.2;
-                }
-            }
+      // partículas
+      for (const p of particles) {
+        ctx.save();
+        ctx.globalAlpha = (p.type === 'star' ? p.life/20 : p.life/15);
+        if (p.type === 'star') {
+          ctx.fillStyle = '#ffd700';
+          ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();
+        } else {
+          ctx.fillStyle = '#ff4757';
+          ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
         }
+        ctx.restore();
+      }
+    }
 
-        function updateBasket() {
-            if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
-                basket.x -= basket.speed;
-            }
-            if (keys['ArrowRight'] || keys['d'] || keys['D']) {
-                basket.x += basket.speed;
-            }
+    function gameLoop(ts = 0) {
+      if (!gameRunning) return;
+      spawnPhone(ts);
+      updateBasket();
+      updatePhones();
+      updateParticles();
+      draw();
+      rafId = requestAnimationFrame(gameLoop);
+    }
 
-            if (mouseX > 0) {
-                basket.x += (mouseX - (basket.x + basket.width / 2)) * 0.15;
-            }
-
-            basket.x = Math.max(0, Math.min(canvas.width - basket.width, basket.x));
-        }
-
-        function updatePhones() {
-            for (let i = phones.length - 1; i >= 0; i--) {
-                const phone = phones[i];
-                phone.y += phone.speed;
-                phone.rotation += phone.rotSpeed;
-
-                if (phone.y + phone.height >= basket.y &&
-                    phone.y <= basket.y + basket.height &&
-                    phone.x + phone.width >= basket.x &&
-                    phone.x <= basket.x + basket.width) {
-                    
-                    if (phone.isBad) {
-                        lives--;
-                        createExplosion(phone.x, phone.y);
-                    } else {
-                        score++;
-                        createStars(phone.x, phone.y);
-                    }
-                    
-                    phones.splice(i, 1);
-                    updateUI();
-                    
-                    if (lives <= 0) {
-                        gameOver();
-                    }
-                    continue;
-                }
-
-                if (phone.y > canvas.height) {
-                    if (!phone.isBad) {
-                        lives--; 
-                        updateUI();
-                        if (lives <= 0) {
-                            gameOver();
-                        }
-                    }
-                    phones.splice(i, 1);
-                }
-            }
-        }
-
-        function createStars(x, y) {
-            for (let i = 0; i < 5; i++) {
-                const angle = (Math.PI * 2 * i) / 5;
-                const particle = {
-                    x: x,
-                    y: y,
-                    vx: Math.cos(angle) * 3,
-                    vy: Math.sin(angle) * 3,
-                    life: 20,
-                    type: 'star'
-                };
-                if (!window.particles) window.particles = [];
-                window.particles.push(particle);
-            }
-        }
-
-        function createExplosion(x, y) {
-            for (let i = 0; i < 8; i++) {
-                const angle = (Math.PI * 2 * i) / 8;
-                const particle = {
-                    x: x,
-                    y: y,
-                    vx: Math.cos(angle) * 4,
-                    vy: Math.sin(angle) * 4,
-                    life: 15,
-                    type: 'explosion'
-                };
-                if (!window.particles) window.particles = [];
-                window.particles.push(particle);
-            }
-        }
-
-        function updateParticles() {
-            if (!window.particles) return;
-            for (let i = window.particles.length - 1; i >= 0; i--) {
-                const p = window.particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life--;
-                if (p.life <= 0) {
-                    window.particles.splice(i, 1);
-                }
-            }
-        }
-
-        function draw() {
-            ctx.fillStyle = '#f0f4ff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Canasta
-            ctx.fillStyle = '#667eea';
-            ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
-            ctx.fillStyle = '#4c5fd7';
-            ctx.fillRect(basket.x, basket.y, basket.width, 10);
-            ctx.fillRect(basket.x, basket.y, 5, basket.height);
-            ctx.fillRect(basket.x + basket.width - 5, basket.y, 5, basket.height);
-
-            // Celulares
-            phones.forEach(phone => {
-                ctx.save();
-                ctx.translate(phone.x + phone.width / 2, phone.y + phone.height / 2);
-                ctx.rotate(phone.rotation);
-                
-                if (phone.isBad) {
-                    ctx.fillStyle = '#ff4757';
-                    ctx.fillRect(-phone.width / 2, -phone.height / 2, phone.width, phone.height);
-                    ctx.fillStyle = '#fff';
-                    ctx.font = '30px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('💥', 0, 0);
-                } else {
-                    ctx.fillStyle = '#2d3436';
-                    ctx.fillRect(-phone.width / 2, -phone.height / 2, phone.width, phone.height);
-                    ctx.fillStyle = '#4facfe';
-                    ctx.fillRect(-phone.width / 2 + 3, -phone.height / 2 + 8, phone.width - 6, phone.height - 16);
-                    ctx.fillStyle = '#fff';
-                    ctx.font = '24px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('📱', 0, 0);
-                }
-                ctx.restore();
-            });
-
-            // Partículas
-            if (window.particles) {
-                window.particles.forEach(p => {
-                    ctx.save();
-                    ctx.globalAlpha = p.life / 20;
-                    if (p.type === 'star') {
-                        ctx.fillStyle = '#ffd700';
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-                        ctx.fill();
-                    } else {
-                        ctx.fillStyle = '#ff4757';
-                        ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
-                    }
-                    ctx.restore();
-                });
-            }
-        }
-
-        function gameLoop(timestamp) {
-            if (!gameRunning) {
-                window.gameLoopRequest = undefined;
-                return;
-            }
-
-            spawnPhone(timestamp);
-            updateBasket();
-            updatePhones();
-            updateParticles();
-            draw();
-
-            window.gameLoopRequest = requestAnimationFrame(gameLoop);
-        }
-
-        function gameOver() {
-            gameRunning = false;
-            document.getElementById('finalScore').textContent = `Puntuación: ${score}`;
-            document.getElementById('gameOverScreen').classList.remove('hidden');
-            
-            if (window.gameLoopRequest) {
-                cancelAnimationFrame(window.gameLoopRequest);
-                window.gameLoopRequest = undefined;
-            }
-        }
-    </script>
+    function gameOver() {
+      gameRunning = false;
+      document.getElementById('finalScore').textContent = `Puntuación: ${score}`;
+      gameOverScreen.classList.remove('hidden');
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    }
+  </script>
 </body>
 </html>
