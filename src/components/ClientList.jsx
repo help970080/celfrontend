@@ -1,4 +1,4 @@
-// Archivo: components/ClientList.jsx
+// Archivo: components/ClientList.jsx - VERSIÓN CORREGIDA
 
 import React from 'react';
 import { Link } from 'react-router-dom';
@@ -32,13 +32,12 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Apellido</th>
+                            <th>Nombre Completo</th>
                             <th>Teléfono</th>
                             <th>Email</th>
                             <th>Dirección</th>
                             <th>ID Identificación</th>
-                            <th>Acciones</th>
+                            <th style={{ minWidth: '280px' }}>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -50,13 +49,11 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                                     </strong>
                                 </td>
                                 
-                                <td>
-                                    <strong>{client.name}</strong>
+                                <td style={{ minWidth: '180px' }}>
+                                    <strong>{client.name} {client.lastName}</strong>
                                 </td>
                                 
-                                <td>{client.lastName}</td>
-                                
-                                <td>
+                                <td style={{ minWidth: '130px' }}>
                                     {client.phone ? (
                                         <a 
                                             href={`tel:${client.phone}`}
@@ -76,7 +73,7 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                                     )}
                                 </td>
                                 
-                                <td>
+                                <td style={{ minWidth: '180px' }}>
                                     {client.email ? (
                                         <a 
                                             href={`mailto:${client.email}`}
@@ -93,11 +90,11 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                                     )}
                                 </td>
                                 
-                                <td style={{ maxWidth: '250px', whiteSpace: 'normal' }}>
+                                <td style={{ minWidth: '200px', maxWidth: '300px', whiteSpace: 'normal' }}>
                                     📍 {`${client.address}, ${client.city}`}
                                 </td>
                                 
-                                <td>
+                                <td style={{ minWidth: '120px' }}>
                                     {client.identificationId ? (
                                         <span 
                                             style={{
@@ -106,7 +103,8 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                                                 borderRadius: '6px',
                                                 fontFamily: 'monospace',
                                                 fontSize: '0.9rem',
-                                                fontWeight: '600'
+                                                fontWeight: '600',
+                                                display: 'inline-block'
                                             }}
                                         >
                                             {client.identificationId}
@@ -117,11 +115,11 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                                 </td>
                                 
                                 <td>
-                                    <div className="action-buttons" style={{ 
-                                        display: 'flex', 
-                                        flexDirection: 'column', 
+                                    <div style={{ 
+                                        display: 'grid',
+                                        gridTemplateColumns: '1fr 1fr',
                                         gap: '0.5rem',
-                                        minWidth: '200px'
+                                        minWidth: '280px'
                                     }}>
                                         {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
                                             <>
@@ -131,14 +129,15 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                                                         background: 'linear-gradient(135deg, var(--warning), var(--warning-dark))',
                                                         color: 'white',
                                                         border: 'none',
-                                                        padding: '0.5rem 1rem',
+                                                        padding: '0.6rem 0.8rem',
                                                         borderRadius: 'var(--radius-sm)',
                                                         cursor: 'pointer',
                                                         fontWeight: '600',
-                                                        fontSize: '0.85rem',
+                                                        fontSize: '0.8rem',
                                                         transition: 'var(--transition)',
-                                                        width: '100%'
+                                                        whiteSpace: 'nowrap'
                                                     }}
+                                                    title="Editar cliente"
                                                 >
                                                     ✏️ Editar
                                                 </button>
@@ -149,17 +148,20 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                                                         background: 'linear-gradient(135deg, var(--secondary), #6b21a8)',
                                                         color: 'white',
                                                         border: 'none',
-                                                        padding: '0.5rem 1rem',
+                                                        padding: '0.6rem 0.8rem',
                                                         borderRadius: 'var(--radius-sm)',
                                                         textDecoration: 'none',
                                                         fontWeight: '600',
-                                                        fontSize: '0.85rem',
+                                                        fontSize: '0.8rem',
                                                         transition: 'var(--transition)',
-                                                        display: 'block',
-                                                        textAlign: 'center'
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        whiteSpace: 'nowrap'
                                                     }}
+                                                    title="Gestionar cobranza"
                                                 >
-                                                    💰 Gestionar Cobranza
+                                                    💰 Cobranza
                                                 </Link>
                                                 
                                                 <Link 
@@ -168,17 +170,21 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                                                         background: 'linear-gradient(135deg, var(--info), var(--info-dark))',
                                                         color: 'white',
                                                         border: 'none',
-                                                        padding: '0.5rem 1rem',
+                                                        padding: '0.6rem 0.8rem',
                                                         borderRadius: 'var(--radius-sm)',
                                                         textDecoration: 'none',
                                                         fontWeight: '600',
-                                                        fontSize: '0.85rem',
+                                                        fontSize: '0.8rem',
                                                         transition: 'var(--transition)',
-                                                        display: 'block',
-                                                        textAlign: 'center'
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        whiteSpace: 'nowrap',
+                                                        gridColumn: hasPermission('super_admin') ? 'auto' : '1 / -1'
                                                     }}
+                                                    title="Ver estado de cuenta"
                                                 >
-                                                    📄 Ver Estado Cuenta
+                                                    📄 Estado
                                                 </Link>
                                             </>
                                         )}
@@ -191,14 +197,15 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                                                     background: 'linear-gradient(135deg, var(--danger), var(--danger-dark))',
                                                     color: 'white',
                                                     border: 'none',
-                                                    padding: '0.5rem 1rem',
+                                                    padding: '0.6rem 0.8rem',
                                                     borderRadius: 'var(--radius-sm)',
                                                     cursor: 'pointer',
                                                     fontWeight: '600',
-                                                    fontSize: '0.85rem',
+                                                    fontSize: '0.8rem',
                                                     transition: 'var(--transition)',
-                                                    width: '100%'
+                                                    whiteSpace: 'nowrap'
                                                 }}
+                                                title="Eliminar cliente"
                                             >
                                                 🗑️ Eliminar
                                             </button>

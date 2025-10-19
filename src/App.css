@@ -961,3 +961,174 @@ button[type="submit"]:disabled {
     display: none !important;
   }
 }
+/* ===== SCROLL HORIZONTAL ULTRA VISIBLE Y FUNCIONAL ===== */
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto !important;
+  overflow-y: visible;
+  margin-top: 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  background: white;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+  /* Añadimos padding inferior para que el scrollbar sea más accesible */
+  padding-bottom: 20px;
+}
+
+/* SCROLLBAR SUPER VISIBLE - Chrome, Safari, Edge */
+.table-responsive::-webkit-scrollbar {
+  height: 20px !important; /* Más alto que antes */
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 100%);
+  border-radius: 10px;
+  margin: 0 10px;
+  border: 2px solid #d1d5db;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border-radius: 10px;
+  border: 3px solid #f3f4f6;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+  min-width: 50px; /* Asegura que el thumb tenga tamaño mínimo */
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #6b21a8 100%) !important;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 5px 10px rgba(0,0,0,0.4);
+  transform: scaleY(1.1);
+}
+
+.table-responsive::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, #4c51bf 0%, #581c87 100%) !important;
+}
+
+/* Para Firefox - Scrollbar visible */
+.table-responsive {
+  scrollbar-width: auto !important; /* 'auto' en lugar de 'thin' */
+  scrollbar-color: #667eea #f3f4f6 !important;
+}
+
+/* Indicador visual de scroll disponible */
+.table-responsive::before {
+  content: '← Desliza horizontalmente para ver más →';
+  position: sticky;
+  left: 0;
+  display: block;
+  text-align: center;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border-bottom: 2px solid #f59e0b;
+  margin-bottom: 0;
+  z-index: 1;
+  animation: pulseHint 2s infinite;
+}
+
+@keyframes pulseHint {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Ocultar el indicador cuando la tabla cabe completa */
+@media (min-width: 1600px) {
+  .table-responsive::before {
+    display: none;
+  }
+}
+
+/* Asegurar que las tablas tengan ancho mínimo */
+.client-table, .sale-table, .daily-table, .pending-credits-table, .user-table {
+  width: 100%;
+  min-width: 1200px !important;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: white;
+  table-layout: auto;
+}
+
+.client-table {
+  min-width: 1500px !important; /* Aumentado para dar más espacio a los botones */
+}
+
+.sale-table {
+  min-width: 1700px !important; /* Aumentado */
+}
+
+/* Asegurar que las celdas de acciones tengan espacio suficiente */
+.client-table td:last-child,
+.sale-table td:last-child,
+.user-table td:last-child {
+  min-width: 200px !important;
+  white-space: nowrap;
+}
+
+/* Forzar que los botones de acción no se compriman */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  min-width: 180px !important;
+  flex-wrap: nowrap !important;
+}
+
+.action-buttons button {
+  flex: 1;
+  min-width: 85px !important;
+  white-space: nowrap;
+}
+
+/* Estilos responsive mejorados */
+@media (max-width: 768px) {
+  .table-responsive {
+    border-radius: var(--radius-sm);
+    padding-bottom: 25px; /* Más espacio en móviles */
+  }
+  
+  .table-responsive::-webkit-scrollbar {
+    height: 24px !important; /* Aún más alto en móviles */
+  }
+  
+  .table-responsive::before {
+    font-size: 0.85rem;
+    padding: 1rem;
+  }
+}
+/* Hover mejorado para botones de tabla */
+.client-table td button:hover,
+.client-table td a:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Indicador de scroll más visible */
+.table-responsive {
+  position: relative;
+}
+
+.table-responsive::after {
+  content: '→';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 2rem;
+  color: rgba(102, 126, 234, 0.3);
+  pointer-events: none;
+  animation: slideHint 2s infinite;
+}
+
+@keyframes slideHint {
+  0%, 100% { opacity: 0.3; transform: translateY(-50%) translateX(0); }
+  50% { opacity: 0.6; transform: translateY(-50%) translateX(10px); }
+}
