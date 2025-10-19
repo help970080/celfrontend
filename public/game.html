@@ -16,80 +16,59 @@
 
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
+    :root { --bg1:#667eea; --bg2:#764ba2; --ink:#1f2251; }
     body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      overflow:hidden; height:100vh; display:flex; justify-content:center; align-items:center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+      height:100vh; display:flex; justify-content:center; align-items:center; overflow:hidden;
     }
     #gameContainer {
       width: 90%; max-width: 800px; height: 600px;
-      background: rgba(255,255,255,0.95); border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      position: relative; overflow: hidden;
+      background:#fff; border-radius:20px; position:relative; overflow:hidden;
+      box-shadow:0 18px 50px rgba(0,0,0,.25);
     }
+
+    /* HUD fijo – SIN overlays */
+    #hud {
+      position:absolute; inset:0 0 auto 0; height:64px; display:flex; align-items:center;
+      padding:10px 12px; gap:10px; background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.85));
+      z-index:5; border-bottom:1px solid rgba(0,0,0,.06);
+    }
+    .pill {
+      background: rgba(102,126,234,.12); color:var(--ink); border:1px solid rgba(102,126,234,.25);
+      padding:8px 12px; border-radius:12px; font-weight:700; font-size:14px;
+    }
+    .spacer { flex:1; }
+    .btn {
+      border:0; border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer; font-size:14px;
+      box-shadow:0 6px 18px rgba(0,0,0,.12); transition:transform .15s ease;
+    }
+    .btn:active { transform:translateY(1px); }
+    .btn-start { background:linear-gradient(135deg,#f093fb,#f5576c); color:#fff; }
+    .btn-restart { background:#eef1ff; color:#3a3f8a; border:1px solid #dadfff; }
+
     #gameCanvas { width:100%; height:100%; display:block; outline:none; }
 
-    /* HUD simple (sin publicidad) */
-    #ui {
-      position:absolute; top:20px; left:20px; right:20px;
-      display:flex; justify-content:flex-start; gap:10px;
-      z-index:10; pointer-events:none;
+    /* Mini ayuda en la esquina (no tapa) */
+    #help {
+      position:absolute; right:10px; bottom:10px; z-index:4;
+      background:rgba(0,0,0,.55); color:#fff; font-size:12px; padding:7px 10px; border-radius:10px;
     }
-    .stat {
-      background: rgba(102,126,234,.9); color:#fff; padding:10px 16px; border-radius:14px;
-      font-size:18px; font-weight:700; box-shadow: 0 5px 15px rgba(0,0,0,.2);
-    }
-
-    /* Pantallas de inicio y game over */
-    #startScreen, #gameOverScreen {
-      position:absolute; inset:0; background:rgba(0,0,0,.85);
-      display:flex; flex-direction:column; justify-content:center; align-items:center;
-      z-index:20; overflow-y:auto; padding:20px 10px;
-    }
-    h1 { color:#fff; font-size:48px; margin-bottom:20px; text-shadow:0 5px 15px rgba(0,0,0,.3); }
-    p { color:#fff; font-size:18px; margin:8px 0; text-align:center; max-width:520px; }
-
-    button {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color:#fff; border:none;
-      padding:16px 44px; font-size:22px; border-radius:50px; cursor:pointer; margin-top:20px;
-      box-shadow:0 10px 30px rgba(245,87,108,.4); transition:all .25s ease; font-weight:700;
-      pointer-events:auto;
-    }
-    button:hover { transform: translateY(-3px) scale(1.03); box-shadow:0 15px 40px rgba(245,87,108,.6); }
-    button:active { transform: translateY(-1px); }
-
-    #finalScore { font-size:32px; color:#f5576c; margin:16px 0; font-weight:700; }
-    .emoji { font-size:60px; margin-bottom:10px; }
-    .hidden { display:none; }
   </style>
 </head>
 <body>
   <div id="gameContainer">
+    <div id="hud" role="toolbar" aria-label="Controles del juego">
+      <div class="pill">📱 Puntuación: <span id="score">0</span></div>
+      <div class="pill">❤️ Vidas: <span id="lives">3</span></div>
+      <div class="spacer"></div>
+      <button id="startBtn" class="btn btn-start" type="button">INICIAR</button>
+      <button id="restartBtn" class="btn btn-restart" type="button">Reiniciar</button>
+    </div>
+
     <canvas id="gameCanvas" tabindex="0" aria-label="Área del juego"></canvas>
 
-    <!-- HUD (solo puntaje y vidas) -->
-    <div id="ui" aria-hidden="true">
-      <div class="stat">📱 <span id="score">0</span></div>
-      <div class="stat">❤️ <span id="lives">3</span></div>
-    </div>
-
-    <!-- INICIO (sin publicidad) -->
-    <div id="startScreen" role="dialog" aria-modal="true">
-      <div class="emoji">📱</div>
-      <h1 style="font-size:42px; margin-bottom:8px;">¡Atrapa los Celulares!</h1>
-      <p>Mueve la canasta con ← →, o arrastra con el mouse/touch.</p>
-      <p>Atrapa los buenos 📱 y evita los rotos 💥.</p>
-      <button id="playBtn" type="button" aria-label="Jugar ahora">JUGAR AHORA</button>
-      <p style="font-size:14px; opacity:.9; margin-top:10px;">Tip: también puedes presionar <strong>Enter</strong> o hacer clic en cualquier parte.</p>
-    </div>
-
-    <!-- GAME OVER (sin publicidad) -->
-    <div id="gameOverScreen" class="hidden" role="dialog" aria-modal="true">
-      <div class="emoji">🎮</div>
-      <h1>¡Juego Terminado!</h1>
-      <div id="finalScore">Puntuación: 0</div>
-      <button id="restartBtn" type="button" aria-label="Jugar de nuevo">JUGAR DE NUEVO</button>
-    </div>
+    <div id="help">← → o arrastra con el mouse/touch</div>
   </div>
 
   <script>
@@ -97,219 +76,156 @@
     const ctx = canvas.getContext('2d');
 
     // Estado
-    let gameRunning = false;
-    let score = 0;
-    let lives = 3;
-    const basket = { x: 0, y: 0, width: 80, height: 60, speed: 8 };
+    let running = false;
+    let score = 0, lives = 3;
+    const basket = { x:0, y:0, w:80, h:60, speed:8 };
     let phones = [];
+    let particles = [];
     const keys = {};
     let mouseX = 0;
-    let lastSpawn = 0;
-    let spawnRate = 1200;
-    let difficulty = 1;
-    let particles = [];
-    let rafId = null;
+    let lastSpawn = 0, spawnRate = 1200, difficulty = 1;
+    let raf = null;
 
     // UI
-    const startScreen = document.getElementById('startScreen');
-    const gameOverScreen = document.getElementById('gameOverScreen');
-    const playBtn = document.getElementById('playBtn');
+    const scoreEl = document.getElementById('score');
+    const livesEl = document.getElementById('lives');
+    const startBtn = document.getElementById('startBtn');
     const restartBtn = document.getElementById('restartBtn');
 
-    // Tamaño canvas
-    function resizeCanvas() {
+    function resize() {
       canvas.width = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
-      basket.y = canvas.height - basket.height - 20;
-      basket.x = canvas.width / 2 - basket.width / 2;
+      basket.y = canvas.height - basket.h - 20;
+      if (!running) basket.x = canvas.width/2 - basket.w/2;
     }
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    resize();
+    addEventListener('resize', resize);
 
     // Controles
-    document.addEventListener('keydown', (e) => { keys[e.key] = true; if (e.key === 'Enter') startGame(); });
-    document.addEventListener('keyup',   (e) => { keys[e.key] = false; });
-    canvas.addEventListener('mousemove', (e) => { const r = canvas.getBoundingClientRect(); mouseX = e.clientX - r.left; });
-    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); const r = canvas.getBoundingClientRect(); mouseX = e.touches[0].clientX - r.left; }, {passive:false});
+    document.addEventListener('keydown', e => { keys[e.key] = true; if (e.key === 'Enter') toggleStart(); });
+    document.addEventListener('keyup',   e => { keys[e.key] = false; });
+    canvas.addEventListener('mousemove', e => { const r=canvas.getBoundingClientRect(); mouseX = e.clientX - r.left; });
+    canvas.addEventListener('touchmove', e => { e.preventDefault(); const r=canvas.getBoundingClientRect(); mouseX = e.touches[0].clientX - r.left; }, {passive:false});
 
-    // Arranque con botón / clic global dentro del contenedor
-    playBtn.addEventListener('click', startGame);
-    restartBtn.addEventListener('click', startGame);
-    document.getElementById('gameContainer').addEventListener('pointerdown', () => {
-      // si está en Game Over, esperar botón
-      if (!gameRunning && !gameOverScreen.classList.contains('hidden')) return;
-      if (!gameRunning) startGame();
-    });
+    startBtn.addEventListener('click', toggleStart);
+    restartBtn.addEventListener('click', resetGame);
 
-    function startGame() {
-      // Ocultar pantallas, resetear estado
-      startScreen.classList.add('hidden');
-      gameOverScreen.classList.add('hidden');
-
-      gameRunning = true;
-      score = 0;
-      lives = 3;
-      phones = [];
-      particles = [];
-      difficulty = 1;
-      spawnRate = 1200;
-      lastSpawn = 0;
-
-      basket.x = canvas.width / 2 - basket.width / 2;
-      mouseX = basket.x + basket.width / 2;
-
-      updateUI();
-
-      // Evitar loops duplicados
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(gameLoop);
-
-      // focus para teclado dentro del iframe
-      canvas.focus();
-    }
-
-    function updateUI() {
-      document.getElementById('score').textContent = score;
-      document.getElementById('lives').textContent = lives;
-    }
-
-    function spawnPhone(ts) {
-      if (ts - lastSpawn > spawnRate) {
-        const isBad = Math.random() < 0.2;
-        phones.push({
-          x: Math.random() * (canvas.width - 40) + 20,
-          y: -50,
-          width: 40, height: 60,
-          speed: 2 + difficulty * 0.5,
-          isBad,
-          rotation: 0,
-          rotSpeed: (Math.random() - 0.5) * 0.1
-        });
-        lastSpawn = ts;
-
-        if (score > 0 && score % 10 === 0) {
-          spawnRate = Math.max(600, spawnRate - 50);
-          difficulty += 0.2;
-        }
+    function toggleStart(){
+      if (running) { // pausar
+        running = false;
+        if (raf) cancelAnimationFrame(raf), raf=null;
+        startBtn.textContent = 'INICIAR';
+      } else {
+        if (lives <= 0) resetGame(); // si estaba en 0, reinicia
+        running = true;
+        startBtn.textContent = 'PAUSAR';
+        canvas.focus();
+        if (raf) cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(loop);
       }
     }
 
-    function updateBasket() {
-      if (keys['ArrowLeft'] || keys['a'] || keys['A']) basket.x -= basket.speed;
-      if (keys['ArrowRight'] || keys['d'] || keys['D']) basket.x += basket.speed;
-      if (mouseX > 0) basket.x += (mouseX - (basket.x + basket.width / 2)) * 0.15;
-      basket.x = Math.max(0, Math.min(canvas.width - basket.width, basket.x));
+    function resetGame(){
+      running = false;
+      if (raf) cancelAnimationFrame(raf), raf=null;
+      score = 0; lives = 3; phones = []; particles = []; difficulty = 1; spawnRate = 1200; lastSpawn = 0;
+      basket.x = canvas.width/2 - basket.w/2; mouseX = basket.x + basket.w/2;
+      updateHUD();
+      startBtn.textContent = 'INICIAR';
+      draw(); // limpia pantalla
     }
 
-    function updatePhones() {
-      for (let i = phones.length - 1; i >= 0; i--) {
+    function updateHUD(){ scoreEl.textContent = score; livesEl.textContent = lives; }
+
+    function spawn(ts){
+      if (ts - lastSpawn > spawnRate){
+        const bad = Math.random() < 0.2;
+        phones.push({
+          x: Math.random()*(canvas.width - 40) + 20, y:-50, w:40, h:60,
+          v: 2 + difficulty*0.5, bad,
+          rot:0, rots:(Math.random()-0.5)*0.1
+        });
+        lastSpawn = ts;
+        if (score>0 && score%10===0){ spawnRate = Math.max(600, spawnRate-50); difficulty += .2; }
+      }
+    }
+
+    function updateBasket(){
+      if (keys['ArrowLeft'] || keys['a'] || keys['A']) basket.x -= basket.speed;
+      if (keys['ArrowRight']|| keys['d'] || keys['D']) basket.x += basket.speed;
+      if (mouseX>0) basket.x += (mouseX - (basket.x + basket.w/2)) * 0.15;
+      basket.x = Math.max(0, Math.min(canvas.width - basket.w, basket.x));
+    }
+
+    function updatePhones(){
+      for (let i=phones.length-1;i>=0;i--){
         const p = phones[i];
-        p.y += p.speed;
-        p.rotation += p.rotSpeed;
+        p.y += p.v; p.rot += p.rots;
 
         // colisión
-        if (p.y + p.height >= basket.y && p.y <= basket.y + basket.height &&
-            p.x + p.width >= basket.x && p.x <= basket.x + basket.width) {
-          if (p.isBad) { lives--; createExplosion(p.x, p.y); }
-          else { score++; createStars(p.x, p.y); }
-          phones.splice(i, 1);
-          updateUI();
-          if (lives <= 0) return gameOver();
+        if (p.y + p.h >= basket.y && p.y <= basket.y + basket.h &&
+            p.x + p.w >= basket.x && p.x <= basket.x + basket.w){
+          if (p.bad){ lives--; boom(p.x,p.y); }
+          else { score++; spark(p.x,p.y); }
+          phones.splice(i,1); updateHUD();
+          if (lives<=0){ running=false; startBtn.textContent='INICIAR'; }
           continue;
         }
 
-        // salió de pantalla
-        if (p.y > canvas.height) {
-          if (!p.isBad) { lives--; updateUI(); if (lives <= 0) return gameOver(); }
-          phones.splice(i, 1);
+        // fuera de pantalla
+        if (p.y > canvas.height){
+          if (!p.bad){ lives--; updateHUD(); if (lives<=0){ running=false; startBtn.textContent='INICIAR'; } }
+          phones.splice(i,1);
         }
       }
     }
 
-    function createStars(x, y) {
-      for (let i = 0; i < 5; i++) {
-        const ang = (Math.PI * 2 * i) / 5;
-        particles.push({ x, y, vx: Math.cos(ang)*3, vy: Math.sin(ang)*3, life:20, type:'star' });
-      }
-    }
-    function createExplosion(x, y) {
-      for (let i = 0; i < 8; i++) {
-        const ang = (Math.PI * 2 * i) / 8;
-        particles.push({ x, y, vx: Math.cos(ang)*4, vy: Math.sin(ang)*4, life:15, type:'explosion' });
-      }
-    }
-    function updateParticles() {
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx; p.y += p.vy; p.life--;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
-    }
+    function spark(x,y){ for(let i=0;i<5;i++){ const a=2*Math.PI*i/5; particles.push({x,y,vx:Math.cos(a)*3,vy:Math.sin(a)*3,life:20,type:'star'});} }
+    function boom(x,y){ for(let i=0;i<8;i++){ const a=2*Math.PI*i/8; particles.push({x,y,vx:Math.cos(a)*4,vy:Math.sin(a)*4,life:15,type:'expl'});} }
+    function updParticles(){ for(let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.x+=p.vx; p.y+=p.vy; if(--p.life<=0) particles.splice(i,1);} }
 
-    function draw() {
-      ctx.fillStyle = '#f0f4ff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    function draw(){
+      ctx.fillStyle='#f0f4ff'; ctx.fillRect(0,0,canvas.width,canvas.height);
 
       // canasta
-      ctx.fillStyle = '#667eea';
-      ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
-      ctx.fillStyle = '#4c5fd7';
-      ctx.fillRect(basket.x, basket.y, basket.width, 10);
-      ctx.fillRect(basket.x, basket.y, 5, basket.height);
-      ctx.fillRect(basket.x + basket.width - 5, basket.y, 5, basket.height);
+      ctx.fillStyle='#667eea'; ctx.fillRect(basket.x,basket.y,basket.w,basket.h);
+      ctx.fillStyle='#4c5fd7'; ctx.fillRect(basket.x,basket.y,basket.w,10);
+      ctx.fillRect(basket.x,basket.y,5,basket.h);
+      ctx.fillRect(basket.x + basket.w - 5,basket.y,5,basket.h);
 
-      // celulares
-      for (const ph of phones) {
-        ctx.save();
-        ctx.translate(ph.x + ph.width/2, ph.y + ph.height/2);
-        ctx.rotate(ph.rotation);
-        if (ph.isBad) {
-          ctx.fillStyle = '#ff4757';
-          ctx.fillRect(-ph.width/2, -ph.height/2, ph.width, ph.height);
-          ctx.fillStyle = '#fff'; ctx.font = '30px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-          ctx.fillText('💥', 0, 0);
+      // teléfonos
+      for(const p of phones){
+        ctx.save(); ctx.translate(p.x + p.w/2, p.y + p.h/2); ctx.rotate(p.rot);
+        if (p.bad){
+          ctx.fillStyle='#ff4757'; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+          ctx.fillStyle='#fff'; ctx.font='30px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('💥',0,0);
         } else {
-          ctx.fillStyle = '#2d3436';
-          ctx.fillRect(-ph.width/2, -ph.height/2, ph.width, ph.height);
-          ctx.fillStyle = '#4facfe';
-          ctx.fillRect(-ph.width/2 + 3, -ph.height/2 + 8, ph.width - 6, ph.height - 16);
-          ctx.fillStyle = '#fff'; ctx.font = '24px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-          ctx.fillText('📱', 0, 0);
+          ctx.fillStyle='#2d3436'; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+          ctx.fillStyle='#4facfe'; ctx.fillRect(-p.w/2+3,-p.h/2+8,p.w-6,p.h-16);
+          ctx.fillStyle='#fff'; ctx.font='24px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('📱',0,0);
         }
         ctx.restore();
       }
 
       // partículas
-      for (const p of particles) {
-        ctx.save();
-        ctx.globalAlpha = (p.type === 'star' ? p.life/20 : p.life/15);
-        if (p.type === 'star') {
-          ctx.fillStyle = '#ffd700';
-          ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();
-        } else {
-          ctx.fillStyle = '#ff4757';
-          ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
-        }
+      for(const q of particles){
+        ctx.save(); ctx.globalAlpha = (q.type==='star'? q.life/20 : q.life/15);
+        if (q.type==='star'){ ctx.fillStyle='#ffd700'; ctx.beginPath(); ctx.arc(q.x,q.y,4,0,Math.PI*2); ctx.fill(); }
+        else { ctx.fillStyle='#ff4757'; ctx.fillRect(q.x-3,q.y-3,6,6); }
         ctx.restore();
       }
     }
 
-    function gameLoop(ts = 0) {
-      if (!gameRunning) return;
-      spawnPhone(ts);
-      updateBasket();
-      updatePhones();
-      updateParticles();
-      draw();
-      rafId = requestAnimationFrame(gameLoop);
+    function loop(ts=0){
+      if (!running) { draw(); return; }
+      spawn(ts); updateBasket(); updatePhones(); updParticles(); draw();
+      raf = requestAnimationFrame(loop);
     }
 
-    function gameOver() {
-      gameRunning = false;
-      document.getElementById('finalScore').textContent = `Puntuación: ${score}`;
-      gameOverScreen.classList.remove('hidden');
-      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-    }
+    // Estado inicial visible y funcional
+    resetGame();
   </script>
 </body>
 </html>
