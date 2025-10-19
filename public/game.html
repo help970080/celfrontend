@@ -100,6 +100,8 @@
             justify-content: center;
             align-items: center;
             z-index: 20;
+            overflow-y: auto;
+            padding: 20px 10px;
         }
 
         h1 {
@@ -149,8 +151,8 @@
         }
 
         .emoji {
-            font-size: 80px;
-            margin-bottom: 20px;
+            font-size: 60px;
+            margin-bottom: 10px;
             animation: bounce 1s infinite;
         }
 
@@ -182,18 +184,18 @@
 
         <div id="startScreen">
             <div class="emoji">📱</div>
-            <h1>¡Atrapa los Celulares!</h1>
-            <p>Mueve la canasta con las flechas ← → o arrastra con el mouse</p>
-            <p>Atrapa los celulares buenos 📱 y evita los rotos 💥</p>
-            <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 15px; margin: 20px; backdrop-filter: blur(10px);">
-                <p style="font-size: 20px; margin: 10px 0; color: #ffd700;">🆕 <strong>¡NUEVO SERVICIO!</strong></p>
-                <p style="font-size: 18px; margin: 10px 0;">📱 Venta de Celulares a Crédito</p>
-                <p style="font-size: 18px; margin: 10px 0; color: #4facfe;">📦 <strong>AHORA TAMBIÉN:</strong></p>
-                <p style="font-size: 17px; margin: 8px 0;">Envío de Paquetería y Mensajería</p>
-                <p style="font-size: 15px; margin: 5px 0;">🚚 DHL • ESTAFETA • UPS</p>
-                <p style="font-size: 14px; margin: 5px 0; font-style: italic;">¡Tu aliado para envíos en todo México!</p>
+            <h1 style="font-size: 36px; margin-bottom: 10px;">¡Atrapa los Celulares!</h1>
+            <p style="font-size: 16px; margin: 5px 0;">Mueve la canasta con las flechas ← → o arrastra con el mouse</p>
+            <p style="font-size: 16px; margin: 5px 0;">Atrapa los celulares buenos 📱 y evita los rotos 💥</p>
+            <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 15px; margin: 15px 20px; backdrop-filter: blur(10px); max-width: 500px;">
+                <p style="font-size: 18px; margin: 8px 0; color: #ffd700;">🆕 <strong>¡NUEVO SERVICIO!</strong></p>
+                <p style="font-size: 16px; margin: 6px 0;">📱 Venta de Celulares a Crédito</p>
+                <p style="font-size: 16px; margin: 6px 0; color: #4facfe;">📦 <strong>AHORA TAMBIÉN:</strong></p>
+                <p style="font-size: 15px; margin: 5px 0;">Envío de Paquetería y Mensajería</p>
+                <p style="font-size: 14px; margin: 5px 0;">🚚 DHL • ESTAFETA • UPS</p>
+                <p style="font-size: 13px; margin: 5px 0; font-style: italic;">¡Tu aliado para envíos en todo México!</p>
             </div>
-            <button onclick="startGame()">JUGAR AHORA</button>
+            <button onclick="startGame()" style="margin-top: 15px;">JUGAR AHORA</button>
         </div>
 
         <div id="gameOverScreen" class="hidden">
