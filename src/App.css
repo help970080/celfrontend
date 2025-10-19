@@ -1238,17 +1238,372 @@ button[type="submit"]:disabled {
    Agregar este código AL FINAL de tu App.css existente
    =================================================================== */
 
-/* ===== PAGINACIÃ"N - MOBILE OPTIMIZED ===== */
-.modern-pagination {
+/* ===================================================================
+   ESTILOS PARA CATÁLOGO PÚBLICO MODERNO - OPTIMIZADO PARA MÓVILES
+   Agregar este código AL FINAL de tu App.css existente
+   =================================================================== */
+
+/* ===== CATÁLOGO MODERNO ===== */
+.modern-catalog {
+    padding: 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.catalog-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.catalog-header h1 {
+    font-size: 2rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+}
+
+.catalog-subtitle {
+    font-size: 1rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* ===== SECCIÓN PROMOCIONAL ===== */
+.promotional-section {
+    max-width: 100%;
+    margin: 0 auto 2rem;
+    text-align: center;
+}
+
+.promotional-video {
+    width: 100%;
+    height: 250px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border: none;
+}
+
+.promotional-text {
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1f2937;
+    padding: 0 1rem;
+}
+
+/* ===== BOTÓN DE FILTROS MODERNO ===== */
+.modern-filter-button {
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto 1.5rem;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.modern-filter-button:active {
+    transform: scale(0.98);
+}
+
+/* ===== FILTROS MODERNOS ===== */
+.modern-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-item label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-item select {
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 1rem;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-item select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* ===== GRID DE PRODUCTOS - MODO MÓVIL ===== */
+.modern-products-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+/* ===== TARJETA DE PRODUCTO - LAYOUT HORIZONTAL PARA MÓVIL ===== */
+.modern-product-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    flex-direction: row; /* HORIZONTAL en móvil */
+    min-height: 140px;
+}
+
+.modern-product-card:active {
+    transform: scale(0.98);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Badge de Crédito */
+.modern-product-card .product-badge {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    z-index: 10;
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4);
+}
+
+/* Media del Producto - LADO IZQUIERDO */
+.modern-product-card .product-media {
+    width: 130px;
+    min-width: 130px;
+    height: 100%;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+.modern-product-card .product-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.modern-product-card .product-media iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    pointer-events: none; /* Evita clicks accidentales */
+}
+
+/* Contenido del Producto - LADO DERECHO */
+.modern-product-card .product-content {
+    padding: 0.8rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.modern-product-card .product-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Máximo 2 líneas */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Sección de Precio - COMPACTA */
+.modern-product-card .price-section {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 1rem;
-    padding: 1.5rem 1rem;
-    background: white;
-    position: sticky;
+    padding: 0.5rem 0.7rem;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-radius: 8px;
+    border: 2px solid #f59e0b;
+    margin-bottom: 0.5rem;
+}
+
+.modern-product-card .price-label {
+    font-size: 0.7rem;
+    color: #78350f;
+    font-weight: 600;
+}
+
+.modern-product-card .price-value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #92400e;
+}
+
+/* Info de Crédito - MUY COMPACTA */
+.modern-product-card .credit-compact {
+    background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+    padding: 0.5rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border: 2px solid #a78bfa;
+}
+
+.modern-product-card .credit-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.3rem;
+}
+
+.modern-product-card .credit-item:last-of-type {
+    margin-bottom: 0;
+}
+
+.modern-product-card .credit-label {
+    font-size: 0.7rem;
+    color: #581c87;
+    font-weight: 600;
+}
+
+.modern-product-card .credit-amount {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #6b21a8;
+}
+
+.modern-product-card .credit-weeks {
+    text-align: center;
+    font-size: 0.65rem;
+    color: #7c3aed;
+    font-weight: 600;
+    font-style: italic;
+    margin-top: 0.2rem;
+}
+
+/* Botón Toggle Detalles - COMPACTO */
+.modern-product-card .toggle-details-btn {
+    width: 100%;
+    padding: 0.6rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 0.5rem;
+}
+
+.modern-product-card .toggle-details-btn:active {
+    transform: scale(0.96);
+}
+
+/* Detalles Expandibles - PANTALLA COMPLETA EN MÓVIL */
+.modern-product-card .product-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #f9fafb;
+    border-radius: 0;
+}
+
+.modern-product-card .product-details.expanded {
+    max-height: 400px;
+    padding: 1rem;
+    border-top: 2px solid #e5e7eb;
+    position: absolute;
     bottom: 0;
-    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.modern-product-card .product-description {
+    color: #4b5563;
+    line-height: 1.5;
+    margin-bottom: 0.8rem;
+    font-size: 0.9rem;
+}
+
+.modern-product-card .detail-row {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e5e7eb;
+    color: #1f2937;
+    font-size: 0.85rem;
+}
+
+.modern-product-card .detail-row:last-child {
+    border-bottom: none;
+}
+
+.modern-product-card .detail-row strong {
+    color: #667eea;
+    margin-right: 0.5rem;
+}
+
+/* Botón de Contacto - GRANDE Y VISIBLE */
+.modern-product-card .contact-btn-modern {
+    width: 100%;
+    padding: 0.8rem;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    display: block;
+}
+
+.modern-product-card .contact-btn-modern:active {
+    transform: scale(0.96);
+}
+
+/* ===== PAGINACIÓN ===== */
+.modern-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding: 1rem;
+    flex-wrap: wrap;
 }
 
 .modern-pagination .pagination-btn {
@@ -1258,10 +1613,10 @@ button[type="submit"]:disabled {
     border: none;
     border-radius: 10px;
     font-size: 0.9rem;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    flex-shrink: 0;
+    min-width: 100px;
 }
 
 .modern-pagination .pagination-btn:active:not(:disabled) {
@@ -1269,22 +1624,22 @@ button[type="submit"]:disabled {
 }
 
 .modern-pagination .pagination-btn:disabled {
-    opacity: 0.4;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
 .modern-pagination .pagination-info {
-    font-size: 0.85rem;
-    font-weight: 700;
+    font-size: 0.9rem;
+    font-weight: 600;
     color: #4b5563;
+    width: 100%;
     text-align: center;
-    flex: 1;
 }
 
-/* ===== MENSAJES - MOBILE ===== */
+/* ===== MENSAJES ===== */
 .modern-catalog .no-products {
     text-align: center;
-    padding: 3rem 1.5rem;
+    padding: 2rem 1rem;
     font-size: 1rem;
     color: #6b7280;
 }
@@ -1294,309 +1649,180 @@ button[type="submit"]:disabled {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 60vh;
-    gap: 1.5rem;
-    padding: 2rem;
+    min-height: 50vh;
+    gap: 1rem;
 }
 
 .modern-catalog .loading-spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid #e5e7eb;
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e5e7eb;
     border-top-color: #667eea;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-}
-
-.modern-catalog .loading-container h2 {
-    font-size: 1.1rem;
-    color: #4b5563;
 }
 
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
 
-/* ===== RESPONSIVE PARA TABLETS Y DESKTOP ===== */
+/* ===== RESPONSIVE - TABLETS ===== */
 @media (min-width: 640px) {
-    .modern-catalog {
-        padding: 0;
-    }
-    
-    .catalog-header h1 {
-        font-size: 2rem;
-    }
-    
-    .promotional-video {
-        height: 320px;
-    }
-    
-    .modern-products-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-        padding: 1rem;
-    }
-    
-    .modern-product-card {
-        border-radius: 16px;
-        margin-bottom: 0;
-        border-bottom: none;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-    
     .modern-product-card .product-media {
-        height: 320px;
+        width: 150px;
+        min-width: 150px;
     }
-    
-    .modern-filters {
-        grid-template-columns: repeat(4, 1fr);
-        padding: 1.5rem;
+
+    .modern-product-card .product-title {
+        font-size: 1.1rem;
+    }
+
+    .promotional-video {
+        height: 300px;
     }
 }
 
+/* ===== RESPONSIVE - DESKTOP ===== */
 @media (min-width: 1024px) {
     .catalog-header h1 {
         font-size: 2.5rem;
     }
-    
+
     .catalog-subtitle {
         font-size: 1.1rem;
     }
-    
+
     .promotional-section {
         max-width: 900px;
-        margin: 0 auto;
-        padding: 2rem;
     }
-    
+
     .promotional-video {
         height: 450px;
         border-radius: 20px;
     }
-    
-    .modern-products-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 2rem;
+
+    .modern-filters {
+        flex-direction: row;
+        justify-content: center;
         padding: 2rem;
-    }
-    
-    .modern-product-card {
         border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
+
+    .filter-item {
+        min-width: 150px;
+    }
+
+    /* Grid en desktop - tarjetas VERTICALES */
+    .modern-products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 2rem;
+    }
+
+    /* Tarjetas VERTICALES en desktop */
+    .modern-product-card {
+        flex-direction: column;
+        min-height: auto;
+    }
+
     .modern-product-card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     }
-    
+
+    .modern-product-card .product-badge {
+        top: 1rem;
+        right: 1rem;
+        left: auto;
+        padding: 0.6rem 1.2rem;
+        font-size: 0.8rem;
+    }
+
     .modern-product-card .product-media {
-        height: 280px;
+        width: 100%;
+        min-width: 100%;
+        height: 260px;
     }
-    
-    .modern-product-card .product-media img {
-        transition: transform 0.5s ease;
-    }
-    
-    .modern-product-card:hover .product-media img {
+
+    .modern-product-card .product-media img:hover {
         transform: scale(1.08);
     }
-    
-    .modern-product-card .toggle-details-btn:hover {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        transform: scale(1.02);
+
+    .modern-product-card .product-content {
+        padding: 1.5rem;
     }
-    
+
+    .modern-product-card .product-title {
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+        min-height: 2.6rem;
+        -webkit-line-clamp: 2;
+    }
+
+    .modern-product-card .price-section {
+        padding: 1rem 1.2rem;
+        margin-bottom: 1rem;
+    }
+
+    .modern-product-card .price-label {
+        font-size: 0.85rem;
+    }
+
+    .modern-product-card .price-value {
+        font-size: 1.6rem;
+    }
+
+    .modern-product-card .credit-compact {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .modern-product-card .credit-item {
+        margin-bottom: 0.6rem;
+    }
+
+    .modern-product-card .credit-label {
+        font-size: 0.85rem;
+    }
+
+    .modern-product-card .credit-amount {
+        font-size: 1rem;
+    }
+
+    .modern-product-card .credit-weeks {
+        font-size: 0.8rem;
+    }
+
+    .modern-product-card .toggle-details-btn {
+        padding: 0.8rem;
+        font-size: 0.95rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .modern-product-card .toggle-details-btn:hover {
+        transform: scale(1.02);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .modern-product-card .product-details.expanded {
+        position: relative;
+        padding: 1.2rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        box-shadow: none;
+    }
+
+    .modern-product-card .contact-btn-modern {
+        padding: 1rem;
+        font-size: 1rem;
+    }
+
     .modern-product-card .contact-btn-modern:hover {
         transform: translateY(-2px);
         box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
     }
-    
-    .modern-pagination {
-        padding: 2rem;
-        position: relative;
-    }
-    
-    .modern-pagination .pagination-btn:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-    }
-}
 
-@media (min-width: 1280px) {
-    .modern-products-grid {
-        grid-template-columns: repeat(4, 1fr);
+    .modern-pagination .pagination-info {
+        width: auto;
     }
-}
-
-/* ===== OPTIMIZACIONES TOUCH PARA MOBILE ===== */
-@media (max-width: 639px) {
-    /* Hacer botones más grandes para dedos */
-    .modern-product-card .toggle-details-btn,
-    .modern-product-card .contact-btn-modern,
-    .modern-pagination .pagination-btn,
-    .modern-filter-button {
-        min-height: 48px; /* Tamaño mínimo recomendado para touch */
-    }
-    
-    /* Evitar zoom en inputs en iOS */
-    .filter-item select {
-        font-size: 16px;
-    }
-    
-    /* Mejorar scroll */
-    .modern-catalog {
-        -webkit-overflow-scrolling: touch;
-        scroll-behavior: smooth;
-    }
-    
-    /* Espaciado entre productos para mejor legibilidad */
-    .modern-product-card .product-content {
-        padding: 1.25rem 1rem;
-    }
-    
-    /* Hacer el precio más visible */
-    .modern-product-card .price-value {
-        font-size: 2rem;
-    }
-    
-    .modern-product-card .credit-amount {
-        font-size: 1.2rem;
-    }
-}
-
-/* ===== ESTADOS ACTIVOS PARA TOUCH ===== */
-@media (hover: none) and (pointer: coarse) {
-    /* Estilos solo para dispositivos táctiles */
-    .modern-product-card .toggle-details-btn:active {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        transform: scale(0.98);
-    }
-    
-    .modern-product-card .contact-btn-modern:active {
-        transform: scale(0.97);
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.5);
-    }
-    
-    .modern-filter-button:active {
-        transform: scale(0.98);
-    }
-    
-    .filter-item select:active {
-        border-color: #667eea;
-    }
-}
-
-/* ===== ANIMACIONES SUAVES ===== */
-@media (prefers-reduced-motion: no-preference) {
-    .modern-product-card .product-details {
-        transition: max-height 0.3s ease-out, padding 0.3s ease-out;
-    }
-    
-    .modern-products-grid {
-        animation: fadeIn 0.5s ease-out;
-    }
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* ===== MEJORAS DE ACCESIBILIDAD ===== */
-.modern-product-card .toggle-details-btn:focus,
-.modern-product-card .contact-btn-modern:focus,
-.modern-pagination .pagination-btn:focus,
-.modern-filter-button:focus,
-.filter-item select:focus {
-    outline: 3px solid #667eea;
-    outline-offset: 2px;
-}
-
-/* ===== FIX PARA SAFARI iOS ===== */
-.modern-product-card .product-media img {
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-}
-
-/* Prevenir selección de texto en elementos interactivos */
-.modern-product-card .product-badge,
-.modern-pagination .pagination-info {
-    -webkit-user-select: none;
-    user-select: none;
-}
-
-/* ===== INDICADOR DE SCROLL EN LA GRILLA (Solo móvil) ===== */
-@media (max-width: 639px) {
-    .modern-products-grid::before {
-        content: '';
-        display: block;
-        height: 0;
-    }
-}
-
-/* ===== MODO OSCURO (Opcional - preparado para futuro) ===== */
-@media (prefers-color-scheme: dark) {
-    /* Puedes descomentar esto si quieres soporte para modo oscuro
-    .modern-catalog {
-        background: #1f2937;
-    }
-    
-    .modern-product-card {
-        background: #374151;
-        border-bottom-color: #1f2937;
-    }
-    
-    .modern-product-card .product-title {
-        color: #f9fafb;
-    }
-    
-    .modern-product-card .product-description,
-    .modern-product-card .detail-row {
-        color: #d1d5db;
-    }
-    */
-}/* ===================================================================
-   ESTILOS PARA CATÃLOGO PÃšBLICO MODERNO - MOBILE FIRST
-   Agregar este cÃ³digo AL FINAL de tu App.css existente
-   =================================================================== */
-
-/* ===== CATÃLOGO MODERNO - DISEÑO MOBILE FIRST ===== */
-.modern-catalog {
-    padding: 0;
-    background: #f9fafb;
-    min-height: 100vh;
-}
-
-.catalog-header {
-    text-align: center;
-    padding: 2rem 1rem 1.5rem;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.catalog-header h1 {
-    font-size: 1.75rem;
-    color: white;
-    margin-bottom: 0.5rem;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-}
-
-.catalog-subtitle {
-    font-size: 0.95rem;
-    color: rgba(255, 255, 255, 0.95);
-    font-weight: 500;
 }
