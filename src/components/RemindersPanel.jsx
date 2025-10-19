@@ -1,9 +1,8 @@
-// Archivo: src/components/RemindersPanel.jsx (CORREGIDO)
+// Archivo: src/components/RemindersPanel.jsx (CORREGIDO CON BOTONES VISIBLES)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
-// Importamos el nuevo componente de gestión de cobranza
 import CollectionLogForm from './CollectionLogForm'; 
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
@@ -15,7 +14,6 @@ const isMobileDevice = () => {
   return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
 };
 
-// Función segura para formatear números como moneda (CRÍTICO para evitar TypeError)
 const formatMXN = (value) => {
   const num = Number(value || 0);
   if (!Number.isFinite(num)) return '0.00';
@@ -27,28 +25,23 @@ const formatMXN = (value) => {
 
 const toE164 = (rawPhone) => {
     if (!rawPhone) return '';
-    // Limpia y asegura el código de país +52 (México) si falta
     const cleaned = String(rawPhone).replace(/[^\d]/g, '');
     if (cleaned.startsWith('52')) return `+${cleaned}`;
     return `+52${cleaned}`;
 };
-
 
 function RemindersPanel({ authenticatedFetch }) {
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // *** ESTADOS PARA GESTIÓN ***
   const [showLogModal, setShowLogModal] = useState(false);
   const [selectedSaleToLog, setSelectedSaleToLog] = useState(null); 
-  // *** FIN ESTADOS ***
 
   const fetchReminders = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Esta ruta ahora trae el historial de gestión gracias a la corrección en el backend
       const response = await authenticatedFetch(`${API_BASE_URL}/api/reminders/overdue`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -118,7 +111,6 @@ function RemindersPanel({ authenticatedFetch }) {
     toast.info(`Abriendo WhatsApp para ${row.client?.name || 'cliente'}.`);
   };
 
-  // --- HANDLERS PARA EL MODAL DE GESTIÓN ---
   const handleOpenLogModal = (saleData) => {
     setSelectedSaleToLog(saleData);
     setShowLogModal(true);
@@ -127,7 +119,7 @@ function RemindersPanel({ authenticatedFetch }) {
   const handleCloseLogModal = () => {
     setSelectedSaleToLog(null);
     setShowLogModal(false);
-    fetchReminders(); // Recargar los recordatorios después de registrar una gestión
+    fetchReminders();
   };
   
   const handleExportLog = async () => {
@@ -151,110 +143,162 @@ function RemindersPanel({ authenticatedFetch }) {
         toast.success('Archivo de gestiones exportado con éxito!');
     } catch (err) {
         console.error('Error al exportar gestiones a Excel:', err);
-        toast.error(`Error al exportar: ${err.message || 'Error desconocido. Verifique la ruta del backend.'}`);
+        toast.error(`Error al exportar: ${err.message || 'Error desconocido.'}`);
     }
   };
-  // --- FIN HANDLERS ---
 
-  // Función para determinar el estilo del botón Registrar Gestión
   const getGestionButtonStyle = (lastManagement) => {
       if (!lastManagement) {
-          // Si no hay gestión, destacar para registrar la primera
           return { backgroundColor: '#007bff', color: 'white', border: 'none' };
       }
-      // Ejemplo: si el resultado es Promesa, se podría poner amarillo/naranja
       if (lastManagement.result === 'PROMISE') { 
           return { backgroundColor: '#ffc107', color: 'black', border: 'none' };
       }
-      // Si ya tiene una gestión reciente, se puede poner en gris
       return { backgroundColor: '#6c757d', color: 'white', border: 'none' }; 
   }
+
+  const renderLastManagement = (lastManagement) => {
+      if (!lastManagement) {
+          return <span style={{ color: '#dc3545', fontWeight: 'bold', fontSize: '0.85rem' }}>SIN GESTIÓN</span>;
+      }
+      const date = dayjs(lastManagement.date).format('DD/MM/YY');
+      const result = lastManagement.result || 'N/A';
+
+      const resultTextMap = {
+          'PROMISE': 'Promesa 🤝',
+          'PAID': 'Pagó ✓',
+          'NO_ANSWER': 'No Contesta 📵',
+          'WRONG_NUMBER': 'N° Mal',
+          'REFUSAL': 'Rechazó 😡',
+          'LOCATED': 'Ubicado',
+          'CONTACT_SUCCESS': 'OK',
+      };
+      const displayResult = resultTextMap[result] || result;
+
+      return (
+          <div style={{ fontSize: '0.85rem' }} title={`Gestor: ${lastManagement.collector || 'N/A'}`}>
+              <div style={{ marginBottom: '0.25rem' }}>{date}</div>
+              <strong>{displayResult}</strong>
+          </div>
+      );
+  };
 
   const renderRemindersTable = (list, severity) => {
     if (!list.length) {
       return <p>No hay clientes en esta categoría.</p>;
     }
 
-    // Función auxiliar para mostrar el resultado de la gestión
-    const renderLastManagement = (lastManagement) => {
-        if (!lastManagement) {
-            return <span style={{ color: '#dc3545', fontWeight: 'bold' }}>SIN GESTIÓN</span>;
-        }
-        const date = dayjs(lastManagement.date).format('DD/MM/YY');
-        const result = lastManagement.result || 'N/A';
-        const collector = lastManagement.collector || 'N/A';
-
-        // Mapeo simple del resultado a un texto más legible
-        const resultTextMap = {
-            'PROMISE': 'Promesa 🤝',
-            'PAID': 'Pagó (Revisar)',
-            'NO_ANSWER': 'No Contesta 📵',
-            'WRONG_NUMBER': 'N° Mal',
-            'REFUSAL': 'Rechazó 😡',
-            'LOCATED': 'Ubicado',
-            'CONTACT_SUCCESS': 'Contacto OK',
-        };
-        const displayResult = resultTextMap[result] || result;
-
-        return (
-            <div title={`Por: ${collector}`}>
-                {date} - **{displayResult}**
-            </div>
-        );
-    };
-
     return (
-      <table className="reminders-table client-table">
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>Teléfono</th>
-            <th>Venta ID</th>
-            <th>Cuota (Venc.)</th>
-            <th>Saldo Pendiente</th>
-            <th>Días Atraso</th>
-            <th>ÚLTIMA GESTIÓN</th> {/* COLUMNA AHORA SE LLENARÁ */}
-            <th>Acción WA</th>
-          </tr>
-        </thead>
-        <tbody>
-          {list.map((r) => (
-            <tr key={r.sale?.id || r.client?.id}>
-              <td>
-                {r.client?.name} {r.client?.lastName}
-              </td>
-              <td>{r.client?.phone}</td>
-              <td>{r.sale?.id || 'N/A'}</td>
-              {/* Uso seguro de formatMXN */}
-              <td>${formatMXN(r.sale?.weeklyPaymentAmount)}</td> 
-              <td>${formatMXN(r.sale?.balanceDue)}</td>
-              <td>{r.daysLate || 0}</td>
-              
-              {/* *** COLUMNA MOSTRANDO EL ESTADO DE LA GESTIÓN *** */}
-              <td title={`Última Gestión: ${r.lastManagement?.result || 'Ninguna'}`}>
-                {renderLastManagement(r.lastManagement)}
-                <button 
-                  onClick={() => handleOpenLogModal(r)} 
-                  className="btn btn-sm btn-info action-button"
-                  style={getGestionButtonStyle(r.lastManagement)}
-                >
-                  Registrar Gestión
-                </button>
-              </td>
-              
-              <td>
-                <button 
-                    onClick={() => handleSendMessage(r)} 
-                    className={`btn btn-sm btn-${severity === 'ALTO' ? 'danger' : (severity === 'BAJO' ? 'warning' : 'success')}`}
-                    style={{backgroundColor: '#25D366', color: 'white', border: 'none'}}
-                >
-                    Enviar WA
-                </button>
-              </td>
+      <div className="table-responsive">
+        <table className="reminders-table client-table">
+          <thead>
+            <tr>
+              <th style={{ minWidth: '180px' }}>Cliente</th>
+              <th style={{ minWidth: '130px' }}>Teléfono</th>
+              <th style={{ minWidth: '80px' }}>Venta ID</th>
+              <th style={{ minWidth: '110px' }}>Cuota (Venc.)</th>
+              <th style={{ minWidth: '130px' }}>Saldo Pendiente</th>
+              <th style={{ minWidth: '90px' }}>Días Atraso</th>
+              <th style={{ minWidth: '200px' }}>ÚLTIMA GESTIÓN</th>
+              <th style={{ minWidth: '240px' }}>Acciones</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {list.map((r) => (
+              <tr key={r.sale?.id || r.client?.id}>
+                <td style={{ minWidth: '180px' }}>
+                  <strong>{r.client?.name} {r.client?.lastName}</strong>
+                </td>
+                <td style={{ minWidth: '130px' }}>
+                  {r.client?.phone ? (
+                    <a 
+                      href={`tel:${r.client.phone}`}
+                      style={{
+                        color: 'var(--primary)',
+                        textDecoration: 'none',
+                        fontWeight: '600'
+                      }}
+                    >
+                      📞 {r.client.phone}
+                    </a>
+                  ) : 'N/A'}
+                </td>
+                <td style={{ minWidth: '80px' }}>
+                  <strong style={{ color: 'var(--info)' }}>{r.sale?.id || 'N/A'}</strong>
+                </td>
+                <td style={{ minWidth: '110px' }}>${formatMXN(r.sale?.weeklyPaymentAmount)}</td> 
+                <td style={{ minWidth: '130px', fontWeight: 'bold', color: 'var(--danger)' }}>
+                  ${formatMXN(r.sale?.balanceDue)}
+                </td>
+                <td style={{ minWidth: '90px' }}>
+                  <span style={{
+                    background: r.daysLate > 30 ? '#fee2e2' : (r.daysLate > 15 ? '#fef3c7' : '#d1fae5'),
+                    color: r.daysLate > 30 ? '#991b1b' : (r.daysLate > 15 ? '#92400e' : '#065f46'),
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '9999px',
+                    fontWeight: 'bold',
+                    fontSize: '0.9rem'
+                  }}>
+                    {r.daysLate || 0}
+                  </span>
+                </td>
+                
+                <td style={{ minWidth: '200px' }}>
+                  {renderLastManagement(r.lastManagement)}
+                </td>
+                
+                <td style={{ minWidth: '240px' }}>
+                  <div style={{ 
+                    display: 'flex',
+                    gap: '0.5rem',
+                    flexWrap: 'nowrap'
+                  }}>
+                    <button 
+                      onClick={() => handleOpenLogModal(r)} 
+                      style={{
+                        ...getGestionButtonStyle(r.lastManagement),
+                        padding: '0.6rem 0.8rem',
+                        borderRadius: 'var(--radius-sm)',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '0.8rem',
+                        transition: 'var(--transition)',
+                        whiteSpace: 'nowrap',
+                        flex: '1',
+                        minWidth: '110px'
+                      }}
+                      title="Registrar nueva gestión de cobranza"
+                    >
+                      📋 Gestión
+                    </button>
+                    
+                    <button 
+                      onClick={() => handleSendMessage(r)} 
+                      style={{
+                        backgroundColor: '#25D366',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.6rem 0.8rem',
+                        borderRadius: 'var(--radius-sm)',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '0.8rem',
+                        transition: 'var(--transition)',
+                        whiteSpace: 'nowrap',
+                        flex: '1',
+                        minWidth: '110px'
+                      }}
+                      title="Enviar mensaje por WhatsApp"
+                    >
+                      💬 WhatsApp
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   };
 
@@ -270,31 +314,66 @@ function RemindersPanel({ authenticatedFetch }) {
       <h3>Panel de Recordatorios y Cobranza</h3>
       <p>Gestión automatizada de recordatorios vía WhatsApp. Haz clic para enviar el mensaje predefinido.</p>
       
-      {/* BOTÓN DE EXPORTACIÓN */}
       <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'flex-end' }}>
-        <button className="action-button export-button" onClick={handleExportLog}>
-          Exportar Registro de Gestión (Excel)
+        <button 
+          className="action-button export-button" 
+          onClick={handleExportLog}
+          style={{
+            background: 'linear-gradient(135deg, var(--success), var(--success-dark))',
+            color: 'white',
+            border: 'none',
+            padding: '0.75rem 1.5rem',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.95rem'
+          }}
+        >
+          📊 Exportar Registro de Gestión (Excel)
         </button>
       </div>
       
       <hr />
 
-      <div style={{ marginBottom: '20px' }}>
-        <h4>🔴 Riesgo ALTO (Pago Vencido, Mayor Saldo o Atraso) - {highRisk.length} clientes</h4>
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ 
+          color: 'var(--danger)', 
+          padding: '1rem', 
+          background: '#fee2e2', 
+          borderRadius: 'var(--radius-sm)',
+          borderLeft: '4px solid var(--danger)'
+        }}>
+          🔴 Riesgo ALTO (Pago Vencido, Mayor Saldo o Atraso) - {highRisk.length} clientes
+        </h4>
         {renderRemindersTable(highRisk, 'ALTO')}
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <h4>🟡 Riesgo BAJO (Atraso Menor) - {lowRisk.length} clientes</h4>
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ 
+          color: '#92400e', 
+          padding: '1rem', 
+          background: '#fef3c7', 
+          borderRadius: 'var(--radius-sm)',
+          borderLeft: '4px solid var(--warning)'
+        }}>
+          🟡 Riesgo BAJO (Atraso Menor) - {lowRisk.length} clientes
+        </h4>
         {renderRemindersTable(lowRisk, 'BAJO')}
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <h4>🟢 Por Vencer (Recordatorio Amistoso) - {dueSoon.length} clientes</h4>
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ 
+          color: '#065f46', 
+          padding: '1rem', 
+          background: '#d1fae5', 
+          borderRadius: 'var(--radius-sm)',
+          borderLeft: '4px solid var(--success)'
+        }}>
+          🟢 Por Vencer (Recordatorio Amistoso) - {dueSoon.length} clientes
+        </h4>
         {renderRemindersTable(dueSoon, 'POR_VENCER')}
       </div>
       
-      {/* MODAL DE REGISTRO DE GESTIÓN */}
       {showLogModal && selectedSaleToLog && (
           <CollectionLogForm
               saleData={selectedSaleToLog}
