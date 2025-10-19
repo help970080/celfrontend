@@ -260,10 +260,11 @@
             mouseX = e.touches[0].clientX - rect.left;
         });
 
-        // 🟢 FUNCIÓN CORREGIDA
+        // 🟢 FUNCIÓN DE INICIO CORREGIDA
         function startGame() {
+            // Oculta ambas pantallas para asegurar que el canvas es visible
             document.getElementById('startScreen').classList.add('hidden');
-            document.getElementById('gameOverScreen').classList.add('hidden'); // Aseguramos que ambas estén ocultas
+            document.getElementById('gameOverScreen').classList.add('hidden'); 
             
             gameRunning = true;
             score = 0;
@@ -278,15 +279,15 @@
             
             updateUI();
             
-            // Si no está corriendo, iniciamos el bucle del juego
+            // Inicia el bucle del juego si no está corriendo
             if (!window.gameLoopRequest) {
                  gameLoop();
             }
         }
 
-        // 🟢 FUNCIÓN CORREGIDA
+        // 🟢 FUNCIÓN DE REINICIO CORREGIDA
         function restartGame() {
-            startGame(); // Simplemente llamamos a startGame para reiniciar
+            startGame(); 
         }
 
         function updateUI() {
@@ -324,9 +325,7 @@
                 basket.x += basket.speed;
             }
 
-            // Movimiento basado en el ratón/touch
             if (mouseX > 0) {
-                // Mueve la canasta gradualmente hacia la posición del ratón
                 basket.x += (mouseX - (basket.x + basket.width / 2)) * 0.15;
             }
 
@@ -339,7 +338,6 @@
                 phone.y += phone.speed;
                 phone.rotation += phone.rotSpeed;
 
-                // Detección de colisión (Canasta)
                 if (phone.y + phone.height >= basket.y &&
                     phone.y <= basket.y + basket.height &&
                     phone.x + phone.width >= basket.x &&
@@ -362,10 +360,9 @@
                     continue;
                 }
 
-                // Si el celular cae al suelo
                 if (phone.y > canvas.height) {
                     if (!phone.isBad) {
-                        lives--; // Pierde vida solo si era un celular bueno
+                        lives--; 
                         updateUI();
                         if (lives <= 0) {
                             gameOver();
@@ -376,7 +373,6 @@
             }
         }
 
-        // --- Sistema de Partículas (Estrellas y Explosiones) ---
         function createStars(x, y) {
             for (let i = 0; i < 5; i++) {
                 const angle = (Math.PI * 2 * i) / 5;
@@ -421,21 +417,18 @@
                 }
             }
         }
-        // --- Fin Sistema de Partículas ---
-
 
         function draw() {
-            // Fondo
             ctx.fillStyle = '#f0f4ff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Canasta (Bandeja)
+            // Canasta
             ctx.fillStyle = '#667eea';
             ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
             ctx.fillStyle = '#4c5fd7';
-            ctx.fillRect(basket.x, basket.y, basket.width, 10); // Borde superior
-            ctx.fillRect(basket.x, basket.y, 5, basket.height); // Borde izquierdo
-            ctx.fillRect(basket.x + basket.width - 5, basket.y, 5, basket.height); // Borde derecho
+            ctx.fillRect(basket.x, basket.y, basket.width, 10);
+            ctx.fillRect(basket.x, basket.y, 5, basket.height);
+            ctx.fillRect(basket.x + basket.width - 5, basket.y, 5, basket.height);
 
             // Celulares
             phones.forEach(phone => {
@@ -444,7 +437,6 @@
                 ctx.rotate(phone.rotation);
                 
                 if (phone.isBad) {
-                    // Celular roto 💥
                     ctx.fillStyle = '#ff4757';
                     ctx.fillRect(-phone.width / 2, -phone.height / 2, phone.width, phone.height);
                     ctx.fillStyle = '#fff';
@@ -453,10 +445,9 @@
                     ctx.textBaseline = 'middle';
                     ctx.fillText('💥', 0, 0);
                 } else {
-                    // Celular bueno 📱
-                    ctx.fillStyle = '#2d3436'; // Cuerpo del celular
+                    ctx.fillStyle = '#2d3436';
                     ctx.fillRect(-phone.width / 2, -phone.height / 2, phone.width, phone.height);
-                    ctx.fillStyle = '#4facfe'; // Pantalla
+                    ctx.fillStyle = '#4facfe';
                     ctx.fillRect(-phone.width / 2 + 3, -phone.height / 2 + 8, phone.width - 6, phone.height - 16);
                     ctx.fillStyle = '#fff';
                     ctx.font = '24px Arial';
@@ -488,7 +479,6 @@
 
         function gameLoop(timestamp) {
             if (!gameRunning) {
-                // Si el juego terminó, cancelamos la próxima animación.
                 window.gameLoopRequest = undefined;
                 return;
             }
@@ -499,16 +489,14 @@
             updateParticles();
             draw();
 
-            // Guardamos la referencia para poder cancelarla en gameOver
             window.gameLoopRequest = requestAnimationFrame(gameLoop);
         }
 
         function gameOver() {
             gameRunning = false;
-            // La línea clave para terminar el juego y mostrar la pantalla
             document.getElementById('finalScore').textContent = `Puntuación: ${score}`;
             document.getElementById('gameOverScreen').classList.remove('hidden');
-            // Cancelamos la animación para detener el juego
+            
             if (window.gameLoopRequest) {
                 cancelAnimationFrame(window.gameLoopRequest);
                 window.gameLoopRequest = undefined;
