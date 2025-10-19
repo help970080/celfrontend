@@ -16,8 +16,6 @@ function PublicCatalog() {
     const [showFilters, setShowFilters] = useState(false);
     const [expandedProducts, setExpandedProducts] = useState(new Set());
 
-    const PROMOTIONAL_VIDEO_URL = "https://youtu.be/l96NpPj1uTc";
-
     const calculateCreditDetails = (price) => {
         const downPaymentPercentage = 0.10;
         const numberOfWeeks = 17;
@@ -113,7 +111,6 @@ function PublicCatalog() {
     }
 
     const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
-    const promotionalMediaDetails = getMediaType(PROMOTIONAL_VIDEO_URL);
 
     return (
         <div className="modern-catalog">
@@ -122,84 +119,29 @@ function PublicCatalog() {
                 <p className="catalog-subtitle">Los mejores productos con planes de crédito flexibles</p>
             </div>
 
-            {/* Video Promocional */}
-            {PROMOTIONAL_VIDEO_URL && (
-                <div className="promotional-section">
-                    {promotionalMediaDetails.type === 'youtube' && promotionalMediaDetails.id ? (
-                        <a
-                            href={PROMOTIONAL_VIDEO_URL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="promotional-video-link"
-                        >
-                            <img 
-                                src={`https://img.youtube.com/vi/${promotionalMediaDetails.id}/maxresdefault.jpg`}
-                                alt="Video Promocional"
-                                className="promotional-video"
-                                onError={(e) => {
-                                    e.target.src = `https://img.youtube.com/vi/${promotionalMediaDetails.id}/hqdefault.jpg`;
-                                }}
-                            />
-                            <div className="promotional-play-button">
-                                <svg viewBox="0 0 68 48" width="80" height="60">
-                                    <path d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,.13,34,0,34,0S12.21,.13,6.9,1.55 C3.97,2.33,2.27,4.81,1.48,7.74C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z" fill="#f00"></path>
-                                    <path d="M 45,24 27,14 27,34" fill="#fff"></path>
-                                </svg>
-                            </div>
-                        </a>
-                    ) : promotionalMediaDetails.type === 'vimeo' && promotionalMediaDetails.id ? (
-                        <a
-                            href={PROMOTIONAL_VIDEO_URL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="promotional-video-link"
-                        >
-                            <img 
-                                src={`https://vumbnail.com/${promotionalMediaDetails.id}.jpg`}
-                                alt="Video Promocional"
-                                className="promotional-video"
-                                onError={(e) => {
-                                    e.target.src = 'https://via.placeholder.com/800x450/667eea/ffffff?text=Video+Promocional';
-                                }}
-                            />
-                            <div className="promotional-play-button vimeo">
-                                <svg viewBox="0 0 24 24" width="80" height="80" fill="#00adef">
-                                    <circle cx="12" cy="12" r="10" fill="#00adef"/>
-                                    <path d="M10 8l6 4-6 4V8z" fill="#fff"/>
-                                </svg>
-                            </div>
-                        </a>
-                    ) : promotionalMediaDetails.type === 'vidnoz' && promotionalMediaDetails.id ? (
-                        <a
-                            href={PROMOTIONAL_VIDEO_URL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="promotional-video-link"
-                        >
-                            <img 
-                                src="https://via.placeholder.com/800x450/667eea/ffffff?text=Video+Promocional"
-                                alt="Video Promocional"
-                                className="promotional-video"
-                            />
-                            <div className="promotional-play-button">
-                                <svg viewBox="0 0 24 24" width="80" height="80" fill="#667eea">
-                                    <circle cx="12" cy="12" r="10" fill="#667eea"/>
-                                    <path d="M10 8l6 4-6 4V8z" fill="#fff"/>
-                                </svg>
-                            </div>
-                        </a>
-                    ) : (
-                        <img
-                            src={PROMOTIONAL_VIDEO_URL || 'https://via.placeholder.com/800x450'}
-                            alt="Contenido Destacado"
-                            className="promotional-video"
-                        />
-                    )}
-                    <p className="promotional-text">
-                        ¡Descubre la innovación que cabe en tu bolsillo!
-                    </p>
-                </div>
-            )}
+            {/* Juego Promocional */}
+            <div className="promotional-section game-section">
+                <iframe 
+                    src="/game.html" 
+                    className="promotional-game"
+                    style={{
+                        width: '100%',
+                        maxWidth: '800px',
+                        height: '600px',
+                        border: 'none',
+                        borderRadius: '20px',
+                        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+                        display: 'block',
+                        margin: '0 auto',
+                        backgroundColor: '#f0f4ff'
+                    }}
+                    title="Juego - Atrapa los Celulares"
+                    loading="lazy"
+                />
+                <p className="promotional-text" style={{marginTop: '20px', textAlign: 'center', fontSize: '18px'}}>
+                    🎮 ¡Juega mientras navegas! - 📱 Celulares a Crédito + 📦 Servicio de Paquetería (DHL, ESTAFETA, UPS)
+                </p>
+            </div>
 
             {/* Filtros */}
             <button className="modern-filter-button" onClick={() => setShowFilters(!showFilters)}>
