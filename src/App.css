@@ -1233,3 +1233,461 @@ button[type="submit"]:disabled {
 .delete-button:hover {
   outline-color: rgba(239, 68, 68, 0.3);
 }
+/* ===================================================================
+   ESTILOS PARA CATÁLOGO PÚBLICO MODERNO
+   Agregar este código AL FINAL de tu App.css existente
+   =================================================================== */
+
+/* ===== CATÁLOGO MODERNO ===== */
+.modern-catalog {
+    padding: 2rem 1rem;
+}
+
+.catalog-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.catalog-header h1 {
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+}
+
+.catalog-subtitle {
+    font-size: 1.1rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* ===== SECCIÓN PROMOCIONAL ===== */
+.promotional-section {
+    max-width: 900px;
+    margin: 0 auto 3rem;
+    text-align: center;
+}
+
+.promotional-video {
+    width: 100%;
+    height: 450px;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    border: none;
+}
+
+.promotional-text {
+    margin-top: 1.5rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+/* ===== BOTÓN DE FILTROS MODERNO ===== */
+.modern-filter-button {
+    display: block;
+    margin: 0 auto 2rem;
+    padding: 1rem 2.5rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.modern-filter-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+}
+
+/* ===== FILTROS MODERNOS ===== */
+.modern-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    justify-content: center;
+    padding: 2rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    margin-bottom: 3rem;
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 150px;
+}
+
+.filter-item label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-item select {
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-item select:hover {
+    border-color: #667eea;
+}
+
+.filter-item select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* ===== GRID DE PRODUCTOS MODERNO ===== */
+.modern-products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+/* ===== TARJETA DE PRODUCTO MODERNA ===== */
+.modern-product-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.modern-product-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+}
+
+/* Badge de Crédito */
+.modern-product-card .product-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 25px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    z-index: 10;
+    box-shadow: 0 6px 15px rgba(245, 158, 11, 0.4);
+}
+
+/* Media del Producto */
+.modern-product-card .product-media {
+    width: 100%;
+    height: 260px;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+.modern-product-card .product-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.modern-product-card:hover .product-media img {
+    transform: scale(1.08);
+}
+
+.modern-product-card .product-media iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* Contenido del Producto */
+.modern-product-card .product-content {
+    padding: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.modern-product-card .product-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+    min-height: 2.6rem;
+}
+
+/* Sección de Precio */
+.modern-product-card .price-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.2rem;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-radius: 12px;
+    border: 2px solid #f59e0b;
+    margin-bottom: 1rem;
+}
+
+.modern-product-card .price-label {
+    font-size: 0.85rem;
+    color: #78350f;
+    font-weight: 600;
+}
+
+.modern-product-card .price-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #92400e;
+}
+
+/* Info de Crédito Compacta */
+.modern-product-card .credit-compact {
+    background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    border: 2px solid #a78bfa;
+}
+
+.modern-product-card .credit-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.6rem;
+}
+
+.modern-product-card .credit-item:last-of-type {
+    margin-bottom: 0.3rem;
+}
+
+.modern-product-card .credit-label {
+    font-size: 0.85rem;
+    color: #581c87;
+    font-weight: 600;
+}
+
+.modern-product-card .credit-amount {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #6b21a8;
+}
+
+.modern-product-card .credit-weeks {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #7c3aed;
+    font-weight: 600;
+    font-style: italic;
+}
+
+/* Botón Toggle Detalles */
+.modern-product-card .toggle-details-btn {
+    width: 100%;
+    padding: 0.8rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 0.8rem;
+}
+
+.modern-product-card .toggle-details-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Detalles Expandibles */
+.modern-product-card .product-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #f9fafb;
+    border-radius: 10px;
+    margin-bottom: 0.8rem;
+}
+
+.modern-product-card .product-details.expanded {
+    max-height: 500px;
+    padding: 1.2rem;
+    border: 2px solid #e5e7eb;
+}
+
+.modern-product-card .product-description {
+    color: #4b5563;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+}
+
+.modern-product-card .detail-row {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #e5e7eb;
+    color: #1f2937;
+    font-size: 0.9rem;
+}
+
+.modern-product-card .detail-row:last-child {
+    border-bottom: none;
+}
+
+.modern-product-card .detail-row strong {
+    color: #667eea;
+    margin-right: 0.5rem;
+}
+
+/* Botón de Contacto Moderno */
+.modern-product-card .contact-btn-modern {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+    display: block;
+    margin-top: auto;
+}
+
+.modern-product-card .contact-btn-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, #059669, #047857);
+}
+
+/* ===== PAGINACIÓN MODERNA ===== */
+.modern-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 3rem;
+    padding: 1.5rem;
+}
+
+.modern-pagination .pagination-btn {
+    padding: 0.8rem 2rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modern-pagination .pagination-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.modern-pagination .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.modern-pagination .pagination-info {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #4b5563;
+}
+
+/* ===== MENSAJES ===== */
+.modern-catalog .no-products {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    font-size: 1.1rem;
+    color: #6b7280;
+}
+
+.modern-catalog .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    gap: 1.5rem;
+}
+
+.modern-catalog .loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #e5e7eb;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+    .modern-products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .catalog-header h1 {
+        font-size: 2rem;
+    }
+
+    .catalog-subtitle {
+        font-size: 1rem;
+    }
+
+    .modern-products-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .promotional-video {
+        height: 300px;
+    }
+
+    .modern-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-item {
+        min-width: 100%;
+    }
+}
