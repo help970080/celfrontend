@@ -45,7 +45,16 @@ function ProductAdminPanel({ authenticatedFetch, userRole }) {
         setErrorProducts(null);
         try {
             let url = `${API_BASE_URL}/api/products?sortBy=${sortBy}&order=${order}&page=${currentPage}&limit=${itemsPerPage}`;
+            // ⭐ NUEVO: Obtener tiendaId del localStorage
+            const userTiendaId = localStorage.getItem('tiendaId');
+            
             if (categoryFilter) url += `&category=${encodeURIComponent(categoryFilter)}`;
+            
+            // ⭐ FILTRO CRÍTICO: Agregar tiendaId si el usuario no es super_admin
+            if (userRole !== 'super_admin' && userTiendaId) {
+                url += `&tiendaId=${userTiendaId}`;
+            }
+            
             if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
 
             const response = await authenticatedFetch(url);
@@ -64,7 +73,7 @@ function ProductAdminPanel({ authenticatedFetch, userRole }) {
         } finally {
             setLoadingProducts(false);
         }
-    }, [authenticatedFetch, searchTerm, sortBy, order, categoryFilter, currentPage, itemsPerPage]);
+    }, [authenticatedFetch, searchTerm, sortBy, order, categoryFilter, currentPage, itemsPerPage, userRole]);
 
     useEffect(() => {
         fetchProducts();

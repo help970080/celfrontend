@@ -57,11 +57,25 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
 
     const fetchSupportingData = useCallback(async () => {
         try {
+            // ⭐ NUEVO: Obtener tiendaId del localStorage
+            const userTiendaId = localStorage.getItem('tiendaId');
+            
+            // ⭐ CORREGIDO: Agregar tiendaId a las URLs
+            let clientsUrl = `${API_BASE_URL}/api/clients?limit=9999`;
+            let productsUrl = `${API_BASE_URL}/api/products?limit=9999`;
+            
+            // ⭐ FILTRO CRÍTICO: Solo si no es super_admin
+            if (userRole !== 'super_admin' && userTiendaId) {
+                clientsUrl += `&tiendaId=${userTiendaId}`;
+                productsUrl += `&tiendaId=${userTiendaId}`;
+            }
+            
             const [clientsRes, productsRes, usersRes] = await Promise.all([
-                authenticatedFetch(`${API_BASE_URL}/api/clients?limit=9999`),
-                authenticatedFetch(`${API_BASE_URL}/api/products?limit=9999`),
+                authenticatedFetch(clientsUrl),
+                authenticatedFetch(productsUrl),
                 authenticatedFetch(`${API_BASE_URL}/api/users`)
             ]);
+            
             if (clientsRes.ok) setClients((await clientsRes.json()).clients || []);
             if (productsRes.ok) setProducts((await productsRes.json()).products || []);
             if (usersRes.ok) {
@@ -71,7 +85,7 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         } catch (err) {
             toast.error("Error al cargar datos de soporte.");
         }
-    }, [authenticatedFetch]);
+    }, [authenticatedFetch, userRole]);
 
     useEffect(() => {
         fetchSales();
@@ -104,8 +118,6 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         }
     };
 
-    // --- INICIO DE LA MODIFICACIÓN ---
-    // Nueva función para manejar la exportación a Excel
     const handleExportSalesExcel = async () => {
         if (!hasPermission(['super_admin', 'regular_admin', 'sales_admin', 'viewer_reports'])) {
             toast.error('No tienes permisos para exportar ventas.');
@@ -113,7 +125,6 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         }
         try {
             toast.info('Generando reporte de ventas en Excel...');
-            // La URL apunta a la nueva ruta que creamos en el backend
             const response = await authenticatedFetch(`${API_BASE_URL}/api/sales/export-excel`);
             if (!response.ok) {
                 const errorData = await response.json();
@@ -134,7 +145,6 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
             toast.error(`Error al exportar: ${err.message || "Error desconocido."}`);
         }
     };
-    // --- FIN DE LA MODIFICACIÓN ---
 
     return (
         <section className="sales-section">
@@ -166,14 +176,11 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
                     </select>
                 </div>
                 
-                {/* --- INICIO DE LA MODIFICACIÓN --- */}
-                {/* Botón para activar la exportación a Excel */}
                 <div className="control-group">
                      <button onClick={handleExportSalesExcel} className="action-button export-button">
                         Exportar a Excel
                     </button>
                 </div>
-                {/* --- FIN DE LA MODIFICACIÓN --- */}
 
             </div>
             {loadingSales ? <p>Cargando...</p> : errorSales ? <p className="error-message">{errorSales}</p> : (
