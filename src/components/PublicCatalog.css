@@ -1,0 +1,400 @@
+/* =====================================================
+   ESTILOS MOBILE-FIRST PARA CATÁLOGO PÚBLICO
+   ===================================================== */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+.mobile-catalog {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #f5f7fa;
+    min-height: 100vh;
+    padding-bottom: 20px;
+}
+
+/* Header Mobile */
+.mobile-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.mobile-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Selector de Tienda Mobile */
+.mobile-store-selector {
+    background: white;
+    padding: 15px;
+    margin: 10px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.mobile-store-selector label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 1rem;
+}
+
+.mobile-store-dropdown {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #667eea;
+    background: white;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    cursor: pointer;
+}
+
+/* Video Promocional */
+.mobile-promo-video {
+    margin: 15px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.mobile-promo-video iframe {
+    display: block;
+    width: 100%;
+}
+
+/* Botón de Filtros */
+.mobile-filter-toggle {
+    display: block;
+    width: calc(100% - 30px);
+    margin: 15px;
+    padding: 15px;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 12px;
+    color: #667eea;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+
+.mobile-filter-toggle:active {
+    transform: scale(0.98);
+    background: #667eea;
+    color: white;
+}
+
+/* Panel de Filtros */
+.mobile-filters-panel {
+    background: white;
+    margin: 0 15px 15px 15px;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mobile-filter-group {
+    margin-bottom: 15px;
+}
+
+.mobile-filter-group:last-child {
+    margin-bottom: 0;
+}
+
+.mobile-filter-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.mobile-filter-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: white;
+    color: #333;
+}
+
+/* Lista de Productos */
+.mobile-product-list {
+    padding: 0 10px;
+}
+
+.mobile-product-card {
+    background: white;
+    margin-bottom: 20px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.mobile-product-card:active {
+    transform: scale(0.98);
+}
+
+/* Media del Producto */
+.mobile-product-media {
+    width: 100%;
+    height: 220px;
+    background: #f0f0f0;
+    position: relative;
+    overflow: hidden;
+}
+
+.mobile-product-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.mobile-product-media iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Info del Producto */
+.mobile-product-info {
+    padding: 20px;
+}
+
+.mobile-product-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+
+.mobile-product-brand {
+    color: #667eea;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+.mobile-product-description {
+    color: #666;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+/* Sección de Precio */
+.mobile-price-section {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.mobile-price-label {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.mobile-price-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #667eea;
+}
+
+/* Caja de Crédito */
+.mobile-credit-box {
+    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    border: 2px solid #667eea30;
+}
+
+.mobile-credit-title {
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 10px;
+    font-size: 1rem;
+}
+
+.mobile-credit-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.mobile-credit-row:last-child {
+    margin-bottom: 0;
+}
+
+.mobile-credit-row span {
+    color: #666;
+}
+
+.mobile-credit-row strong {
+    color: #333;
+    font-size: 1.1rem;
+}
+
+/* Botón de WhatsApp */
+.mobile-whatsapp-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 15px;
+    background: #25D366;
+    color: white;
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+    transition: all 0.3s ease;
+}
+
+.mobile-whatsapp-button:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 8px rgba(37, 211, 102, 0.4);
+}
+
+.whatsapp-icon {
+    font-size: 1.5rem;
+}
+
+/* Paginación Mobile */
+.mobile-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 15px;
+    gap: 10px;
+}
+
+.mobile-pagination-btn {
+    flex: 1;
+    padding: 12px 20px;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 10px;
+    color: #667eea;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.mobile-pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.mobile-pagination-btn:not(:disabled):active {
+    background: #667eea;
+    color: white;
+}
+
+.mobile-pagination-info {
+    font-weight: 700;
+    color: #333;
+    white-space: nowrap;
+}
+
+/* Estados de Carga y Error */
+.loading-mobile,
+.error-mobile,
+.mobile-empty {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-mobile p,
+.error-mobile p,
+.mobile-empty p {
+    font-size: 1.1rem;
+    color: #666;
+}
+
+/* Responsive para Tablets y Desktop */
+@media (min-width: 768px) {
+    .mobile-product-list {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        padding: 0 20px;
+    }
+
+    .mobile-header h1 {
+        font-size: 2rem;
+    }
+
+    .mobile-product-name {
+        font-size: 1.4rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .mobile-product-list {
+        grid-template-columns: repeat(3, 1fr);
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .mobile-catalog {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+}

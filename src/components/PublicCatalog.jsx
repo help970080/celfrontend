@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import './PublicCatalog.css';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
 function PublicCatalog() {
     const [products, setProducts] = useState([]);
     const [stores, setStores] = useState([]);
-    const [selectedStore, setSelectedStore] = useState(1); // ⭐ NUEVO
+    const [selectedStore, setSelectedStore] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [sortBy, setSortBy] = useState('name');
@@ -31,7 +32,6 @@ function PublicCatalog() {
         };
     };
 
-    // ⭐ NUEVO: Cargar tiendas
     useEffect(() => {
         const fetchStores = async () => {
             try {
@@ -56,13 +56,12 @@ function PublicCatalog() {
         fetchStores();
     }, []);
 
-    // Cargar productos (ahora con filtro de tienda)
     useEffect(() => {
         const fetchPublicProducts = async () => {
             setLoading(true);
             setError(null);
             try {
-                let url = `${API_BASE_URL}/api/products?sortBy=${sortBy}&order=${order}&tiendaId=${selectedStore}`; // ⭐ AGREGADO tiendaId
+                let url = `${API_BASE_URL}/api/products?sortBy=${sortBy}&order=${order}&tiendaId=${selectedStore}`;
                 if (category) {
                     url += `&category=${encodeURIComponent(category)}`;
                 }
@@ -87,7 +86,7 @@ function PublicCatalog() {
         };
 
         fetchPublicProducts();
-    }, [sortBy, order, category, currentPage, itemsPerPage, selectedStore]); // ⭐ AGREGADO selectedStore
+    }, [sortBy, order, category, currentPage, itemsPerPage, selectedStore]);
 
     const getMediaType = (url) => {
         if (!url) return 'none';
@@ -108,7 +107,6 @@ function PublicCatalog() {
         return { type: 'image' };
     };
 
-    // ⭐ NUEVO: Función para cambiar tienda
     const handleStoreChange = (storeId) => {
         setSelectedStore(parseInt(storeId));
         setCurrentPage(1);
@@ -121,18 +119,27 @@ function PublicCatalog() {
 
     if (loading) {
         return (
-            <div className="public-catalog">
-                <h1>Nuestro Catálogo de Celulares</h1>
-                <p>Cargando los productos más recientes...</p>
+            <div className="mobile-catalog">
+                <div className="mobile-header">
+                    <h1>📱 Catálogo</h1>
+                </div>
+                <div className="loading-mobile">
+                    <div className="spinner"></div>
+                    <p>Cargando productos...</p>
+                </div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="public-catalog">
-                <h1>Nuestro Catálogo de Celulares</h1>
-                <p style={{ color: 'red' }}>Error: {error}</p>
+            <div className="mobile-catalog">
+                <div className="mobile-header">
+                    <h1>📱 Catálogo</h1>
+                </div>
+                <div className="error-mobile">
+                    <p>❌ {error}</p>
+                </div>
             </div>
         );
     }
@@ -141,42 +148,37 @@ function PublicCatalog() {
     const promotionalMediaDetails = getMediaType(PROMOTIONAL_VIDEO_URL);
 
     return (
-        <div className="public-catalog">
-            <h1>Nuestro Catálogo de Celulares</h1>
+        <div className="mobile-catalog">
+            {/* Header Mobile */}
+            <div className="mobile-header">
+                <h1>📱 Catálogo de Celulares</h1>
+            </div>
 
-            {/* ⭐ NUEVO: Selector de Tienda */}
+            {/* Selector de Tienda Mobile */}
             {stores.length > 1 && (
-                <div className="store-selector-banner">
-                    <div className="store-selector-content">
-                        <label htmlFor="store-select">
-                            <span className="store-icon">🏪</span>
-                            Seleccionar Tienda:
-                        </label>
-                        <select
-                            id="store-select"
-                            value={selectedStore}
-                            onChange={(e) => handleStoreChange(e.target.value)}
-                            className="store-dropdown"
-                        >
-                            {stores.map(store => (
-                                <option key={store.id} value={store.id}>
-                                    {store.name}
-                                </option>
-                            ))}
-                        </select>
-                        <span className="current-store-badge">
-                            Viendo: <strong>{getStoreName()}</strong>
-                        </span>
-                    </div>
+                <div className="mobile-store-selector">
+                    <label>🏪 Selecciona tu tienda:</label>
+                    <select
+                        value={selectedStore}
+                        onChange={(e) => handleStoreChange(e.target.value)}
+                        className="mobile-store-dropdown"
+                    >
+                        {stores.map(store => (
+                            <option key={store.id} value={store.id}>
+                                {store.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
             )}
 
+            {/* Video Promocional */}
             {PROMOTIONAL_VIDEO_URL && (
-                <div className="promotional-media-container" style={{ margin: '30px auto', maxWidth: '800px' }}>
+                <div className="mobile-promo-video">
                     {promotionalMediaDetails.type === 'youtube' && promotionalMediaDetails.id ? (
                         <iframe
                             width="100%"
-                            height="450"
+                            height="200"
                             src={`https://www.youtube.com/embed/${promotionalMediaDetails.id}?autoplay=0&mute=0&loop=0`}
                             frameBorder="0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -187,139 +189,152 @@ function PublicCatalog() {
                         <iframe
                             src={`https://player.vimeo.com/video/${promotionalMediaDetails.id}?autoplay=0&loop=0&byline=0&portrait=0`}
                             width="100%"
-                            height="450"
+                            height="200"
                             frameBorder="0"
                             allow="autoplay; fullscreen; picture-in-picture"
                             allowFullScreen
                             title="Video Promocional"
                         ></iframe>
-                    ) : promotionalMediaDetails.type === 'vidnoz' && promotionalMediaDetails.id ? (
-                        <iframe
-                            src={`https://share.vidnoz.com/embed/${promotionalMediaDetails.id}`}
-                            width="100%"
-                            height="450"
-                            frameBorder="0"
-                            allow="autoplay; fullscreen; picture-in-picture"
-                            allowFullScreen
-                            title="Video Promocional Vidnoz"
-                        ></iframe>
-                    ) : (
-                        <img
-                            src={PROMOTIONAL_VIDEO_URL || 'https://via.placeholder.com/800x450?text=Espacio+para+Contenido+Destacado'}
-                            alt="Contenido Destacado"
-                            style={{ width: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}
-                        />
-                    )}
-                    <p className="catalog-intro" style={{ marginTop: '20px', fontSize: '1.2em', fontWeight: 'bold' }}>
-                        ¡Descubre la innovación que cabe en tu bolsillo!
-                    </p>
+                    ) : null}
                 </div>
             )}
 
-            <p className="catalog-intro">Descubre las últimas novedades y ofertas en celulares y accesorios.</p>
-
-            <button className="filter-button" onClick={() => setShowFilters(!showFilters)}>
-                {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+            {/* Botón de Filtros Mobile */}
+            <button className="mobile-filter-toggle" onClick={() => setShowFilters(!showFilters)}>
+                {showFilters ? '✕ Cerrar Filtros' : '⚙️ Filtros'}
             </button>
-            
-            <div className={`filters-container ${showFilters ? 'open' : ''}`}>
-                <div className="control-group">
-                    <label htmlFor="sortBy">Ordenar por:</label>
-                    <select id="sortBy" value={sortBy} onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}>
-                        <option value="name">Nombre (A-Z)</option>
-                        <option value="price">Precio</option>
-                        <option value="createdAt">Más Recientes</option>
-                    </select>
-                </div>
-                <div className="control-group">
-                    <label htmlFor="order">Orden:</label>
-                    <select id="order" value={order} onChange={(e) => { setOrder(e.target.value); setCurrentPage(1); }}>
-                        <option value="asc">Ascendente</option>
-                        <option value="desc">Descendente</option>
-                    </select>
-                </div>
-                <div className="control-group">
-                    <label htmlFor="category">Categoría:</label>
-                    <select id="category" value={category} onChange={(e) => { setCategory(e.target.value); setCurrentPage(1); }}>
-                        <option value="">Todas</option>
-                        {uniqueCategories.map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                    </select>
-                </div>
-                 <div className="control-group">
-                    <label htmlFor="itemsPerPage">Ítems por página:</label>
-                    <select id="itemsPerPage" value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
-                        <option value="5">5</option>
-                        <option value="10">10</option>
-                        <option value="20">20</option>
-                        <option value="50">50</option>
-                    </select>
-                </div>
-            </div>
 
-            <div className="product-list">
+            {/* Panel de Filtros Deslizante */}
+            {showFilters && (
+                <div className="mobile-filters-panel">
+                    <div className="mobile-filter-group">
+                        <label>Ordenar:</label>
+                        <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}>
+                            <option value="name">Nombre</option>
+                            <option value="price">Precio</option>
+                            <option value="createdAt">Más Recientes</option>
+                        </select>
+                    </div>
+
+                    <div className="mobile-filter-group">
+                        <label>Dirección:</label>
+                        <select value={order} onChange={(e) => { setOrder(e.target.value); setCurrentPage(1); }}>
+                            <option value="asc">⬆️ Menor a Mayor</option>
+                            <option value="desc">⬇️ Mayor a Menor</option>
+                        </select>
+                    </div>
+
+                    {uniqueCategories.length > 0 && (
+                        <div className="mobile-filter-group">
+                            <label>Categoría:</label>
+                            <select value={category} onChange={(e) => { setCategory(e.target.value); setCurrentPage(1); }}>
+                                <option value="">Todas</option>
+                                {uniqueCategories.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Lista de Productos Mobile */}
+            <div className="mobile-product-list">
                 {products.length === 0 ? (
-                    <p>No hay productos disponibles en el catálogo que coincidan con los criterios.</p>
+                    <div className="mobile-empty">
+                        <p>📦 No hay productos disponibles</p>
+                    </div>
                 ) : (
                     products.map(product => {
-                        const imageUrls = Array.isArray(product.imageUrls) ? product.imageUrls : (typeof product.imageUrls === 'string' && product.imageUrls ? product.imageUrls.split(/[\n,]/).map(url => url.trim()).filter(Boolean) : []);
-                        const firstMedia = imageUrls.length > 0 ? imageUrls[0] : 'https://via.placeholder.com/200';
+                        const imageUrls = Array.isArray(product.imageUrls) 
+                            ? product.imageUrls 
+                            : (typeof product.imageUrls === 'string' && product.imageUrls 
+                                ? product.imageUrls.split(/[\n,]/).map(url => url.trim()).filter(Boolean) 
+                                : []);
+                        const firstMedia = imageUrls.length > 0 ? imageUrls[0] : 'https://via.placeholder.com/400x300?text=Sin+Imagen';
                         const mediaType = getMediaType(firstMedia);
                         const { downPayment, weeklyPayment } = calculateCreditDetails(product.price);
 
                         return (
-                            <div key={product.id} className="product-card">
-                                {mediaType.type === 'youtube' && mediaType.id ? (
-                                    <iframe
-                                        width="100%"
-                                        height="200"
-                                        src={`https://www.youtube.com/embed/${mediaType.id}`}
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                        title={product.name}
-                                    ></iframe>
-                                ) : mediaType.type === 'vimeo' && mediaType.id ? (
-                                    <iframe
-                                        src={`https://player.vimeo.com/video/${mediaType.id}`}
-                                        width="100%"
-                                        height="200"
-                                        frameBorder="0"
-                                        allow="autoplay; fullscreen; picture-in-picture"
-                                        allowFullScreen
-                                        title={product.name}
-                                    ></iframe>
-                                ) : mediaType.type === 'vidnoz' && mediaType.id ? (
-                                    <iframe
-                                        src={`https://share.vidnoz.com/embed/${mediaType.id}`}
-                                        width="100%"
-                                        height="200"
-                                        frameBorder="0"
-                                        allow="autoplay; fullscreen; picture-in-picture"
-                                        allowFullScreen
-                                        title={product.name}
-                                    ></iframe>
-                                ) : (
-                                    <img src={firstMedia} alt={product.name} />
-                                )}
-                                <div className="product-info-container">
-                                    <h2>{product.name}</h2>
-                                    <p className="product-description">{product.description}</p>
-                                    <p className="product-price">Precio: ${product.price ? product.price.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A'}</p>
+                            <div key={product.id} className="mobile-product-card">
+                                {/* Media (Video o Imagen) */}
+                                <div className="mobile-product-media">
+                                    {mediaType.type === 'youtube' && mediaType.id ? (
+                                        <iframe
+                                            width="100%"
+                                            height="220"
+                                            src={`https://www.youtube.com/embed/${mediaType.id}`}
+                                            frameBorder="0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen
+                                            title={product.name}
+                                        ></iframe>
+                                    ) : mediaType.type === 'vimeo' && mediaType.id ? (
+                                        <iframe
+                                            src={`https://player.vimeo.com/video/${mediaType.id}`}
+                                            width="100%"
+                                            height="220"
+                                            frameBorder="0"
+                                            allow="autoplay; fullscreen; picture-in-picture"
+                                            allowFullScreen
+                                            title={product.name}
+                                        ></iframe>
+                                    ) : mediaType.type === 'vidnoz' && mediaType.id ? (
+                                        <iframe
+                                            src={`https://share.vidnoz.com/embed/${mediaType.id}`}
+                                            width="100%"
+                                            height="220"
+                                            frameBorder="0"
+                                            allow="autoplay; fullscreen; picture-in-picture"
+                                            allowFullScreen
+                                            title={product.name}
+                                        ></iframe>
+                                    ) : (
+                                        <img src={firstMedia} alt={product.name} />
+                                    )}
+                                </div>
+
+                                {/* Info del Producto */}
+                                <div className="mobile-product-info">
+                                    <h2 className="mobile-product-name">{product.name}</h2>
+                                    
+                                    {product.brand && (
+                                        <p className="mobile-product-brand">{product.brand}</p>
+                                    )}
+                                    
+                                    {product.description && (
+                                        <p className="mobile-product-description">{product.description}</p>
+                                    )}
+
+                                    <div className="mobile-price-section">
+                                        <p className="mobile-price-label">Precio Contado:</p>
+                                        <p className="mobile-price-value">
+                                            ${product.price ? product.price.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : 'N/A'}
+                                        </p>
+                                    </div>
+
                                     {product.price > 0 && (
-                                        <div className="credit-info">
-                                            <p>Enganche: <strong>${downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></p>
-                                            <p>Pago Semanal: <strong>${weeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (17 semanas)</strong></p>
+                                        <div className="mobile-credit-box">
+                                            <p className="mobile-credit-title">💳 Opción a Crédito:</p>
+                                            <div className="mobile-credit-row">
+                                                <span>Enganche:</span>
+                                                <strong>${downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong>
+                                            </div>
+                                            <div className="mobile-credit-row">
+                                                <span>Semanal (17 semanas):</span>
+                                                <strong>${weeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong>
+                                            </div>
                                         </div>
                                     )}
+
                                     <a
                                         href="https://wa.me/525665489522"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="contact-button"
+                                        className="mobile-whatsapp-button"
                                     >
-                                        Contactar para comprar
+                                        <span className="whatsapp-icon">💬</span>
+                                        Contactar por WhatsApp
                                     </a>
                                 </div>
                             </div>
@@ -327,88 +342,29 @@ function PublicCatalog() {
                     })
                 )}
             </div>
+
+            {/* Paginación Mobile */}
             {totalPages > 1 && (
-                <div className="pagination-controls">
-                    <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
-                        Anterior
+                <div className="mobile-pagination">
+                    <button 
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                        disabled={currentPage === 1}
+                        className="mobile-pagination-btn"
+                    >
+                        ← Anterior
                     </button>
-                    <span>Página {currentPage} de {totalPages} ({totalItems} ítems)</span>
-                    <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>
-                        Siguiente
+                    <span className="mobile-pagination-info">
+                        {currentPage} / {totalPages}
+                    </span>
+                    <button 
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+                        disabled={currentPage === totalPages}
+                        className="mobile-pagination-btn"
+                    >
+                        Siguiente →
                     </button>
                 </div>
             )}
-
-            {/* ⭐ ESTILOS PARA SELECTOR DE TIENDA */}
-            <style jsx>{`
-                .store-selector-banner {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    padding: 20px;
-                    border-radius: 12px;
-                    margin: 20px 0 30px 0;
-                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-                }
-
-                .store-selector-content {
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    gap: 20px;
-                    flex-wrap: wrap;
-                }
-
-                .store-selector-content label {
-                    color: white;
-                    font-weight: 600;
-                    font-size: 1.1rem;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-
-                .store-icon {
-                    font-size: 1.5rem;
-                }
-
-                .store-dropdown {
-                    padding: 10px 20px;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 1rem;
-                    font-weight: 600;
-                    background: white;
-                    color: #667eea;
-                    cursor: pointer;
-                    min-width: 200px;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-                    transition: all 0.3s ease;
-                }
-
-                .store-dropdown:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                }
-
-                .current-store-badge {
-                    background: rgba(255,255,255,0.2);
-                    padding: 10px 20px;
-                    border-radius: 20px;
-                    color: white;
-                    font-size: 0.95rem;
-                    backdrop-filter: blur(10px);
-                }
-
-                .current-store-badge strong {
-                    font-weight: 700;
-                }
-
-                @media (max-width: 768px) {
-                    .store-selector-content {
-                        flex-direction: column;
-                        text-align: center;
-                    }
-                }
-            `}</style>
         </div>
     );
 }
