@@ -72,11 +72,11 @@ function Auth({ onLoginSuccess }) {
                 setUsername('');
                 setPassword('');
                 setCanRegister(false); 
-                onLoginSuccess(data.token, data.username, data.role, data.userId); 
+                onLoginSuccess(data.token, data.username, data.role, data.tiendaId); 
             } else {
                 setSuccess('Login exitoso.');
                 toast.success(`Bienvenido, ${data.username}!`);
-                onLoginSuccess(data.token, data.username, data.role, data.userId); 
+                onLoginSuccess(data.token, data.username, data.role, data.tiendaId); 
             }
         } catch (err) {
             console.error("Error de autenticación:", err);
