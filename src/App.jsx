@@ -18,6 +18,8 @@ import VisualDashboard from './components/VisualDashboard';
 import ClientLogin from './components/ClientLogin';
 import ClientPortalDashboard from './components/ClientPortalDashboard';
 import RouteTracker from './components/RouteTracker';
+import StoreManager from './components/StoreManager'; // ⭐ AGREGADO
+import UserManager from './components/UserManager'; // ⭐ AGREGADO
 
 import './App.css';
 
@@ -35,21 +37,20 @@ function App() {
   const [token, setToken] = useState(() => localStorage.getItem('token') || null);
   const [username, setUsername] = useState(() => localStorage.getItem('username') || null);
   const [userRole, setUserRole] = useState(() => localStorage.getItem('userRole') || null);
-  const [tiendaId, setTiendaId] = useState(() => localStorage.getItem('tiendaId') || null); // ⭐ NUEVO
+  const [tiendaId, setTiendaId] = useState(() => localStorage.getItem('tiendaId') || null);
 
   const [clientToken, setClientToken] = useState(() => localStorage.getItem('clientToken') || null);
   const [clientName, setClientName] = useState(() => localStorage.getItem('clientName') || null);
 
-  // ⭐ CORREGIDO: Ahora recibe tiendaId como parámetro
   const handleAdminLoginSuccess = useCallback((newToken, newUsername, newUserRole, newTiendaId) => {
     setToken(newToken);
     setUsername(newUsername);
     setUserRole(newUserRole);
-    setTiendaId(newTiendaId); // ⭐ NUEVO
+    setTiendaId(newTiendaId);
     localStorage.setItem('token', newToken);
     localStorage.setItem('username', newUsername);
     localStorage.setItem('userRole', newUserRole);
-    localStorage.setItem('tiendaId', newTiendaId); // ⭐ CRÍTICO: Guardar tiendaId
+    localStorage.setItem('tiendaId', newTiendaId);
     toast.success(`Bienvenido, ${newUsername}!`);
   }, []);
 
@@ -64,11 +65,11 @@ function App() {
     setToken(null);
     setUsername(null);
     setUserRole(null);
-    setTiendaId(null); // ⭐ NUEVO
+    setTiendaId(null);
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     localStorage.removeItem('userRole');
-    localStorage.removeItem('tiendaId'); // ⭐ NUEVO
+    localStorage.removeItem('tiendaId');
 
     setClientToken(null);
     setClientName(null);
@@ -115,7 +116,8 @@ function App() {
                 {hasRole(['super_admin', 'regular_admin', 'inventory_admin']) && <Link to="/admin/products" className="nav-button">Gestión Productos</Link>}
                 {hasRole(['super_admin', 'regular_admin', 'sales_admin']) && <Link to="/admin/clients" className="nav-button">Gestión Clientes</Link>}
                 {hasRole(['super_admin', 'regular_admin', 'sales_admin', 'viewer_reports']) && <Link to="/admin/reports" className="nav-button">Reportes</Link>}
-                {hasRole('super_admin') && <Link to="/admin/users" className="nav-button">Gestión Usuarios</Link>}
+                {hasRole('super_admin') && <Link to="/admin/stores" className="nav-button">🏪 Tiendas</Link>} {/* ⭐ AGREGADO */}
+                {hasRole('super_admin') && <Link to="/admin/users-manager" className="nav-button">👥 Usuarios</Link>} {/* ⭐ AGREGADO */}
                 {hasRole('collector_agent') && <Link to="/admin/my-collections" className="nav-button">Mis Cobranzas</Link>}
                 {hasRole('super_admin') && <Link to="/admin/audit" className="nav-button">Auditoría</Link>}
                 <span className="user-info">Admin: {username} ({userRole})</span>
@@ -152,6 +154,11 @@ function App() {
             <Route path="/admin/clients" element={<PrivateRoute isAuthenticated={!!token}><ClientAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} /></PrivateRoute>} />
             <Route path="/admin/reports" element={<PrivateRoute isAuthenticated={!!token}><ReportsAdminPanel authenticatedFetch={authenticatedFetch} /></PrivateRoute>} />
             <Route path="/admin/users" element={<PrivateRoute isAuthenticated={!!token}><UserAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} /></PrivateRoute>} />
+            
+            {/* ⭐ RUTAS AGREGADAS PARA STOREMANAGER Y USERMANAGER */}
+            <Route path="/admin/stores" element={<PrivateRoute isAuthenticated={!!token}><StoreManager authenticatedFetch={authenticatedFetch} userRole={userRole} /></PrivateRoute>} />
+            <Route path="/admin/users-manager" element={<PrivateRoute isAuthenticated={!!token}><UserManager authenticatedFetch={authenticatedFetch} userRole={userRole} /></PrivateRoute>} />
+            
             <Route path="/admin/clients/statement/:clientId" element={<PrivateRoute isAuthenticated={!!token}><ClientStatementViewer authenticatedFetch={authenticatedFetch} /></PrivateRoute>} />
             <Route path="/admin/clients/payments/:clientId" element={<PrivateRoute isAuthenticated={!!token}><ClientPayments authenticatedFetch={authenticatedFetch} userRole={userRole} /></PrivateRoute>} />
             <Route path="/admin/my-collections" element={<PrivateRoute isAuthenticated={!!token}><CollectorDashboard authenticatedFetch={authenticatedFetch} /></PrivateRoute>} />
