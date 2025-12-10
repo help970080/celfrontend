@@ -1,366 +1,624 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import './PublicCatalog.css';
 
-const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
+const PublicCatalog = () => {
+  const [products, setProducts] = useState([]);
+  const [stores, setStores] = useState([]);
+  const [selectedStore, setSelectedStore] = useState(1); // Default: Tienda 1
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+  const [order, setOrder] = useState('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-function PublicCatalog() {
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [sortBy, setSortBy] = useState('name');
-    const [order, setOrder] = useState('asc');
-    const [category, setCategory] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(12);
-    const [totalPages, setTotalPages] = useState(1);
-    const [totalItems, setTotalItems] = useState(0);
-    const [showFilters, setShowFilters] = useState(false);
-    const [expandedProducts, setExpandedProducts] = useState(new Set());
+  const API_URL = import.meta.env.VITE_API_URL || 'https://celbackend.onrender.com';
 
-    const calculateCreditDetails = (price) => {
-        const downPaymentPercentage = 0.10;
-        const numberOfWeeks = 17;
-        const downPayment = price * downPaymentPercentage;
-        const remainingBalance = price - downPayment;
-        const weeklyPayment = remainingBalance / numberOfWeeks;
+  // Cargar tiendas activas
+  useEffect(() => {
+    fetchStores();
+  }, []);
 
-        return {
-            downPayment: parseFloat(downPayment.toFixed(2)),
-            weeklyPayment: parseFloat(weeklyPayment.toFixed(2)),
-        };
-    };
+  // Cargar productos cuando cambia la tienda, búsqueda, orden o página
+  useEffect(() => {
+    fetchProducts();
+  }, [selectedStore, searchTerm, sortBy, order, currentPage]);
 
-    useEffect(() => {
-        const fetchPublicProducts = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                let url = `${API_BASE_URL}/api/products?sortBy=${sortBy}&order=${order}`;
-                if (category) url += `&category=${encodeURIComponent(category)}`;
-                url += `&page=${currentPage}&limit=${itemsPerPage}`;
-
-                const response = await fetch(url);
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || `Error HTTP: ${response.status}`);
-                }
-                const data = await response.json();
-                setProducts(data.products || []);
-                setTotalPages(data.totalPages);
-                setTotalItems(data.totalItems);
-            } catch (err) {
-                console.error("Error al obtener productos:", err);
-                setError(err.message || "No se pudieron cargar los productos.");
-                setProducts([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchPublicProducts();
-    }, [sortBy, order, category, currentPage, itemsPerPage]);
-
-    const toggleDetails = (productId) => {
-        setExpandedProducts(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(productId)) {
-                newSet.delete(productId);
-            } else {
-                newSet.add(productId);
-            }
-            return newSet;
-        });
-    };
-
-    const getMediaType = (url) => {
-        if (!url) return 'none';
-        if (url.includes('youtube.com/watch') || url.includes('youtu.be/') || url.includes('youtube.com/shorts')) {
-            const videoIdMatch = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
-            const videoId = videoIdMatch ? videoIdMatch[1] : null;
-            return { type: 'youtube', id: videoId };
-        }
-        if (url.includes('vimeo.com/')) {
-            const videoId = url.split('/').pop();
-            return { type: 'vimeo', id: videoId.split('?')[0] };
-        }
-        if (url.includes('share.vidnoz.com/aivideo')) {
-            const videoIdMatch = url.match(/id=(aishare-[a-zA-Z0-9_-]+)/);
-            const videoId = videoIdMatch ? videoIdMatch[1] : null;
-            return { type: 'vidnoz', id: videoId };
-        }
-        return { type: 'image' };
-    };
-
-    if (loading) {
-        return (
-            <div className="modern-catalog">
-                <div className="loading-container">
-                    <div className="loading-spinner"></div>
-                    <h2>Cargando los mejores productos...</h2>
-                </div>
-            </div>
-        );
+  const fetchStores = async () => {
+    try {
+      // Intentar obtener tiendas (sin autenticación)
+      // Si falla, usar tiendas por defecto
+      const response = await fetch(`${API_URL}/api/stores`);
+      if (response.ok) {
+        const data = await response.json();
+        setStores(data.filter(store => store.isActive));
+      } else {
+        // Usar tiendas por defecto si la API requiere auth
+        setStores([
+          { id: 1, name: 'Tienda Principal' },
+          { id: 2, name: 'Tienda Sucursal' }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error al cargar tiendas:', error);
+      // Usar tiendas por defecto
+      setStores([
+        { id: 1, name: 'Tienda Principal' },
+        { id: 2, name: 'Tienda Sucursal' }
+      ]);
     }
+  };
 
-    if (error) {
-        return (
-            <div className="modern-catalog">
-                <h1>📱 Nuestro Catálogo</h1>
-                <p className="error-message">Error: {error}</p>
-            </div>
-        );
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        tiendaId: selectedStore,
+        sortBy,
+        order,
+        page: currentPage,
+        limit: 12
+      });
+
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+
+      const response = await fetch(`${API_URL}/api/products?${params}`);
+      const data = await response.json();
+
+      setProducts(data.products || []);
+      setTotalPages(data.totalPages || 1);
+    } catch (error) {
+      console.error('Error al cargar productos:', error);
+      setProducts([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
+  const handleStoreChange = (storeId) => {
+    setSelectedStore(parseInt(storeId));
+    setCurrentPage(1); // Reset a primera página
+  };
 
-    return (
-        <div className="modern-catalog">
-            <div className="catalog-header">
-                <h1>📱 Descubre Nuestra Colección</h1>
-                <p className="catalog-subtitle">Los mejores productos con planes de crédito flexibles</p>
-            </div>
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
 
-            {/* Juego Promocional */}
-            <div className="promotional-section game-section">
-                <iframe 
-                    src="/game.html" 
-                    className="promotional-game"
-                    style={{
-                        width: '100%',
-                        maxWidth: '800px',
-                        height: '600px',
-                        border: 'none',
-                        borderRadius: '20px',
-                        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-                        display: 'block',
-                        margin: '0 auto',
-                        backgroundColor: '#f0f4ff'
-                    }}
-                    title="Juego - Atrapa los Celulares"
-                    loading="lazy"
-                />
-                <p className="promotional-text" style={{marginTop: '20px', textAlign: 'center', fontSize: '18px'}}>
-                    🎮 ¡Juega mientras navegas! - 📱 Celulares a Crédito + 📦 Servicio de Paquetería (DHL, ESTAFETA, UPS)
-                </p>
-            </div>
+  const handleSortChange = (newSortBy) => {
+    if (sortBy === newSortBy) {
+      setOrder(order === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(newSortBy);
+      setOrder('asc');
+    }
+    setCurrentPage(1);
+  };
 
-            {/* Filtros */}
-            <button className="modern-filter-button" onClick={() => setShowFilters(!showFilters)}>
-                {showFilters ? '✕ Ocultar Filtros' : '⚙️ Filtros'}
-            </button>
-            
-            {showFilters && (
-                <div className="modern-filters">
-                    <div className="filter-item">
-                        <label>Ordenar por:</label>
-                        <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}>
-                            <option value="name">Nombre</option>
-                            <option value="price">Precio</option>
-                            <option value="createdAt">Más Recientes</option>
-                        </select>
-                    </div>
-                    <div className="filter-item">
-                        <label>Orden:</label>
-                        <select value={order} onChange={(e) => { setOrder(e.target.value); setCurrentPage(1); }}>
-                            <option value="asc">Ascendente</option>
-                            <option value="desc">Descendente</option>
-                        </select>
-                    </div>
-                    <div className="filter-item">
-                        <label>Categoría:</label>
-                        <select value={category} onChange={(e) => { setCategory(e.target.value); setCurrentPage(1); }}>
-                            <option value="">Todas</option>
-                            {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                        </select>
-                    </div>
-                    <div className="filter-item">
-                        <label>Por página:</label>
-                        <select value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
-                            <option value="6">6</option>
-                            <option value="12">12</option>
-                            <option value="24">24</option>
-                        </select>
-                    </div>
-                </div>
-            )}
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(price);
+  };
 
-            {/* Grid de Productos */}
-            <div className="modern-products-grid">
-                {products.length === 0 ? (
-                    <p className="no-products">No hay productos disponibles que coincidan con los criterios.</p>
-                ) : (
-                    products.map(product => {
-                        const imageUrls = Array.isArray(product.imageUrls) 
-                            ? product.imageUrls 
-                            : (typeof product.imageUrls === 'string' && product.imageUrls 
-                                ? product.imageUrls.split(/[\n,]/).map(url => url.trim()).filter(Boolean) 
-                                : []);
-                        const firstMedia = imageUrls.length > 0 ? imageUrls[0] : 'https://via.placeholder.com/400x300/667eea/ffffff?text=Imagen+No+Disponible';
-                        const mediaType = getMediaType(firstMedia);
-                        const { downPayment, weeklyPayment } = calculateCreditDetails(product.price);
-                        const isExpanded = expandedProducts.has(product.id);
+  const getStoreName = () => {
+    const store = stores.find(s => s.id === selectedStore);
+    return store ? store.name : 'Tienda';
+  };
 
-                        return (
-                            <div key={product.id} className="modern-product-card">
-                                {/* Badge de Crédito */}
-                                <div className="product-badge">A Crédito</div>
+  return (
+    <div className="public-catalog">
+      <div className="catalog-header">
+        <h1>Catálogo de Productos</h1>
+        <p className="subtitle">Explora nuestro inventario disponible</p>
+      </div>
 
-                                {/* Imagen/Video */}
-                                <div className="product-media">
-                                    {mediaType.type === 'youtube' && mediaType.id ? (
-                                        <a
-                                            href={firstMedia}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="video-thumbnail-link"
-                                        >
-                                            <img 
-                                                src={`https://img.youtube.com/vi/${mediaType.id}/maxresdefault.jpg`}
-                                                alt={product.name}
-                                                onError={(e) => {
-                                                    e.target.src = `https://img.youtube.com/vi/${mediaType.id}/hqdefault.jpg`;
-                                                }}
-                                            />
-                                            <div className="play-button-overlay">
-                                                <svg viewBox="0 0 68 48" width="68" height="48">
-                                                    <path d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,.13,34,0,34,0S12.21,.13,6.9,1.55 C3.97,2.33,2.27,4.81,1.48,7.74C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z" fill="#f00"></path>
-                                                    <path d="M 45,24 27,14 27,34" fill="#fff"></path>
-                                                </svg>
-                                            </div>
-                                        </a>
-                                    ) : mediaType.type === 'vimeo' && mediaType.id ? (
-                                        <a
-                                            href={firstMedia}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="video-thumbnail-link"
-                                        >
-                                            <img 
-                                                src={`https://vumbnail.com/${mediaType.id}.jpg`}
-                                                alt={product.name}
-                                                onError={(e) => {
-                                                    e.target.src = 'https://via.placeholder.com/400x300/667eea/ffffff?text=Video+Vimeo';
-                                                }}
-                                            />
-                                            <div className="play-button-overlay vimeo">
-                                                <svg viewBox="0 0 24 24" width="60" height="60" fill="#00adef">
-                                                    <circle cx="12" cy="12" r="10" fill="#00adef"/>
-                                                    <path d="M10 8l6 4-6 4V8z" fill="#fff"/>
-                                                </svg>
-                                            </div>
-                                        </a>
-                                    ) : mediaType.type === 'vidnoz' && mediaType.id ? (
-                                        <a
-                                            href={firstMedia}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="video-thumbnail-link"
-                                        >
-                                            <img 
-                                                src="https://via.placeholder.com/400x300/667eea/ffffff?text=Video+Vidnoz"
-                                                alt={product.name}
-                                            />
-                                            <div className="play-button-overlay">
-                                                <svg viewBox="0 0 24 24" width="60" height="60" fill="#667eea">
-                                                    <circle cx="12" cy="12" r="10" fill="#667eea"/>
-                                                    <path d="M10 8l6 4-6 4V8z" fill="#fff"/>
-                                                </svg>
-                                            </div>
-                                        </a>
-                                    ) : (
-                                        <img src={firstMedia} alt={product.name} />
-                                    )}
-                                </div>
-
-                                {/* Info del Producto */}
-                                <div className="product-content">
-                                    <h3 className="product-title">{product.name}</h3>
-                                    
-                                    {/* Precio Principal */}
-                                    <div className="price-section">
-                                        <div className="price-label">Precio Total</div>
-                                        <div className="price-value">
-                                            ${product.price ? product.price.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : 'N/A'}
-                                        </div>
-                                    </div>
-
-                                    {/* Info de Crédito Compacta */}
-                                    {product.price > 0 && (
-                                        <div className="credit-compact">
-                                            <div className="credit-item">
-                                                <span className="credit-label">Enganche:</span>
-                                                <span className="credit-amount">${downPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
-                                            </div>
-                                            <div className="credit-item">
-                                                <span className="credit-label">Pago Semanal:</span>
-                                                <span className="credit-amount">${weeklyPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
-                                            </div>
-                                            <div className="credit-weeks">(17 semanas)</div>
-                                        </div>
-                                    )}
-
-                                    {/* Botón para Ver Detalles */}
-                                    <button 
-                                        className="toggle-details-btn"
-                                        onClick={() => toggleDetails(product.id)}
-                                    >
-                                        {isExpanded ? '▲ Ocultar Detalles' : '▼ Ver Detalles'}
-                                    </button>
-
-                                    {/* Detalles Expandibles */}
-                                    <div className={`product-details ${isExpanded ? 'expanded' : ''}`}>
-                                        <p className="product-description">{product.description}</p>
-                                        {product.category && (
-                                            <div className="detail-row">
-                                                <strong>Categoría:</strong> {product.category}
-                                            </div>
-                                        )}
-                                        {product.brand && (
-                                            <div className="detail-row">
-                                                <strong>Marca:</strong> {product.brand}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Botón de Contacto */}
-                                    <a
-                                        href="https://wa.me/525665489522"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="contact-btn-modern"
-                                    >
-                                        📞 Contactar para comprar
-                                    </a>
-                                </div>
-                            </div>
-                        );
-                    })
-                )}
-            </div>
-
-            {/* Paginación */}
-            {totalPages > 1 && (
-                <div className="modern-pagination">
-                    <button 
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
-                        disabled={currentPage === 1}
-                        className="pagination-btn"
-                    >
-                        ← Anterior
-                    </button>
-                    <span className="pagination-info">
-                        Página {currentPage} de {totalPages} ({totalItems} productos)
-                    </span>
-                    <button 
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
-                        disabled={currentPage === totalPages}
-                        className="pagination-btn"
-                    >
-                        Siguiente →
-                    </button>
-                </div>
-            )}
+      {/* Selector de Tienda */}
+      <div className="store-selector-container">
+        <div className="store-selector">
+          <label htmlFor="store-select">
+            <span className="store-icon">🏪</span>
+            Seleccionar Tienda:
+          </label>
+          <select
+            id="store-select"
+            value={selectedStore}
+            onChange={(e) => handleStoreChange(e.target.value)}
+            className="store-dropdown"
+          >
+            {stores.map(store => (
+              <option key={store.id} value={store.id}>
+                {store.name}
+              </option>
+            ))}
+          </select>
         </div>
-    );
-}
+        <div className="current-store-badge">
+          Viendo: <strong>{getStoreName()}</strong>
+        </div>
+      </div>
+
+      {/* Barra de búsqueda y ordenamiento */}
+      <div className="catalog-controls">
+        <div className="search-box">
+          <input
+            type="text"
+            placeholder="Buscar productos..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="search-input"
+          />
+          <span className="search-icon">🔍</span>
+        </div>
+
+        <div className="sort-controls">
+          <button
+            onClick={() => handleSortChange('name')}
+            className={`sort-btn ${sortBy === 'name' ? 'active' : ''}`}
+          >
+            Nombre {sortBy === 'name' && (order === 'asc' ? '↑' : '↓')}
+          </button>
+          <button
+            onClick={() => handleSortChange('price')}
+            className={`sort-btn ${sortBy === 'price' ? 'active' : ''}`}
+          >
+            Precio {sortBy === 'price' && (order === 'asc' ? '↑' : '↓')}
+          </button>
+        </div>
+      </div>
+
+      {/* Grid de productos */}
+      {loading ? (
+        <div className="loading-state">
+          <div className="spinner"></div>
+          <p>Cargando productos...</p>
+        </div>
+      ) : products.length === 0 ? (
+        <div className="empty-state">
+          <p className="empty-icon">📦</p>
+          <h3>No hay productos disponibles</h3>
+          <p>Esta tienda aún no tiene productos en el catálogo</p>
+        </div>
+      ) : (
+        <>
+          <div className="products-grid">
+            {products.map((product) => (
+              <div key={product.id} className="product-card">
+                {product.imageUrls && product.imageUrls.length > 0 ? (
+                  <img
+                    src={product.imageUrls[0]}
+                    alt={product.name}
+                    className="product-image"
+                  />
+                ) : (
+                  <div className="product-image-placeholder">
+                    <span>📱</span>
+                  </div>
+                )}
+                
+                <div className="product-info">
+                  <h3 className="product-name">{product.name}</h3>
+                  
+                  {product.brand && (
+                    <p className="product-brand">{product.brand}</p>
+                  )}
+                  
+                  {product.description && (
+                    <p className="product-description">
+                      {product.description.length > 80
+                        ? product.description.substring(0, 80) + '...'
+                        : product.description}
+                    </p>
+                  )}
+                  
+                  <div className="product-footer">
+                    <p className="product-price">{formatPrice(product.price)}</p>
+                    <p className={`product-stock ${product.stock < 5 ? 'low-stock' : ''}`}>
+                      {product.stock > 0 ? (
+                        <>
+                          <span className="stock-icon">✓</span>
+                          {product.stock} disponibles
+                        </>
+                      ) : (
+                        <>
+                          <span className="stock-icon">✗</span>
+                          Agotado
+                        </>
+                      )}
+                    </p>
+                  </div>
+
+                  {product.category && (
+                    <span className="product-category">{product.category}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="pagination-btn"
+              >
+                ← Anterior
+              </button>
+              
+              <span className="pagination-info">
+                Página {currentPage} de {totalPages}
+              </span>
+              
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="pagination-btn"
+              >
+                Siguiente →
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      <style jsx>{`
+        .public-catalog {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+
+        .catalog-header {
+          text-align: center;
+          margin-bottom: 30px;
+        }
+
+        .catalog-header h1 {
+          font-size: 2.5rem;
+          color: #333;
+          margin-bottom: 10px;
+        }
+
+        .subtitle {
+          color: #666;
+          font-size: 1.1rem;
+        }
+
+        /* Selector de Tienda */
+        .store-selector-container {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          padding: 20px 30px;
+          border-radius: 12px;
+          margin-bottom: 30px;
+          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .store-selector {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+
+        .store-selector label {
+          color: white;
+          font-weight: 600;
+          font-size: 1.1rem;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .store-icon {
+          font-size: 1.5rem;
+        }
+
+        .store-dropdown {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 8px;
+          font-size: 1rem;
+          font-weight: 600;
+          background: white;
+          color: #667eea;
+          cursor: pointer;
+          min-width: 200px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          transition: all 0.3s ease;
+        }
+
+        .store-dropdown:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .store-dropdown:focus {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+        }
+
+        .current-store-badge {
+          background: rgba(255,255,255,0.2);
+          padding: 10px 20px;
+          border-radius: 20px;
+          color: white;
+          font-size: 0.95rem;
+          backdrop-filter: blur(10px);
+        }
+
+        .current-store-badge strong {
+          font-weight: 700;
+        }
+
+        /* Controles */
+        .catalog-controls {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 30px;
+          gap: 20px;
+          flex-wrap: wrap;
+        }
+
+        .search-box {
+          position: relative;
+          flex: 1;
+          min-width: 250px;
+        }
+
+        .search-input {
+          width: 100%;
+          padding: 12px 45px 12px 15px;
+          border: 2px solid #e0e0e0;
+          border-radius: 8px;
+          font-size: 1rem;
+          transition: all 0.3s;
+        }
+
+        .search-input:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+          position: absolute;
+          right: 15px;
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: 1.2rem;
+        }
+
+        .sort-controls {
+          display: flex;
+          gap: 10px;
+        }
+
+        .sort-btn {
+          padding: 10px 20px;
+          border: 2px solid #e0e0e0;
+          border-radius: 8px;
+          background: white;
+          cursor: pointer;
+          font-weight: 600;
+          transition: all 0.3s;
+        }
+
+        .sort-btn:hover {
+          border-color: #667eea;
+          color: #667eea;
+        }
+
+        .sort-btn.active {
+          background: #667eea;
+          color: white;
+          border-color: #667eea;
+        }
+
+        /* Grid de Productos */
+        .products-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 25px;
+          margin-bottom: 30px;
+        }
+
+        .product-card {
+          background: white;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          transition: all 0.3s ease;
+        }
+
+        .product-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .product-image {
+          width: 100%;
+          height: 220px;
+          object-fit: cover;
+        }
+
+        .product-image-placeholder {
+          width: 100%;
+          height: 220px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 4rem;
+        }
+
+        .product-info {
+          padding: 20px;
+        }
+
+        .product-name {
+          font-size: 1.2rem;
+          font-weight: 700;
+          color: #333;
+          margin-bottom: 8px;
+        }
+
+        .product-brand {
+          color: #667eea;
+          font-size: 0.9rem;
+          font-weight: 600;
+          margin-bottom: 10px;
+        }
+
+        .product-description {
+          color: #666;
+          font-size: 0.9rem;
+          line-height: 1.5;
+          margin-bottom: 15px;
+        }
+
+        .product-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 10px;
+        }
+
+        .product-price {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #667eea;
+        }
+
+        .product-stock {
+          font-size: 0.85rem;
+          color: #28a745;
+          font-weight: 600;
+        }
+
+        .product-stock.low-stock {
+          color: #ffc107;
+        }
+
+        .stock-icon {
+          margin-right: 4px;
+        }
+
+        .product-category {
+          display: inline-block;
+          background: #f0f0f0;
+          padding: 5px 12px;
+          border-radius: 15px;
+          font-size: 0.8rem;
+          color: #666;
+        }
+
+        /* Estados */
+        .loading-state {
+          text-align: center;
+          padding: 60px 20px;
+        }
+
+        .spinner {
+          width: 50px;
+          height: 50px;
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #667eea;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 80px 20px;
+        }
+
+        .empty-icon {
+          font-size: 5rem;
+          margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+          color: #333;
+          margin-bottom: 10px;
+        }
+
+        .empty-state p {
+          color: #666;
+        }
+
+        /* Paginación */
+        .pagination {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 20px;
+          margin-top: 40px;
+        }
+
+        .pagination-btn {
+          padding: 10px 20px;
+          border: 2px solid #667eea;
+          background: white;
+          color: #667eea;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+          transition: all 0.3s;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+          background: #667eea;
+          color: white;
+        }
+
+        .pagination-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .pagination-info {
+          font-weight: 600;
+          color: #333;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+          .catalog-header h1 {
+            font-size: 2rem;
+          }
+
+          .store-selector-container {
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+          }
+
+          .catalog-controls {
+            flex-direction: column;
+          }
+
+          .products-grid {
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
 
 export default PublicCatalog;
