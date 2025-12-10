@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import './PublicCatalog.css';
 
 const PublicCatalog = () => {
   const [products, setProducts] = useState([]);
