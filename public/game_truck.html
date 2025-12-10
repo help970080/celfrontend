@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DHL Truck Runner</title>
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self' data: blob:;
+               img-src 'self' data: blob:;
+               script-src 'self' 'unsafe-inline' 'unsafe-eval';
+               style-src 'self' 'unsafe-inline';
+               connect-src 'self';
+               frame-ancestors *;">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#0b1020;min-height:100vh;display:flex;align-items:center;justify-content:center}
+  #wrap{width:90vw;max-width:420px;aspect-ratio:9/16;background:#121730;border-radius:16px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.5);position:relative}
+  canvas{width:100%;height:100%;display:block;outline:none}
+  /* HUD */
+  #hud{position:absolute;inset:0 0 auto 0;height:56px;display:flex;align-items:center;gap:8px;padding:8px 10px;z-index:3;background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,.65))}
+  .pill{background:#eef1ff;border:1px solid #d7dcff;color:#263086;font-weight:800;font-size:14px;border-radius:10px;padding:6px 10px}
+  .sp{flex:1}
+  .btn{border:0;border-radius:10px;padding:8px 12px;font-weight:900;box-shadow:0 6px 18px rgba(0,0,0,.15);cursor:pointer}
+  .start{background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff}
+  .restart{background:#eaf0ff;color:#2a327a;border:1px solid #d8e0ff}
+  /* Overlay inicio / fin */
+  #overlay{position:absolute;inset:0;background:radial-gradient(70% 60% at 50% 0%,rgba(255,255,255,.95),rgba(0,0,0,.6));z-index:5;display:flex;align-items:center;justify-content:center;padding:16px}
+  .card{width:min(92%,380px);background:rgba(255,255,255,.95);border:1px solid #e8e8f8;border-radius:16px;box-shadow:0 18px 60px rgba(0,0,0,.25);padding:18px;text-align:center}
+  .title{font-size:24px;font-weight:900;color:#1e2462}
+  .sub{margin-top:6px;color:#4d568a}
+  .row{display:flex;gap:10px;justify-content:center;margin-top:14px}
+  .cta{margin-top:14px;display:flex;gap:10px;justify-content:center}
+  .count{background:#eef1ff;border:1px solid #d7dcff;color:#2e348a;border-radius:999px;padding:8px 12px;font-weight:800;min-width:110px}
+  .cta .btn{padding:12px 16px}
+  .hidden{display:none !important}
+  /* Controles táctiles */
+  #touch{position:absolute;inset:auto 0 10px 0;display:flex;gap:10px;justify-content:center;z-index:2}
+  .tbtn{background:rgba(255,255,255,.8);border:1px solid #e1e6ff;border-radius:12px;padding:10px 14px;font-weight:900}
+  @media (pointer:fine){#touch{display:none}}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <div class="pill">📦 Puntos: <span id="score">0</span></div>
+    <div class="pill">❤️ Vidas: <span id="lives">3</span></div>
+    <div class="sp"></div>
+    <button id="btnStart" class="btn start">INICIAR</button>
+    <button id="btnRestart" class="btn restart">Reiniciar</button>
+  </div>
+
+  <canvas id="cv" tabindex="0" aria-label="Juego camión DHL"></canvas>
+
+  <!-- botones táctiles -->
+  <div id="touch">
+    <button id="left" class="tbtn">◀︎</button>
+    <button id="right" class="tbtn">▶︎</button>
+  </div>
+
+  <!-- overlay -->
+  <div id="overlay">
+    <div class="card">
+      <div class="title">Conduce el camión DHL</div>
+      <div class="sub">Mueve entre carriles. Evita autos/conos y <b>agarra paquetes</b> para sumar puntos.</div>
+      <div class="row">
+        <div class="pill">Controles: ← →</div>
+        <div class="pill">Tocar: ◀︎ ▶︎</div>
+      </div>
+      <div class="cta">
+        <div id="count" class="count">Empieza en 5s</div>
+        <button id="play" class="btn start" disabled>JUGAR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const livesEl = document.getElementById('lives');
+  const btnStart = document.getElementById('btnStart');
+  const btnRestart = document.getElementById('btnRestart');
+  const overlay = document.getElementById('overlay');
+  const playBtn = document.getElementById('play');
+  const countEl = document.getElementById('count');
+  const leftBtn = document.getElementById('left');
+  const rightBtn = document.getElementById('right');
+
+  // Dimensiones & carriles
+  let W = 360, H = 640; // se ajusta con resize()
+  const lanes = [0.2, 0.5, 0.8]; // posiciones relativas
+  let laneX = i => lanes[i]*W;
+
+  // Estado
+  let running = false, raf = null;
+  let score = 0, lives = 3, time = 0;
+  let speed = 3.5;         // velocidad base carretera / enemigos
+  let spawnT = 0, spawnInt = 900; // ms
+  let obstacles = [];   // autos/conos (malos)
+  let pickups = [];     // paquetes (buenos)
+  let roadY = 0;        // para el scroll de rayas
+  const keys = {};
+
+  // Camión (jugador)
+  const truck = { lane: 1, x:0, y:0, w:64, h:96 };
+
+  function resize(){
+    // Canvas responsivo al contenedor
+    const r = cv.getBoundingClientRect();
+    W = Math.floor(r.width);
+    H = Math.floor(r.height);
+    if (W === 0 || H === 0) { // primer layout
+      const wrap = document.getElementById('wrap');
+      W = wrap.clientWidth;
+      H = wrap.clientHeight;
+    }
+    cv.width = W; cv.height = H;
+    truck.x = laneX(truck.lane) - truck.w/2;
+    truck.y = H - truck.h - 28;
+  }
+  resize(); addEventListener('resize', resize);
+
+  // Utilidades de dibujo
+  function roundRect(x,y,w,h,r){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr,y);
+    ctx.arcTo(x+w,y,x+w,y+h,rr);
+    ctx.arcTo(x+w,y+h,x,y+h,rr);
+    ctx.arcTo(x,y+h,x,y,rr);
+    ctx.arcTo(x,y,x+w,y,rr);
+    ctx.closePath();
+  }
+
+  function drawRoad(){
+    // carretera
+    ctx.fillStyle = '#1a203c';
+    ctx.fillRect(0,0,W,H);
+    // líneas laterales
+    ctx.fillStyle = '#2e355a';
+    ctx.fillRect(W*0.1,0,4,H);
+    ctx.fillRect(W*0.9-4,0,4,H);
+    // rayas blancas centrales por carril
+    roadY = (roadY + speed*2) % 60;
+    ctx.fillStyle = '#eaeefc';
+    for (let i=0;i<3;i++){
+      const x = laneX(i) - 2;
+      for (let y=-40;y<H;y+=60){
+        ctx.fillRect(x, y + roadY, 4, 24);
+      }
+    }
+  }
+
+  function drawTruck(){
+    const {x,y,w,h} = truck;
+    // cuerpo
+    ctx.fillStyle = '#ffcc00'; // DHL
+    roundRect(x,y,w,h,10); ctx.fill();
+    // cabina
+    ctx.fillStyle = '#f2b800';
+    roundRect(x, y+h*0.35, w, h*0.65, 10); ctx.fill();
+    // parabrisas
+    ctx.fillStyle = '#c8d5ff';
+    roundRect(x+10, y+10, w-20, 22, 6); ctx.fill();
+    // logo DHL simple
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = 'bold 14px Arial'; ctx.textAlign='center';
+    ctx.fillText('DHL', x+w/2, y+h*0.62);
+    // ruedas
+    ctx.fillStyle = '#222';
+    ctx.fillRect(x+6, y+h-10, 14, 10);
+    ctx.fillRect(x+w-20, y+h-10, 14, 10);
+    // escape humo
+    const puff = Math.sin(time/120)*2;
+    ctx.fillStyle = 'rgba(200,200,200,.8)';
+    ctx.beginPath(); ctx.arc(x+w-6, y+h, 4+puff, 0, Math.PI*2); ctx.fill();
+  }
+
+  function spawnEntities(dt){
+    if (time - spawnT > spawnInt){
+      // 60% obstáculo, 40% paquete
+      if (Math.random() < 0.6){
+        const lane = Math.floor(Math.random()*3);
+        obstacles.push({ lane, y:-110, w:60, h:90, kind: Math.random()<0.5?'car':'cone' });
+      } else {
+        const lane = Math.floor(Math.random()*3);
+        pickups.push({ lane, y:-70, w:44, h:44 });
+      }
+      spawnT = time;
+      // subir dificultad gradualmente
+      speed = Math.min(12, speed + 0.08);
+      spawnInt = Math.max(420, spawnInt - 8);
+    }
+  }
+
+  function drawObstacles(){
+    for (const o of obstacles){
+      const x = laneX(o.lane) - o.w/2;
+      // auto / cono
+      if (o.kind === 'car'){
+        ctx.fillStyle = '#e34b4b';
+        roundRect(x, o.y, o.w, o.h, 10); ctx.fill();
+        ctx.fillStyle = '#cfe1ff'; roundRect(x+8,o.y+8,o.w-16,18,6); ctx.fill(); // vidrio
+        ctx.fillStyle = '#222'; ctx.fillRect(x+6, o.y+o.h-10, 12,10); ctx.fillRect(x+o.w-18, o.y+o.h-10, 12,10);
+      } else {
+        // cono
+        ctx.fillStyle = '#ff8c42';
+        roundRect(x+8, o.y+10, o.w-16, o.h-20, 8); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.fillRect(x+12, o.y+o.h*0.4, o.w-24, 10);
+      }
+      o.y += speed + 1.5;
+    }
+    // remove off-screen
+    obstacles = obstacles.filter(o => o.y < H + 120);
+  }
+
+  function drawPickups(){
+    for (const p of pickups){
+      const x = laneX(p.lane) - p.w/2;
+      // caja de paquete
+      ctx.fillStyle = '#f7c77d';
+      roundRect(x, p.y, p.w, p.h, 6); ctx.fill();
+      ctx.fillStyle = '#c27d3d'; ctx.fillRect(x, p.y+p.h*0.45, p.w, 6);
+      ctx.fillStyle = '#934a1f'; ctx.fillRect(x+p.w*0.48, p.y, 6, p.h);
+      // etiqueta
+      ctx.fillStyle = '#fff'; ctx.fillRect(x+6, p.y+8, 14, 10);
+      p.y += speed + 1.0;
+    }
+    pickups = pickups.filter(p => p.y < H + 80);
+  }
+
+  function rectsOverlap(ax,ay,aw,ah,bx,by,bw,bh){
+    return ax<bx+bw && ax+aw>bx && ay<by+bh && ay+ah>by;
+  }
+
+  function collisions(){
+    const tx = truck.x, ty = truck.y, tw = truck.w, th = truck.h;
+    // pickups
+    for (let i=pickups.length-1;i>=0;i--){
+      const p = pickups[i];
+      const px = laneX(p.lane) - p.w/2;
+      if (rectsOverlap(tx,ty,tw,th, px,p.y,p.w,p.h)){
+        score++; pickups.splice(i,1);
+      }
+    }
+    // obstacles
+    for (let i=obstacles.length-1;i>=0;i--){
+      const o = obstacles[i];
+      const ox = laneX(o.lane) - o.w/2;
+      if (rectsOverlap(tx,ty,tw,th, ox,o.y,o.w,o.h)){
+        lives--; obstacles.splice(i,1);
+        // pequeño “golpe” visual
+        ctx.save(); ctx.globalAlpha=.25; ctx.fillStyle='#ff2a2a'; ctx.fillRect(0,0,W,H); ctx.restore();
+        if (lives<=0){ gameOver(); }
+      }
+    }
+  }
+
+  function updateHUD(){ scoreEl.textContent = score; livesEl.textContent = lives; }
+
+  function step(ts){
+    if (!running){ drawFrame(); return; }
+    if (!time) time = ts; const dt = ts - time; time = ts;
+
+    spawnEntities(dt);
+    drawFrame();
+    collisions();
+    updateHUD();
+    raf = requestAnimationFrame(step);
+  }
+
+  function drawFrame(){
+    drawRoad();
+    drawObstacles();
+    drawPickups();
+    drawTruck();
+  }
+
+  // Controles
+  function moveLeft(){ if (truck.lane>0){ truck.lane--; truck.x = laneX(truck.lane) - truck.w/2; } }
+  function moveRight(){ if (truck.lane<2){ truck.lane++; truck.x = laneX(truck.lane) - truck.w/2; } }
+  document.addEventListener('keydown', e => {
+    keys[e.key]=true;
+    if (e.key==='ArrowLeft' || e.key==='a' || e.key==='A') moveLeft();
+    if (e.key==='ArrowRight'|| e.key==='d' || e.key==='D') moveRight();
+    if (e.key==='Enter') startToggle();
+  });
+  document.addEventListener('keyup', e => { keys[e.key]=false; });
+  leftBtn.addEventListener('click', moveLeft);
+  rightBtn.addEventListener('click', moveRight);
+
+  // Botones HUD
+  btnStart.addEventListener('click', () => {
+    if (!overlay.classList.contains('hidden')) hideOverlayAndStart();
+    else startToggle();
+  });
+  btnRestart.addEventListener('click', resetGame);
+
+  // Overlay
+  function showOverlay(mode, seconds=5){
+    overlay.classList.remove('hidden');
+    if (mode==='intro'){
+      countEl.textContent = `Empieza en ${seconds}s`;
+      playBtn.disabled = true; playBtn.classList.remove('enabled');
+      let left = seconds;
+      const t = setInterval(() => {
+        left--;
+        if (left>0){ countEl.textContent = `Empieza en ${left}s`; }
+        else { clearInterval(t); countEl.textContent='Listo'; playBtn.disabled=false; playBtn.classList.add('enabled'); playBtn.focus(); }
+      },1000);
+      playBtn.textContent = 'JUGAR';
+    } else { // gameover
+      countEl.textContent = `Puntos: ${score}`;
+      playBtn.disabled=false; playBtn.classList.add('enabled');
+      playBtn.textContent='JUGAR DE NUEVO';
+    }
+  }
+  function hideOverlayAndStart(){
+    overlay.classList.add('hidden');
+    if (lives<=0) resetGame(); // clave: si venimos de game over, reinicia primero
+    if (!running){ running=true; btnStart.textContent='PAUSAR'; if (raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
+  }
+  playBtn.addEventListener('click', hideOverlayAndStart);
+
+  function startToggle(){
+    if (running){ running=false; btnStart.textContent='INICIAR'; if (raf) cancelAnimationFrame(raf), raf=null; }
+    else { if (lives<=0) resetGame(); running=true; btnStart.textContent='PAUSAR'; if (raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
+  }
+
+  function resetGame(){
+    running=false; if (raf) cancelAnimationFrame(raf), raf=null;
+    score=0; lives=3; time=0; speed=3.5; spawnInt=900; spawnT=0; roadY=0;
+    obstacles.length=0; pickups.length=0;
+    truck.lane=1; truck.x = laneX(1) - truck.w/2; truck.y = H - truck.h - 28;
+    updateHUD(); drawFrame(); btnStart.textContent='INICIAR';
+  }
+
+  function gameOver(){
+    running=false; btnStart.textContent='INICIAR';
+    showOverlay('gameover',0);
+  }
+
+  // Inicio
+  resetGame();
+  window.addEventListener('load', () => showOverlay('intro', 5));
+})();
+</script>
+</body>
+</html>

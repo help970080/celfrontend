@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Street Courier – Combate</title>
+<style>
+  *{box-sizing:border-box} html,body{margin:0;height:100%;background:#0b1020;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  #wrap{width:min(100vw,900px);aspect-ratio:16/9;margin:0 auto;position:relative;background:#101737;border-radius:16px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.5)}
+  canvas{width:100%;height:100%;display:block}
+
+  /* HUD */
+  #hud{position:absolute;inset:0 0 auto 0;height:64px;display:flex;align-items:center;gap:10px;padding:10px;z-index:3;
+       background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.7))}
+  .bar{height:18px;width:36%;background:#1f254d;border-radius:10px;position:relative;overflow:hidden;border:1px solid #cfd6ff}
+  .fill{position:absolute;inset:0;transform-origin:left center;background:linear-gradient(90deg,#ff6b6b,#ff4757)}
+  .bar.right .fill{transform-origin:right center;background:linear-gradient(270deg,#4dd0e1,#00bcd4)}
+  .label{font-weight:800;color:#1f2353;min-width:68px}
+  .sp{flex:1}
+  .timer{min-width:70px;text-align:center;font-weight:900;color:#1c2262;background:#eef1ff;border:1px solid #d7dcff;border-radius:12px;padding:6px 10px}
+  #btnStart,#btnRestart{border:0;border-radius:12px;padding:8px 14px;font-weight:900;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.15)}
+  #btnStart{background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff}
+  #btnRestart{background:#eaf0ff;color:#2a327a;border:1px solid #d8e0ff}
+
+  /* Overlay */
+  #overlay{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
+           background:radial-gradient(70% 60% at 50% 0%,rgba(255,255,255,.95),rgba(0,0,0,.55));padding:18px}
+  .card{width:min(92%,560px);background:rgba(255,255,255,.95);border:1px solid #e8e8f8;border-radius:16px;
+        box-shadow:0 18px 60px rgba(0,0,0,.25);padding:18px;text-align:center}
+  .title{font-size:26px;font-weight:900;color:#1c2262}
+  .sub{color:#4a538a;margin-top:6px}
+  .row{display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+  .pill{background:#eef1ff;border:1px solid #d7dcff;color:#2e348a;border-radius:999px;padding:6px 10px;font-weight:800}
+  .cta{margin-top:14px;display:flex;gap:10px;justify-content:center;align-items:center}
+  .count{background:#eef1ff;border:1px solid #d7dcff;color:#2e348a;border-radius:999px;padding:8px 12px;font-weight:800;min-width:110px}
+  .play{border:0;border-radius:12px;padding:12px 16px;font-weight:900;background:linear-gradient(135deg,#8ec5fc,#e0c3fc);color:#272557;
+        cursor:not-allowed;opacity:.65;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+  .play.enabled{cursor:pointer;opacity:1;background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff}
+  .hidden{display:none !important}
+
+  /* Touch */
+  #touch{position:absolute;inset:auto 0 10px 0;display:flex;gap:10px;justify-content:center;z-index:4}
+  .tbtn{background:rgba(255,255,255,.9);border:1px solid #e1e6ff;color:#1f2353;font-weight:900;border-radius:12px;padding:10px 12px;min-width:52px}
+  @media (pointer:fine){#touch{display:none}}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <div class="label">P1 ❤️</div>
+    <div class="bar"><div id="hp1" class="fill" style="transform:scaleX(1)"></div></div>
+    <div class="sp"></div>
+    <div class="timer" id="timer">60</div>
+    <div class="sp"></div>
+    <div class="bar right"><div id="hp2" class="fill" style="transform:scaleX(1)"></div></div>
+    <div class="label">❤️ CPU</div>
+    <button id="btnStart">INICIAR</button>
+    <button id="btnRestart">Reiniciar</button>
+  </div>
+
+  <canvas id="cv" tabindex="0" aria-label="Combate"></canvas>
+
+  <div id="touch">
+    <button class="tbtn" data-act="left">⬅️</button>
+    <button class="tbtn" data-act="jump">⤴️</button>
+    <button class="tbtn" data-act="right">➡️</button>
+    <button class="tbtn" data-act="punch">👊</button>
+    <button class="tbtn" data-act="kick">🦵</button>
+    <button class="tbtn" data-act="block">🛡️</button>
+  </div>
+
+  <div id="overlay">
+    <div class="card">
+      <div class="title">Street Courier – Combate</div>
+      <div class="sub">P1: A/D moverse · W saltar · J puño · K patada · S bloquear</div>
+      <div class="row">
+        <div class="pill">Knockback</div>
+        <div class="pill">Bloqueo reduce daño</div>
+        <div class="pill">IA básica</div>
+      </div>
+      <div class="cta">
+        <div id="count" class="count">Empieza en 5s</div>
+        <button id="play" class="play" disabled>JUGAR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  var hp1El = document.getElementById('hp1'), hp2El = document.getElementById('hp2');
+  var timerEl = document.getElementById('timer');
+  var btnStart = document.getElementById('btnStart'), btnRestart = document.getElementById('btnRestart');
+  var overlay = document.getElementById('overlay'), playBtn = document.getElementById('play'), countEl = document.getElementById('count');
+  var touch = document.getElementById('touch');
+
+  var W=800,H=450, ground=H-80;
+  function resize(){
+    var r=cv.getBoundingClientRect();
+    W = (r.width|0) || document.getElementById('wrap').clientWidth;
+    H = (r.height|0) || document.getElementById('wrap').clientHeight;
+    cv.width=W; cv.height=H; ground=H-80;
+  }
+  resize(); addEventListener('resize', resize);
+
+  var running=false, raf=null, last=0;
+  var roundTime=60000; // 60s (sin separadores)
+  var timeLeft=roundTime;
+
+  var GRAV=0.9, FRICTION=0.82, MOVE=3.2, JUMP=13;
+  var ATTACKS = {
+    punch:{range:42, dmg:8,  knock:6, windup:80,  active:120, cooldown:380},
+    kick: {range:56, dmg:12, knock:9, windup:120, active:140, cooldown:520}
+  };
+
+  function fighter(x, face, color, name){
+    return { name:name, x:x, y:ground-100, w:44, h:100, vx:0, vy:0, face:face, color:color,
+      hp:100, blocking:false, state:'idle', atk:null, atkT:0, cd:0, inv:0 };
+  }
+  var p1 = fighter(W*0.25, +1, '#ffcc00','P1');
+  var p2 = fighter(W*0.75, -1, '#4dd0e1','CPU');
+
+  function cpuThink(dt){
+    if (p2.state==='ko') return;
+    var dist = Math.abs(p1.x - p2.x);
+    var dir = (p1.x < p2.x) ? -1 : 1;
+    if (p1.state==='attack' && dist<70 && Math.random()<0.05) p2.blocking = true; else p2.blocking=false;
+
+    if (dist>90){
+      p2.vx += 0.3*dir; p2.state='walk';
+    } else if (dist<55){
+      p2.vx -= 0.25*dir; p2.state='walk';
+    } else {
+      p2.vx *= 0.9;
+      if (p2.cd<=0 && Math.random()<0.02) doAttack(p2, Math.random()<0.55?'punch':'kick');
+      else if (p2.state!=='attack' && p2.state!=='hit') p2.state='idle';
+    }
+    if (p2.y>=ground-p2.h && Math.random()<0.005) p2.vy=-JUMP;
+  }
+
+  var keys={};
+  document.addEventListener('keydown',function(e){
+    keys[e.key]=true; if (e.key==='Enter') startToggle();
+  });
+  document.addEventListener('keyup',function(e){ keys[e.key]=false; });
+
+  touch.addEventListener('click', function(e){
+    var act = e.target && e.target.getAttribute('data-act'); if(!act) return;
+    if (act==='left'){ keys['A']=true; setTimeout(function(){keys['A']=false;},120); }
+    if (act==='right'){ keys['D']=true; setTimeout(function(){keys['D']=false;},120); }
+    if (act==='jump') doJump(p1);
+    if (act==='punch') doAttack(p1,'punch');
+    if (act==='kick') doAttack(p1,'kick');
+    if (act==='block') p1.blocking = !p1.blocking;
+  });
+
+  function doJump(f){ if (f.y>=ground-f.h && f.state!=='attack') { f.vy=-JUMP; f.state='jump'; } }
+  function doAttack(f, type){
+    if (f.cd>0 || f.state==='attack' || f.state==='ko') return;
+    f.atk = ATTACKS[type]; f.atkT = 0; f.cd = f.atk.cooldown; f.state='attack';
+  }
+
+  function updateFighter(f, dt){
+    if (f.cd>0) f.cd-=dt; if (f.inv>0) f.inv-=dt;
+
+    if (f===p1){
+      var left = keys['a']||keys['A']||keys['ArrowLeft'];
+      var right= keys['d']||keys['D']||keys['ArrowRight'];
+      var up   = keys['w']||keys['W']||keys['ArrowUp'];
+      var block= keys['s']||keys['S'];
+      if (block && f.state!=='attack') f.blocking=true; else if (f.state!=='hit') f.blocking=false;
+      if (up) doJump(f);
+      if (left && !right){ f.vx -= 0.7; f.face=-1; if(f.state!=='attack'&&f.state!=='jump'&&f.state!=='hit') f.state='walk'; }
+      if (right&& !left){ f.vx += 0.7; f.face=+1; if(f.state!=='attack'&&f.state!=='jump'&&f.state!=='hit') f.state='walk'; }
+      if (!left && !right && f.state==='walk') f.state='idle';
+      if (keys['j']||keys['J']) { doAttack(f,'punch'); keys['j']=keys['J']=false; }
+      if (keys['k']||keys['K']) { doAttack(f,'kick');  keys['k']=keys['K']=false; }
+    }
+
+    if (f.state==='attack' && f.atk){
+      f.atkT += dt;
+      if (f.atkT < f.atk.windup){ f.vx *= 0.85; }
+      if (f.atkT >= f.atk.windup && f.atkT <= f.atk.windup + f.atk.active){
+        var t = (f===p1)?p2:p1;
+        if (hitCheck(f,t,f.atk)){ applyHit(f,t,f.atk); f.atkT = f.atk.windup + f.atk.active + 1; }
+      }
+      if (f.atkT > f.atk.windup + f.atk.active){ f.state = (f.y<ground-f.h)?'jump':'idle'; f.atk=null; f.atkT=0; }
+    }
+
+    f.vy += GRAV; f.y += f.vy; f.vx *= FRICTION; f.x += f.vx;
+    if (f.y > ground - f.h){ f.y = ground - f.h; f.vy = 0; if(f.state==='jump') f.state='idle'; }
+    f.x = Math.max(10, Math.min(W-10-f.w, f.x));
+    if ((f===p1 && p2.x<f.x) || (f===p2 && p1.x<f.x)) f.face=-1; else f.face=+1;
+    if (f.hp<=0 && f.state!=='ko'){ f.state='ko'; f.blocking=false; }
+  }
+
+  function hitCheck(att, def, atk){
+    if (def.inv>0 || def.state==='ko') return false;
+    var hb = { x: att.face>0 ? (att.x+att.w) : (att.x - atk.range), y: att.y+20, w: atk.range, h: att.h-40 };
+    var rb = { x: def.x, y:def.y, w:def.w, h:def.h };
+    return !(hb.x>rb.x+rb.w || hb.x+hb.w<rb.x || hb.y>rb.y+rb.h || hb.y+hb.h<rb.y);
+  }
+  function applyHit(att, def, atk){
+    var dmg = atk.dmg;
+    var k = atk.knock * (att.face>0?1:-1);
+    if (def.blocking && def.state!=='attack'){ dmg = Math.ceil(dmg*0.35); k *= 0.35; }
+    def.hp = Math.max(0, def.hp - dmg);
+    def.vx += k; def.vy = -4; def.state='hit'; def.inv=180;
+    if (def.hp<=0){ endRound(); }
+    updateHPBars();
+  }
+  function updateHPBars(){
+    hp1El.style.transform = 'scaleX(' + (Math.max(0,p1.hp)/100) + ')';
+    hp2El.style.transform = 'scaleX(' + (Math.max(0,p2.hp)/100) + ')';
+  }
+
+  function drawStage(){
+    var g1 = ctx.createLinearGradient(0,0,0,H);
+    g1.addColorStop(0,'#0e1430'); g1.addColorStop(1,'#0b1020');
+    ctx.fillStyle=g1; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#0f1534'; ctx.fillRect(0,ground,W,H-ground);
+    ctx.fillStyle='#1b214a'; for(var x=0;x<W;x+=36){ ctx.fillRect(x,ground,18,6); }
+    ctx.fillStyle='#ffcc00'; ctx.fillRect(W/2-120, 22, 240, 20);
+    ctx.fillStyle='#111'; ctx.font='bold 14px Arial'; ctx.textAlign='center'; ctx.fillText('DHL ARENA', W/2, 37);
+  }
+  function roundRect(x,y,w,h,r){
+    var rr=Math.min(r,w/2,h/2); ctx.beginPath();
+    ctx.moveTo(x+rr,y); ctx.arcTo(x+w,y,x+w,y+h,rr); ctx.arcTo(x+w,y+h,x,y+h,rr);
+    ctx.arcTo(x,y+h,x,y,rr); ctx.arcTo(x,y,x+w,y,rr); ctx.closePath();
+  }
+  function drawFighter(f){
+    var x=f.x,y=f.y,w=f.w,h=f.h,face=f.face;
+    ctx.save();
+    ctx.fillStyle='rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x+w/2, ground+6, w*0.55, 8, 0, 0, Math.PI*2); ctx.fill();
+    ctx.translate(x + (face<0?w:0), y); ctx.scale(face,1);
+    ctx.fillStyle=f.color; roundRect(0,0,w,h,8); ctx.fill();
+    ctx.fillStyle='#ffd7b3'; roundRect(w*0.22,-22,w*0.56,22,10); ctx.fill();
+    ctx.fillStyle='#ffd7b3'; ctx.fillRect(-6, 20, 10, 34); ctx.fillRect(w-4, 20, 10, 34);
+    ctx.fillStyle='#ff4d4d'; 
+    if (f.state==='attack' && f.atk && f.atkT>f.atk.windup) ctx.fillRect(w+10, 24, 12, 16);
+    else ctx.fillRect(w-4, 24, 12, 16);
+    ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(0,h-14,w,14);
+    if (f.blocking && f.state!=='ko'){ ctx.fillStyle='rgba(255,255,255,.18)'; ctx.fillRect(-8, 6, w+16, h-12); }
+    if (f.state==='ko'){ ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(0,0,w,h); }
+    ctx.restore();
+  }
+
+  function step(ts){
+    if (!running){ drawFrame(); return; }
+    if (!last) last=ts; var dt = ts-last; last=ts;
+
+    timeLeft = Math.max(0, timeLeft - dt);
+    timerEl.textContent = Math.ceil(timeLeft/1000);
+    if (timeLeft<=0){ if (p1.hp===p2.hp) { p2.hp-=1; } endRound(); }
+
+    cpuThink(dt);
+    updateFighter(p1, dt); updateFighter(p2, dt);
+    drawFrame();
+    raf = requestAnimationFrame(step);
+  }
+  function drawFrame(){ drawStage(); drawFighter(p1); drawFighter(p2); }
+
+  function startToggle(){
+    if (running){ running=false; btnStart.textContent='INICIAR'; if (raf) cancelAnimationFrame(raf), raf=null; }
+    else { if (p1.hp<=0 || p2.hp<=0) resetGame(); running=true; btnStart.textContent='PAUSAR'; if (raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
+  }
+  function endRound(){ running=false; btnStart.textContent='INICIAR'; showOverlay('gameover'); }
+
+  function showOverlay(mode){
+    overlay.classList.remove('hidden');
+    playBtn.classList.remove('enabled'); playBtn.disabled=true;
+    if (mode==='intro'){
+      var left=5; countEl.textContent='Empieza en '+left+'s';
+      var t=setInterval(function(){
+        left--; if(left>0){ countEl.textContent='Empieza en '+left+'s'; }
+        else{ clearInterval(t); countEl.textContent='Listo'; playBtn.disabled=false; playBtn.classList.add('enabled'); playBtn.focus(); }
+      },1000);
+      playBtn.textContent='JUGAR';
+    } else {
+      countEl.textContent = (p1.hp>p2.hp)? '¡Ganaste!' : 'Game Over';
+      playBtn.disabled=false; playBtn.classList.add('enabled'); playBtn.textContent='JUGAR DE NUEVO';
+    }
+  }
+  function hideOverlayAndStart(){
+    overlay.classList.add('hidden');
+    if (p1.hp<=0 || p2.hp<=0) resetGame();
+    if (!running){ running=true; btnStart.textContent='PAUSAR'; if (raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
+  }
+
+  function resetGame(){
+    running=false; if (raf) cancelAnimationFrame(raf), raf=null; last=0;
+    p1.x=W*0.25; p1.y=ground-100; p1.vx=0; p1.vy=0; p1.face=+1; p1.hp=100; p1.blocking=false; p1.state='idle'; p1.atk=null; p1.cd=0; p1.inv=0;
+    p2.x=W*0.75; p2.y=ground-100; p2.vx=0; p2.vy=0; p2.face=-1; p2.hp=100; p2.blocking=false; p2.state='idle'; p2.atk=null; p2.cd=0; p2.inv=0;
+    timeLeft=roundTime; timerEl.textContent = Math.ceil(timeLeft/1000);
+    updateHPBars(); drawFrame(); btnStart.textContent='INICIAR';
+  }
+
+  btnStart.addEventListener('click', function(){
+    if (!overlay.classList.contains('hidden')) hideOverlayAndStart(); else startToggle();
+  });
+  btnRestart.addEventListener('click', resetGame);
+  playBtn.addEventListener('click', hideOverlayAndStart);
+
+  resetGame();
+  window.addEventListener('load', function(){ showOverlay('intro'); });
+})();
+</script>
+</body>
+</html>

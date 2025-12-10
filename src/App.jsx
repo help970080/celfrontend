@@ -18,6 +18,8 @@ import VisualDashboard from './components/VisualDashboard';
 import ClientLogin from './components/ClientLogin';
 import ClientPortalDashboard from './components/ClientPortalDashboard';
 import RouteTracker from './components/RouteTracker';
+import StoreManager from './components/StoreManager'; // ⭐ NUEVO
+import UserManager from './components/UserManager'; // ⭐ NUEVO
 
 import './App.css?v=20251017B'; 
 
@@ -40,7 +42,6 @@ function App() {
   const [clientToken, setClientToken] = useState(() => localStorage.getItem('clientToken') || null);
   const [clientName, setClientName] = useState(() => localStorage.getItem('clientName') || null);
 
-  // ✅ CORRECCIÓN: Ahora recibe 4 parámetros incluyendo userId
   const handleAdminLoginSuccess = useCallback((newToken, newUsername, newUserRole, newUserId) => {
     setToken(newToken);
     setUsername(newUsername);
@@ -132,7 +133,15 @@ function App() {
                 {hasRole(['super_admin', 'regular_admin', 'sales_admin', 'viewer_reports']) && (
                   <Link to="/admin/reports" className="nav-button">Reportes</Link>
                 )}
+                {/* ⭐ NUEVO: Menú de Multi-Tenant solo para super_admin */}
                 {hasRole('super_admin') && (
+                  <>
+                    <Link to="/admin/stores" className="nav-button">🏪 Tiendas</Link>
+                    <Link to="/admin/users-manager" className="nav-button">👥 Usuarios</Link>
+                  </>
+                )}
+                {/* Mantener el panel original de usuarios para otros roles */}
+                {hasRole(['regular_admin', 'sales_admin']) && (
                   <Link to="/admin/users" className="nav-button">Gestión Usuarios</Link>
                 )}
                 {hasRole('collector_agent') && (
@@ -190,11 +199,26 @@ function App() {
                 <ReportsAdminPanel authenticatedFetch={authenticatedFetch} />
               </PrivateRoute>
             } />
+            
+            {/* ⭐ NUEVO: Rutas de Multi-Tenant (solo super_admin) */}
+            <Route path="/admin/stores" element={
+              <PrivateRoute isAuthenticated={!!token}>
+                <StoreManager />
+              </PrivateRoute>
+            } />
+            <Route path="/admin/users-manager" element={
+              <PrivateRoute isAuthenticated={!!token}>
+                <UserManager />
+              </PrivateRoute>
+            } />
+            
+            {/* Panel de usuarios original (mantener para compatibilidad) */}
             <Route path="/admin/users" element={
               <PrivateRoute isAuthenticated={!!token}>
                 <UserAdminPanel authenticatedFetch={authenticatedFetch} userRole={userRole} />
               </PrivateRoute>
             } />
+            
             <Route path="/admin/clients/statement/:clientId" element={
               <PrivateRoute isAuthenticated={!!token}>
                 <ClientStatementViewer authenticatedFetch={authenticatedFetch} />
