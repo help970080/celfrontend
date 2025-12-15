@@ -1,0 +1,291 @@
+import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
+import './AnalyticsDashboard.css';
+
+const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
+
+const COLORS = ['#4A90E2', '#2ECC71', '#E74C3C', '#F39C12', '#9B59B6'];
+
+function AnalyticsDashboard({ authenticatedFetch, userRole }) {
+  const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
+
+  // Estados
+  const [stats, setStats] = useState(null);
+  const [dailyStats, setDailyStats] = useState([]);
+  const [devices, setDevices] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [topSearches, setTopSearches] = useState([]);
+  const [hourlyConversion, setHourlyConversion] = useState([]);
+
+  useEffect(() => {
+    fetchData();
+  }, [dateRange]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Dashboard general
+      const dashboardRes = await authenticatedFetch(
+        `${API_BASE_URL}/api/analytics/dashboard?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`
+      );
+      const dashboardData = await dashboardRes.json();
+
+      if (dashboardData.success) {
+        setStats(dashboardData.stats);
+        setDevices(dashboardData.devices);
+        setTopProducts(dashboardData.topProducts);
+        setTopSearches(dashboardData.topSearches);
+      }
+
+      // Estadísticas diarias
+      const dailyRes = await authenticatedFetch(
+        `${API_BASE_URL}/api/analytics/daily-stats?days=30`
+      );
+      const dailyData = await dailyRes.json();
+      if (dailyData.success) {
+        setDailyStats(dailyData.data);
+      }
+
+      // Conversión por hora
+      const hourlyRes = await authenticatedFetch(
+        `${API_BASE_URL}/api/analytics/hourly-conversion`
+      );
+      const hourlyData = await hourlyRes.json();
+      if (hourlyData.success) {
+        setHourlyConversion(hourlyData.data);
+      }
+
+    } catch (error) {
+      console.error('Error al cargar analytics:', error);
+      toast.error('Error al cargar estadísticas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDuration = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}m ${secs}s`;
+  };
+
+  if (loading) {
+    return (
+      <div className="analytics-dashboard">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p>Cargando estadísticas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="analytics-dashboard">
+      <div className="dashboard-header">
+        <h2>📊 Analíticas del Catálogo</h2>
+        
+        <div className="date-filters">
+          <input
+            type="date"
+            value={dateRange.startDate}
+            onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+          />
+          <span>hasta</span>
+          <input
+            type="date"
+            value={dateRange.endDate}
+            onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+          />
+          <button onClick={fetchData} className="btn-primary">Actualizar</button>
+        </div>
+      </div>
+
+      {/* RESUMEN DE MÉTRICAS */}
+      <div className="metrics-grid">
+        <div className="metric-card">
+          <div className="metric-icon">👥</div>
+          <div className="metric-info">
+            <h3>{stats?.total_sessions || 0}</h3>
+            <p>Visitas Totales</p>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon">⏱️</div>
+          <div className="metric-info">
+            <h3>{formatDuration(stats?.avg_duration || 0)}</h3>
+            <p>Tiempo Promedio</p>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon">👀</div>
+          <div className="metric-info">
+            <h3>{stats?.total_products_viewed || 0}</h3>
+            <p>Productos Vistos</p>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon">🔍</div>
+          <div className="metric-info">
+            <h3>{stats?.total_searches || 0}</h3>
+            <p>Búsquedas Realizadas</p>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon">💬</div>
+          <div className="metric-info">
+            <h3>{stats?.total_whatsapp_clicks || 0}</h3>
+            <p>Clicks en WhatsApp</p>
+          </div>
+        </div>
+
+        <div className="metric-card highlight">
+          <div className="metric-icon">📈</div>
+          <div className="metric-info">
+            <h3>{stats?.conversion_rate || 0}%</h3>
+            <p>Tasa de Conversión</p>
+          </div>
+        </div>
+      </div>
+
+      {/* GRÁFICAS */}
+      <div className="charts-grid">
+        
+        {/* VISITAS POR DÍA */}
+        <div className="chart-card">
+          <h3>📅 Visitas por Día (Últimos 30 días)</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={dailyStats}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="date" 
+                tickFormatter={(date) => new Date(date).toLocaleDateString('es-MX', { month: 'short', day: 'numeric' })}
+              />
+              <YAxis />
+              <Tooltip 
+                labelFormatter={(date) => new Date(date).toLocaleDateString('es-MX')}
+              />
+              <Legend />
+              <Line type="monotone" dataKey="total_sessions" stroke="#4A90E2" name="Visitas" strokeWidth={2} />
+              <Line type="monotone" dataKey="total_whatsapp_clicks" stroke="#2ECC71" name="Clicks WhatsApp" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* DISPOSITIVOS */}
+        <div className="chart-card">
+          <h3>📱 Dispositivos Usados</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={devices}
+                dataKey="count"
+                nameKey="device_type"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                label={(entry) => `${entry.device_type}: ${entry.count}`}
+              >
+                {devices.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* CONVERSIÓN POR HORA */}
+        <div className="chart-card full-width">
+          <h3>🕐 Mejor Hora para Conversión</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={hourlyConversion}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="hour_of_day" tickFormatter={(hour) => `${hour}:00`} />
+              <YAxis yAxisId="left" />
+              <YAxis yAxisId="right" orientation="right" />
+              <Tooltip />
+              <Legend />
+              <Bar yAxisId="left" dataKey="sessions" fill="#4A90E2" name="Visitas" />
+              <Bar yAxisId="right" dataKey="conversion_rate" fill="#2ECC71" name="Conversión %" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* PRODUCTOS MÁS VISTOS */}
+      <div className="table-section">
+        <h3>🏆 Productos Más Vistos</h3>
+        <table className="analytics-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Producto</th>
+              <th>Marca</th>
+              <th>Precio</th>
+              <th>Vistas</th>
+              <th>Clicks WhatsApp</th>
+              <th>Conversión</th>
+            </tr>
+          </thead>
+          <tbody>
+            {topProducts.map((product, index) => (
+              <tr key={product.id}>
+                <td>{index + 1}</td>
+                <td>{product.nombre}</td>
+                <td>{product.marca}</td>
+                <td>${parseFloat(product.precio).toFixed(2)}</td>
+                <td>{product.views}</td>
+                <td>{product.whatsapp_clicks}</td>
+                <td>
+                  <span className="conversion-badge">
+                    {((product.whatsapp_clicks / product.views) * 100).toFixed(1)}%
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* BÚSQUEDAS MÁS POPULARES */}
+      <div className="table-section">
+        <h3>🔍 Búsquedas Más Populares</h3>
+        <table className="analytics-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Término de Búsqueda</th>
+              <th>Veces Buscado</th>
+              <th>Resultados Promedio</th>
+            </tr>
+          </thead>
+          <tbody>
+            {topSearches.map((search, index) => (
+              <tr key={index}>
+                <td>{index + 1}</td>
+                <td><strong>{search.search_term}</strong></td>
+                <td>{search.count}</td>
+                <td>{Math.round(search.avg_results)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export default AnalyticsDashboard;
