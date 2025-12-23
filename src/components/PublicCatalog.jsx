@@ -18,7 +18,7 @@ function PublicCatalog() {
     const [totalItems, setTotalItems] = useState(0);
     const [showFilters, setShowFilters] = useState(false);
 
-    const PROMOTIONAL_VIDEO_URL = "https://youtu.be/duyjk1mheMA?si=gPpjkU7UQVFfl1wF";
+    const PROMOTIONAL_VIDEO_URL = "https://youtu.be/fPBLV2kcjKw";
 
     const calculateCreditDetails = (price) => {
         const downPaymentPercentage = 0.10;
