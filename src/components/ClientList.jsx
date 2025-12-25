@@ -1,9 +1,12 @@
-// ClientList.jsx - VERSIÓN CON INDICADOR DE RIESGO
+// ClientList.jsx - VERSIÓN COMPLETA CON MODAL DE GESTIÓN
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import CollectionManagementModal from './CollectionManagementModal';
 
-function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
+function ClientList({ clients, onEditClient, onDeleteClient, userRole, authenticatedFetch }) {
+    const [selectedClientForManagement, setSelectedClientForManagement] = useState(null);
+
     const hasPermission = (roles) => {
         if (!userRole) return false;
         if (Array.isArray(roles)) {
@@ -12,7 +15,6 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
         return userRole === roles;
     };
 
-    // ⭐ NUEVO: Función para obtener badge de riesgo
     const getRiskBadge = (riskData) => {
         if (!riskData) {
             return {
@@ -88,7 +90,7 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                             <th style={{ minWidth: '120px' }}>Adeudo Total</th>
                             <th>Email</th>
                             <th>Dirección</th>
-                            <th style={{ minWidth: '320px' }}>Acciones</th>
+                            <th style={{ minWidth: '400px' }}>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -130,7 +132,6 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                                         )}
                                     </td>
 
-                                    {/* ⭐ NUEVO: Columna de Riesgo */}
                                     <td style={{ minWidth: '150px' }}>
                                         <div style={{
                                             display: 'flex',
@@ -165,7 +166,6 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                                         </div>
                                     </td>
 
-                                    {/* ⭐ NUEVO: Columna de Adeudo Total */}
                                     <td style={{ minWidth: '120px' }}>
                                         {riskBadge.totalBalance > 0 ? (
                                             <div style={{
@@ -218,9 +218,9 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                                     <td>
                                         <div style={{ 
                                             display: 'grid',
-                                            gridTemplateColumns: '1fr 1fr',
+                                            gridTemplateColumns: 'repeat(2, 1fr)',
                                             gap: '0.5rem',
-                                            minWidth: '320px'
+                                            minWidth: '400px'
                                         }}>
                                             {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
                                                 <>
@@ -241,6 +241,26 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                                                         title="Editar cliente"
                                                     >
                                                         ✏️ Editar
+                                                    </button>
+
+                                                    {/* ⭐ NUEVO: Botón de Gestión */}
+                                                    <button
+                                                        onClick={() => setSelectedClientForManagement(client)}
+                                                        style={{
+                                                            background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            padding: '0.6rem 0.8rem',
+                                                            borderRadius: 'var(--radius-sm)',
+                                                            cursor: 'pointer',
+                                                            fontWeight: '600',
+                                                            fontSize: '0.8rem',
+                                                            transition: 'var(--transition)',
+                                                            whiteSpace: 'nowrap'
+                                                        }}
+                                                        title="Registrar gestión de cobranza"
+                                                    >
+                                                        📋 Gestionar
                                                     </button>
                                                     
                                                     <Link 
@@ -321,6 +341,15 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole }) {
                     </tbody>
                 </table>
             </div>
+
+            {/* ⭐ NUEVO: Modal de Gestión */}
+            {selectedClientForManagement && (
+                <CollectionManagementModal
+                    client={selectedClientForManagement}
+                    onClose={() => setSelectedClientForManagement(null)}
+                    authenticatedFetch={authenticatedFetch}
+                />
+            )}
         </div>
     );
 }
