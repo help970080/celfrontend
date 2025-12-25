@@ -1,4 +1,4 @@
-// ClientAdminPanel.jsx - VERSIÓN CON GESTIÓN DE RIESGO
+// ClientAdminPanel.jsx - VERSIÓN COMPLETA CON EXPORTAR GESTIONES
 
 import React, { useState, useEffect, useCallback } from 'react';
 import ClientForm from './ClientForm';
@@ -21,10 +21,9 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
 
     const [showForm, setShowForm] = useState(false);
     
-    // ⭐ NUEVO: Filtros de riesgo
-    const [riskFilter, setRiskFilter] = useState('all'); // 'all', 'high', 'medium', 'low'
-    const [sortBy, setSortBy] = useState('name'); // 'name', 'risk', 'balance'
-    const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
+    const [riskFilter, setRiskFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('name');
+    const [sortOrder, setSortOrder] = useState('asc');
 
     const hasPermission = (roles) => {
         if (!userRole) return false;
@@ -43,7 +42,6 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
                 sortOrder: sortOrder
             });
             
-            // ⭐ NUEVO: Agregar filtro de riesgo
             if (riskFilter !== 'all') {
                 params.append('riskLevel', riskFilter);
             }
@@ -138,27 +136,62 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
             a.click();
             a.remove();
             window.URL.revokeObjectURL(url);
-            toast.success('Archivo Excel exportado con éxito!');
+            toast.success('✅ Archivo Excel de clientes exportado con éxito');
         } catch (err) {
             console.error("Error al exportar clientes a Excel:", err);
             toast.error(`Error al exportar clientes: ${err.message || "Error desconocido."}`);
         }
     };
 
-    // ⭐ NUEVO: Función para cambiar filtro de riesgo
-    const handleRiskFilterChange = (risk) => {
-        setRiskFilter(risk);
-        setCurrentPage(1); // Reset a primera página
+    // ⭐ NUEVO: Exportar gestiones de cobranza
+    const handleExportCollectionLogs = async () => {
+        if (!hasPermission(['super_admin', 'regular_admin', 'sales_admin'])) {
+            toast.error('No tienes permisos para exportar gestiones.');
+            return;
+        }
+        
+        try {
+            toast.info('Generando archivo Excel de gestiones de cobranza...');
+            
+            const exportUrl = `${API_BASE_URL}/api/collections/export-excel`;
+            
+            const response = await authenticatedFetch(exportUrl, { 
+                method: 'GET'
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+            }
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `gestiones_cobranza_${new Date().toISOString().split('T')[0]}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            
+            toast.success('✅ Archivo Excel de gestiones exportado exitosamente');
+        } catch (err) {
+            console.error("Error al exportar gestiones:", err);
+            toast.error(`Error al exportar gestiones: ${err.message || "Error desconocido."}`);
+        }
     };
 
-    // ⭐ NUEVO: Función para cambiar ordenamiento
+    const handleRiskFilterChange = (risk) => {
+        setRiskFilter(risk);
+        setCurrentPage(1);
+    };
+
     const handleSortChange = (field) => {
         if (sortBy === field) {
-            // Si ya está ordenado por este campo, invertir orden
             setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
         } else {
             setSortBy(field);
-            setSortOrder('desc'); // Por defecto descendente para riesgo y balance
+            setSortOrder('desc');
         }
         setCurrentPage(1);
     };
@@ -183,7 +216,7 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
                 />
             )}
 
-            {/* ⭐ NUEVO: Filtros de Riesgo */}
+            {/* Filtros de Riesgo */}
             <div className="risk-filters" style={{ 
                 display: 'flex', 
                 gap: '10px', 
@@ -194,7 +227,6 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
                 <span style={{ fontWeight: '600' }}>Filtrar por riesgo:</span>
                 <button 
                     onClick={() => handleRiskFilterChange('all')}
-                    className={riskFilter === 'all' ? 'filter-button active' : 'filter-button'}
                     style={{
                         padding: '8px 16px',
                         border: riskFilter === 'all' ? '2px solid var(--primary)' : '2px solid #ddd',
@@ -209,7 +241,6 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
                 </button>
                 <button 
                     onClick={() => handleRiskFilterChange('high')}
-                    className={riskFilter === 'high' ? 'filter-button active' : 'filter-button'}
                     style={{
                         padding: '8px 16px',
                         border: riskFilter === 'high' ? '2px solid #dc3545' : '2px solid #ddd',
@@ -224,7 +255,6 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
                 </button>
                 <button 
                     onClick={() => handleRiskFilterChange('medium')}
-                    className={riskFilter === 'medium' ? 'filter-button active' : 'filter-button'}
                     style={{
                         padding: '8px 16px',
                         border: riskFilter === 'medium' ? '2px solid #ffc107' : '2px solid #ddd',
@@ -239,7 +269,6 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
                 </button>
                 <button 
                     onClick={() => handleRiskFilterChange('low')}
-                    className={riskFilter === 'low' ? 'filter-button active' : 'filter-button'}
                     style={{
                         padding: '8px 16px',
                         border: riskFilter === 'low' ? '2px solid #28a745' : '2px solid #ddd',
@@ -254,7 +283,7 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
                 </button>
             </div>
 
-            {/* ⭐ NUEVO: Ordenamiento */}
+            {/* Ordenamiento */}
             <div className="sort-controls" style={{ 
                 display: 'flex', 
                 gap: '10px', 
@@ -332,11 +361,27 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
                     </select>
                 </div>
                 {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
-                    <div className="control-group">
-                        <button onClick={handleExportExcel} className="action-button primary-button">
-                            📊 Exportar a Excel
-                        </button>
-                    </div>
+                    <>
+                        <div className="control-group">
+                            <button onClick={handleExportExcel} className="action-button primary-button">
+                                📊 Exportar Clientes
+                            </button>
+                        </div>
+                        <div className="control-group">
+                            <button onClick={handleExportCollectionLogs} className="action-button secondary-button" style={{
+                                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                                color: 'white',
+                                border: 'none',
+                                padding: '0.6rem 1rem',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontWeight: '600',
+                                fontSize: '0.9rem'
+                            }}>
+                                📋 Exportar Gestiones
+                            </button>
+                        </div>
+                    </>
                 )}
             </div>
 
@@ -354,6 +399,7 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
                         onEditClient={setClientToEdit}
                         onDeleteClient={handleDeleteClient}
                         userRole={userRole}
+                        authenticatedFetch={authenticatedFetch}
                     />
                     {totalPages > 1 && (
                         <div className="pagination-controls">
