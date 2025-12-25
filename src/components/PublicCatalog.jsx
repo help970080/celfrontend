@@ -6,7 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:
 function PublicCatalog() {
     const [products, setProducts] = useState([]);
     const [stores, setStores] = useState([]);
-    const [selectedStore, setSelectedStore] = useState(1);
+    const [selectedStore, setSelectedStore] = useState(null); // ⭐ CAMBIO: null inicial
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [sortBy, setSortBy] = useState('name');
@@ -32,31 +32,41 @@ function PublicCatalog() {
         };
     };
 
+    // ⭐ EFECTO 1: Cargar tiendas desde el endpoint público
     useEffect(() => {
         const fetchStores = async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/stores`);
+                const response = await fetch(`${API_BASE_URL}/api/stores/public`); // ⭐ CAMBIO
                 if (response.ok) {
                     const data = await response.json();
-                    setStores(data.filter(store => store.isActive));
+                    const activeStores = data.filter(store => store.isActive !== false);
+                    setStores(activeStores);
+                    
+                    // ⭐ NUEVO: Seleccionar automáticamente la primera tienda
+                    if (activeStores.length > 0 && !selectedStore) {
+                        setSelectedStore(activeStores[0].id);
+                    }
                 } else {
-                    setStores([
-                        { id: 1, name: 'Tienda Principal' },
-                        { id: 2, name: 'Tienda Sucursal' }
-                    ]);
+                    console.error('Error al cargar tiendas:', response.status);
+                    // ⭐ FALLBACK MEJORADO: Al menos intentar cargar productos de tienda 1
+                    setStores([{ id: 1, name: 'Celexpress' }]);
+                    setSelectedStore(1);
                 }
             } catch (error) {
                 console.error('Error al cargar tiendas:', error);
-                setStores([
-                    { id: 1, name: 'Tienda Principal' },
-                    { id: 2, name: 'Tienda Sucursal' }
-                ]);
+                // ⭐ FALLBACK MEJORADO
+                setStores([{ id: 1, name: 'Celexpress' }]);
+                setSelectedStore(1);
             }
         };
         fetchStores();
     }, []);
 
+    // ⭐ EFECTO 2: Cargar productos (solo cuando selectedStore está definido)
     useEffect(() => {
+        // ⭐ NUEVO: No cargar productos hasta que tengamos una tienda seleccionada
+        if (!selectedStore) return;
+
         const fetchPublicProducts = async () => {
             setLoading(true);
             setError(null);
@@ -117,7 +127,8 @@ function PublicCatalog() {
         return store ? store.name : 'Tienda';
     };
 
-    if (loading) {
+    // ⭐ LOADING mejorado
+    if (loading || !selectedStore) {
         return (
             <div className="mobile-catalog">
                 <div className="mobile-header">
@@ -151,7 +162,7 @@ function PublicCatalog() {
         <div className="mobile-catalog">
             {/* Header Mobile */}
             <div className="mobile-header">
-                <h1>📱 Catálogo de Celulares</h1>
+                <h1>📱 {getStoreName()}</h1> {/* ⭐ CAMBIO: Mostrar nombre dinámico */}
             </div>
 
             {/* Selector de Tienda Mobile */}
@@ -165,7 +176,7 @@ function PublicCatalog() {
                     >
                         {stores.map(store => (
                             <option key={store.id} value={store.id}>
-                                {store.name}
+                                {store.name} {/* ⭐ AHORA DINÁMICO */}
                             </option>
                         ))}
                     </select>
@@ -173,35 +184,26 @@ function PublicCatalog() {
             )}
 
             {/* Video Promocional */}
-            {PROMOTIONAL_VIDEO_URL && (
+            {promotionalMediaDetails.type === 'youtube' && promotionalMediaDetails.id && (
                 <div className="mobile-promo-video">
-                    {promotionalMediaDetails.type === 'youtube' && promotionalMediaDetails.id ? (
-                        <iframe
-                            width="100%"
-                            height="200"
-                            src={`https://www.youtube.com/embed/${promotionalMediaDetails.id}?autoplay=0&mute=0&loop=0`}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            title="Video Promocional"
-                        ></iframe>
-                    ) : promotionalMediaDetails.type === 'vimeo' && promotionalMediaDetails.id ? (
-                        <iframe
-                            src={`https://player.vimeo.com/video/${promotionalMediaDetails.id}?autoplay=0&loop=0&byline=0&portrait=0`}
-                            width="100%"
-                            height="200"
-                            frameBorder="0"
-                            allow="autoplay; fullscreen; picture-in-picture"
-                            allowFullScreen
-                            title="Video Promocional"
-                        ></iframe>
-                    ) : null}
+                    <iframe
+                        width="100%"
+                        height="220"
+                        src={`https://www.youtube.com/embed/${promotionalMediaDetails.id}`}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title="Video Promocional"
+                    ></iframe>
                 </div>
             )}
 
-            {/* Botón de Filtros Mobile */}
-            <button className="mobile-filter-toggle" onClick={() => setShowFilters(!showFilters)}>
-                {showFilters ? '✕ Cerrar Filtros' : '⚙️ Filtros'}
+            {/* Botón de Filtros */}
+            <button 
+                onClick={() => setShowFilters(!showFilters)} 
+                className="mobile-filter-toggle"
+            >
+                {showFilters ? '✖️ Cerrar Filtros' : '🔍 Filtrar Productos'}
             </button>
 
             {/* Panel de Filtros Deslizante */}
@@ -242,7 +244,7 @@ function PublicCatalog() {
             <div className="mobile-product-list">
                 {products.length === 0 ? (
                     <div className="mobile-empty">
-                        <p>📦 No hay productos disponibles</p>
+                        <p>📦 No hay productos disponibles en {getStoreName()}</p>
                     </div>
                 ) : (
                     products.map(product => {
@@ -327,7 +329,7 @@ function PublicCatalog() {
                                         </div>
                                     )}
 
-                                    <a
+                                    
                                         href="https://wa.me/525665489522"
                                         target="_blank"
                                         rel="noopener noreferrer"
