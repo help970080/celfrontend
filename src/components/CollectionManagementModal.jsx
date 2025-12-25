@@ -1,4 +1,4 @@
-// CollectionManagementModal.jsx - VERSIÓN SIMPLIFICADA SIN DEPENDENCIA DE SALES
+// CollectionManagementModal.jsx - VERSIÓN CORREGIDA CON VENTA REAL
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
@@ -14,6 +14,44 @@ function CollectionManagementModal({ client, onClose, authenticatedFetch }) {
     const [loading, setLoading] = useState(false);
     const [logs, setLogs] = useState([]);
     const [loadingLogs, setLoadingLogs] = useState(true);
+    const [activeSaleId, setActiveSaleId] = useState(null);
+    const [loadingSale, setLoadingSale] = useState(true);
+
+    // Cargar primera venta activa del cliente
+    useEffect(() => {
+        const fetchActiveSale = async () => {
+            setLoadingSale(true);
+            try {
+                // Usar la ruta de estado de cuenta para obtener ventas
+                const response = await authenticatedFetch(
+                    `${API_BASE_URL}/api/sales/client/${client.id}/statement`
+                );
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const sales = data.sales || [];
+                    
+                    // Buscar primera venta con saldo pendiente
+                    const pendingSale = sales.find(s => s.balanceDue > 0);
+                    
+                    if (pendingSale) {
+                        setActiveSaleId(pendingSale.id);
+                    } else if (sales.length > 0) {
+                        // Si no hay ventas pendientes, usar la más reciente
+                        setActiveSaleId(sales[0].id);
+                    }
+                } else {
+                    console.log('No se pudieron cargar ventas del cliente');
+                }
+            } catch (error) {
+                console.error('Error al cargar venta activa:', error);
+            } finally {
+                setLoadingSale(false);
+            }
+        };
+
+        fetchActiveSale();
+    }, [client.id, authenticatedFetch]);
 
     // Cargar historial de gestiones del cliente
     useEffect(() => {
@@ -27,7 +65,7 @@ function CollectionManagementModal({ client, onClose, authenticatedFetch }) {
                     const data = await response.json();
                     setLogs(data);
                 } else {
-                    console.log('No se pudo cargar historial, continuar sin historial');
+                    console.log('No se pudo cargar historial');
                     setLogs([]);
                 }
             } catch (error) {
@@ -43,13 +81,17 @@ function CollectionManagementModal({ client, onClose, authenticatedFetch }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (!activeSaleId) {
+            toast.error('No hay ventas disponibles para este cliente');
+            return;
+        }
+
         setLoading(true);
 
         try {
-            // Usar client.id como saleId temporal
-            // El backend debería validar y buscar la venta correcta
             const logData = {
-                saleId: client.id,
+                saleId: activeSaleId,
                 contactType,
                 contactResult,
                 notes: notes.trim() || null,
@@ -220,113 +262,134 @@ function CollectionManagementModal({ client, onClose, authenticatedFetch }) {
 
                     <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
 
-                    {/* Formulario */}
-                    <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
-                        <h3 style={{ marginBottom: '15px' }}>📝 Nueva Gestión</h3>
-
-                        <div style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px' }}>
-                                Tipo de contacto:
-                            </label>
-                            <select 
-                                value={contactType} 
-                                onChange={(e) => setContactType(e.target.value)}
-                                style={{ 
-                                    width: '100%', 
-                                    padding: '10px', 
-                                    borderRadius: '8px', 
-                                    border: '2px solid #ddd',
-                                    fontSize: '1rem'
-                                }}
-                            >
-                                <option value="phone_call">📞 Llamada telefónica</option>
-                                <option value="whatsapp">💬 WhatsApp</option>
-                                <option value="home_visit">🏠 Visita domiciliaria</option>
-                                <option value="sms">📱 SMS</option>
-                                <option value="email">📧 Email</option>
-                            </select>
+                    {/* Estado de carga */}
+                    {loadingSale ? (
+                        <div style={{ textAlign: 'center', padding: '20px' }}>
+                            <p>⏳ Cargando información de ventas...</p>
                         </div>
-
-                        <div style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px' }}>
-                                Resultado:
-                            </label>
-                            <select 
-                                value={contactResult} 
-                                onChange={(e) => setContactResult(e.target.value)}
-                                style={{ 
-                                    width: '100%', 
-                                    padding: '10px', 
-                                    borderRadius: '8px', 
-                                    border: '2px solid #ddd',
-                                    fontSize: '1rem'
-                                }}
-                            >
-                                <option value="payment_promise">✅ Promesa de pago</option>
-                                <option value="payment_made">💰 Realizó pago</option>
-                                <option value="partial_payment">💵 Pago parcial</option>
-                                <option value="no_answer">❌ No contesta</option>
-                                <option value="refuses_to_pay">🚫 Se niega a pagar</option>
-                                <option value="wrong_number">📵 Número equivocado</option>
-                                <option value="other">📝 Otro</option>
-                            </select>
-                        </div>
-
-                        <div style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px' }}>
-                                Notas:
-                            </label>
-                            <textarea
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                rows="4"
-                                style={{ 
-                                    width: '100%', 
-                                    padding: '10px', 
-                                    borderRadius: '8px', 
-                                    border: '2px solid #ddd', 
-                                    fontFamily: 'inherit',
-                                    fontSize: '1rem',
-                                    resize: 'vertical'
-                                }}
-                                placeholder="Descripción detallada de la gestión realizada..."
-                            />
-                        </div>
-
-                        <div style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px' }}>
-                                Próximo contacto (opcional):
-                            </label>
-                            <input
-                                type="datetime-local"
-                                value={nextContactDate}
-                                onChange={(e) => setNextContactDate(e.target.value)}
-                                style={{ 
-                                    width: '100%', 
-                                    padding: '10px', 
-                                    borderRadius: '8px', 
-                                    border: '2px solid #ddd',
-                                    fontSize: '1rem'
-                                }}
-                            />
-                        </div>
-
-                        <button type="submit" disabled={loading} style={{
-                            width: '100%',
-                            padding: '14px',
-                            background: loading ? '#ccc' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            color: 'white',
-                            border: 'none',
+                    ) : !activeSaleId ? (
+                        <div style={{
+                            background: '#fff3cd',
+                            border: '2px solid #ffc107',
                             borderRadius: '8px',
-                            fontSize: '1.1rem',
-                            fontWeight: '700',
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.3s',
-                            boxShadow: loading ? 'none' : '0 4px 12px rgba(102, 126, 234, 0.3)'
+                            padding: '15px',
+                            marginBottom: '20px'
                         }}>
-                            {loading ? '⏳ Guardando...' : '💾 Guardar Gestión'}
-                        </button>
-                    </form>
+                            <p style={{ margin: 0, fontWeight: '600', color: '#856404' }}>
+                                ⚠️ Este cliente no tiene ventas registradas.
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Formulario */}
+                            <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
+                                <h3 style={{ marginBottom: '15px' }}>📝 Nueva Gestión</h3>
+
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px' }}>
+                                        Tipo de contacto:
+                                    </label>
+                                    <select 
+                                        value={contactType} 
+                                        onChange={(e) => setContactType(e.target.value)}
+                                        style={{ 
+                                            width: '100%', 
+                                            padding: '10px', 
+                                            borderRadius: '8px', 
+                                            border: '2px solid #ddd',
+                                            fontSize: '1rem'
+                                        }}
+                                    >
+                                        <option value="phone_call">📞 Llamada telefónica</option>
+                                        <option value="whatsapp">💬 WhatsApp</option>
+                                        <option value="home_visit">🏠 Visita domiciliaria</option>
+                                        <option value="sms">📱 SMS</option>
+                                        <option value="email">📧 Email</option>
+                                    </select>
+                                </div>
+
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px' }}>
+                                        Resultado:
+                                    </label>
+                                    <select 
+                                        value={contactResult} 
+                                        onChange={(e) => setContactResult(e.target.value)}
+                                        style={{ 
+                                            width: '100%', 
+                                            padding: '10px', 
+                                            borderRadius: '8px', 
+                                            border: '2px solid #ddd',
+                                            fontSize: '1rem'
+                                        }}
+                                    >
+                                        <option value="payment_promise">✅ Promesa de pago</option>
+                                        <option value="payment_made">💰 Realizó pago</option>
+                                        <option value="partial_payment">💵 Pago parcial</option>
+                                        <option value="no_answer">❌ No contesta</option>
+                                        <option value="refuses_to_pay">🚫 Se niega a pagar</option>
+                                        <option value="wrong_number">📵 Número equivocado</option>
+                                        <option value="other">📝 Otro</option>
+                                    </select>
+                                </div>
+
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px' }}>
+                                        Notas:
+                                    </label>
+                                    <textarea
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        rows="4"
+                                        style={{ 
+                                            width: '100%', 
+                                            padding: '10px', 
+                                            borderRadius: '8px', 
+                                            border: '2px solid #ddd', 
+                                            fontFamily: 'inherit',
+                                            fontSize: '1rem',
+                                            resize: 'vertical'
+                                        }}
+                                        placeholder="Descripción detallada de la gestión realizada..."
+                                    />
+                                </div>
+
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px' }}>
+                                        Próximo contacto (opcional):
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        value={nextContactDate}
+                                        onChange={(e) => setNextContactDate(e.target.value)}
+                                        style={{ 
+                                            width: '100%', 
+                                            padding: '10px', 
+                                            borderRadius: '8px', 
+                                            border: '2px solid #ddd',
+                                            fontSize: '1rem'
+                                        }}
+                                    />
+                                </div>
+
+                                <button type="submit" disabled={loading} style={{
+                                    width: '100%',
+                                    padding: '14px',
+                                    background: loading ? '#ccc' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    fontSize: '1.1rem',
+                                    fontWeight: '700',
+                                    cursor: loading ? 'not-allowed' : 'pointer',
+                                    transition: 'all 0.3s',
+                                    boxShadow: loading ? 'none' : '0 4px 12px rgba(102, 126, 234, 0.3)'
+                                }}>
+                                    {loading ? '⏳ Guardando...' : '💾 Guardar Gestión'}
+                                </button>
+                            </form>
+                        </>
+                    )}
 
                     <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
 
