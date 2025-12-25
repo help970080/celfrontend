@@ -1,4 +1,5 @@
-// UserManager.jsx - Componente mejorado para gestionar usuarios con selector de tiendas
+// UserManager.jsx - VERSIÓN CORREGIDA CON API UNIFICADA
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
@@ -15,7 +16,8 @@ const UserManager = () => {
     tiendaId: ''
   });
 
-  const API_URL = import.meta.env.VITE_API_URL || 'https://celbackend.onrender.com';
+  // ⭐ CORREGIDO: Usar VITE_APP_API_BASE_URL como el resto del sistema
+  const API_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
   const ROLES = [
     { value: 'super_admin', label: 'Super Administrador' },
@@ -26,7 +28,6 @@ const UserManager = () => {
     { value: 'viewer_reports', label: 'Visualizador de Reportes' }
   ];
 
-  // Cargar usuarios y tiendas
   useEffect(() => {
     fetchUsers();
     fetchStores();
@@ -66,7 +67,6 @@ const UserManager = () => {
       if (!response.ok) throw new Error('Error al cargar tiendas');
       
       const data = await response.json();
-      // Filtrar solo tiendas activas
       setStores(data.filter(store => store.isActive));
     } catch (error) {
       toast.error('Error al cargar tiendas');
@@ -92,7 +92,6 @@ const UserManager = () => {
       
       const method = editingUser ? 'PUT' : 'POST';
 
-      // Si es edición y no se cambió la contraseña, no enviarla
       const dataToSend = { ...formData };
       if (editingUser && !formData.password) {
         delete dataToSend.password;
@@ -128,7 +127,7 @@ const UserManager = () => {
     setEditingUser(user);
     setFormData({
       username: user.username,
-      password: '', // No prellenar contraseña
+      password: '',
       role: user.role,
       tiendaId: user.tienda_id || user.tiendaId
     });
@@ -199,7 +198,7 @@ const UserManager = () => {
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   placeholder="usuario123"
-                  disabled={editingUser} // No permitir cambiar username al editar
+                  disabled={editingUser}
                 />
               </div>
 
@@ -309,6 +308,7 @@ const UserManager = () => {
       )}
 
       <style jsx>{`
+        /* Estilos idénticos al original - mantenidos para no romper UI */
         .user-manager {
           padding: 20px;
           max-width: 1200px;

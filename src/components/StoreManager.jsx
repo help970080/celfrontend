@@ -1,4 +1,5 @@
-// StoreManager.jsx - Componente para gestionar tiendas (solo super_admin)
+// StoreManager.jsx - VERSIÓN CORREGIDA CON API UNIFICADA
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
@@ -14,9 +15,9 @@ const StoreManager = () => {
     email: ''
   });
 
-  const API_URL = import.meta.env.VITE_API_URL || 'https://celbackend.onrender.com';
+  // ⭐ CORREGIDO: Usar VITE_APP_API_BASE_URL como el resto del sistema
+  const API_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-  // Cargar tiendas
   useEffect(() => {
     fetchStores();
   }, []);
@@ -231,6 +232,7 @@ const StoreManager = () => {
       )}
 
       <style jsx>{`
+        /* Estilos idénticos al original - mantenidos para no romper UI */
         .store-manager {
           padding: 20px;
           max-width: 1200px;

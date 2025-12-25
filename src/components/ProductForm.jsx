@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function ProductForm({ onProductAdded, productToEdit, setProductToEdit }) {
+function ProductForm({ onProductAdded, productToEdit, setProductToEdit, authenticatedFetch }) { // ⭐ AGREGADO authenticatedFetch
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState('');
@@ -21,7 +21,11 @@ function ProductForm({ onProductAdded, productToEdit, setProductToEdit }) {
             setDescription(productToEdit.description || '');
             setPrice(productToEdit.price || '');
             setStock(productToEdit.stock || '');
-            setImageUrlsInput(Array.isArray(productToEdit.imageUrls) ? productToEdit.imageUrls.join('\n') : (productToEdit.imageUrls || ''));
+            setImageUrlsInput(
+                Array.isArray(productToEdit.imageUrls) 
+                    ? productToEdit.imageUrls.join('\n') 
+                    : (productToEdit.imageUrls || '')
+            );
             setCategory(productToEdit.category || '');
             setBrand(productToEdit.brand || '');
         } else {
@@ -50,10 +54,11 @@ function ProductForm({ onProductAdded, productToEdit, setProductToEdit }) {
         setError(null);
         setSuccess(null);
 
+        // Parsear URLs de imágenes
         const parsedImageUrls = (imageUrlsInput)
-                                    .split(/[\n,]/) 
-                                    .map(url => url.trim()) 
-                                    .filter(url => url !== ''); 
+            .split(/[\n,]/) 
+            .map(url => url.trim()) 
+            .filter(url => url !== ''); 
 
         const productData = {
             name,
@@ -71,12 +76,10 @@ function ProductForm({ onProductAdded, productToEdit, setProductToEdit }) {
         const method = productToEdit ? 'PUT' : 'POST';
 
         try {
-            const response = await fetch(url, {
+            // ⭐ MEJORADO: Usar authenticatedFetch
+            const response = await authenticatedFetch(url, {
                 method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(productData),
             });
 
@@ -116,6 +119,7 @@ function ProductForm({ onProductAdded, productToEdit, setProductToEdit }) {
                         required
                     />
                 </div>
+                
                 <div className="form-group">
                     <label htmlFor="description">Descripción:</label>
                     <textarea
@@ -124,6 +128,7 @@ function ProductForm({ onProductAdded, productToEdit, setProductToEdit }) {
                         onChange={(e) => setDescription(e.target.value)}
                     ></textarea>
                 </div>
+                
                 <div className="form-group">
                     <label htmlFor="price">Precio:</label>
                     <input
@@ -135,6 +140,7 @@ function ProductForm({ onProductAdded, productToEdit, setProductToEdit }) {
                         required
                     />
                 </div>
+                
                 <div className="form-group">
                     <label htmlFor="stock">Existencias:</label>
                     <input
@@ -145,6 +151,7 @@ function ProductForm({ onProductAdded, productToEdit, setProductToEdit }) {
                         required
                     />
                 </div>
+                
                 <div className="form-group">
                     <label htmlFor="imageUrls">URLs de Imágenes/Videos (una por línea o separadas por comas):</label>
                     <textarea
@@ -159,6 +166,7 @@ https://example.com/img2.png"
                     ></textarea>
                     <p className="hint-text">Cada URL en una nueva línea o separadas por comas.</p>
                 </div>
+                
                 <div className="form-group">
                     <label htmlFor="category">Categoría:</label>
                     <input
@@ -168,6 +176,7 @@ https://example.com/img2.png"
                         onChange={(e) => setCategory(e.target.value)}
                     />
                 </div>
+                
                 <div className="form-group">
                     <label htmlFor="brand">Marca:</label>
                     <input
@@ -177,6 +186,7 @@ https://example.com/img2.png"
                         onChange={(e) => setBrand(e.target.value)}
                     />
                 </div>
+                
                 <button type="submit" disabled={loading}>
                     {loading ? 'Guardando...' : (productToEdit ? 'Actualizar Producto' : 'Agregar Producto')}
                 </button>

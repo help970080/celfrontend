@@ -1,3 +1,5 @@
+// SaleAdminPanel.jsx - VERSIÓN CORREGIDA CON MULTI-TENANT COMPLETO
+
 import React, { useState, useEffect, useCallback } from 'react';
 import SaleForm from './SaleForm';
 import SaleList from './SaleList';
@@ -5,7 +7,7 @@ import { toast } from 'react-toastify';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function SaleAdminPanel({ authenticatedFetch, userRole }) { 
+function SaleAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // ⭐ AGREGADO userTiendaId como prop
     const [sales, setSales] = useState([]);
     const [clients, setClients] = useState([]);
     const [products, setProducts] = useState([]);
@@ -33,10 +35,23 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         setLoadingSales(true);
         setErrorSales(null);
         try {
-            let url = `${API_BASE_URL}/api/sales?page=${currentPage}&limit=${itemsPerPage}`;
+            // ⭐ CORREGIDO: Construir URL con filtros
+            const params = new URLSearchParams({
+                page: currentPage,
+                limit: itemsPerPage
+            });
+            
             if (searchTerm) {
-                url += `&search=${encodeURIComponent(searchTerm)}`;
+                params.append('search', searchTerm);
             }
+            
+            // ⭐ CRÍTICO: Agregar tiendaId si NO es super_admin
+            if (userRole !== 'super_admin' && userTiendaId) {
+                params.append('tiendaId', userTiendaId);
+            }
+            
+            const url = `${API_BASE_URL}/api/sales?${params.toString()}`;
+            
             const response = await authenticatedFetch(url);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: "Error del servidor." }));
@@ -53,22 +68,20 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         } finally {
             setLoadingSales(false);
         }
-    }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage]);
+    }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage, userRole, userTiendaId]); // ⭐ Agregadas dependencias
 
     const fetchSupportingData = useCallback(async () => {
         try {
-            // ⭐ NUEVO: Obtener tiendaId del localStorage
-            const userTiendaId = localStorage.getItem('tiendaId');
+            // ⭐ CORREGIDO: Construir URLs con filtros
+            const params = new URLSearchParams({ limit: 9999 });
             
-            // ⭐ CORREGIDO: Agregar tiendaId a las URLs
-            let clientsUrl = `${API_BASE_URL}/api/clients?limit=9999`;
-            let productsUrl = `${API_BASE_URL}/api/products?limit=9999`;
-            
-            // ⭐ FILTRO CRÍTICO: Solo si no es super_admin
+            // ⭐ CRÍTICO: Solo si NO es super_admin
             if (userRole !== 'super_admin' && userTiendaId) {
-                clientsUrl += `&tiendaId=${userTiendaId}`;
-                productsUrl += `&tiendaId=${userTiendaId}`;
+                params.append('tiendaId', userTiendaId);
             }
+            
+            const clientsUrl = `${API_BASE_URL}/api/clients?${params.toString()}`;
+            const productsUrl = `${API_BASE_URL}/api/products?${params.toString()}`;
             
             const [clientsRes, productsRes, usersRes] = await Promise.all([
                 authenticatedFetch(clientsUrl),
@@ -85,7 +98,7 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         } catch (err) {
             toast.error("Error al cargar datos de soporte.");
         }
-    }, [authenticatedFetch, userRole]);
+    }, [authenticatedFetch, userRole, userTiendaId]); // ⭐ Agregadas dependencias
 
     useEffect(() => {
         fetchSales();
@@ -125,7 +138,14 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         }
         try {
             toast.info('Generando reporte de ventas en Excel...');
-            const response = await authenticatedFetch(`${API_BASE_URL}/api/sales/export-excel`);
+            
+            // ⭐ NUEVO: Agregar filtro de tienda en exportación
+            let exportUrl = `${API_BASE_URL}/api/sales/export-excel`;
+            if (userRole !== 'super_admin' && userTiendaId) {
+                exportUrl += `?tiendaId=${userTiendaId}`;
+            }
+            
+            const response = await authenticatedFetch(exportUrl);
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Error al generar el reporte.');
@@ -162,17 +182,30 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
                     clients={clients}
                     products={products}
                     collectors={collectors}
+                    authenticatedFetch={authenticatedFetch} // ⭐ PASAR authenticatedFetch
                 />
             )}
             <div className="admin-controls">
                 <div className="control-group">
                     <label htmlFor="searchSale">Buscar Venta:</label>
-                    <input type="text" id="searchSale" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder="Buscar por ID, cliente..."/>
+                    <input 
+                        type="text" 
+                        id="searchSale" 
+                        value={searchTerm} 
+                        onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
+                        placeholder="Buscar por ID, cliente..."
+                    />
                 </div>
                 <div className="control-group">
                     <label htmlFor="itemsPerPage">Ítems por página:</label>
-                    <select id="itemsPerPage" value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
-                        <option value="10">10</option><option value="20">20</option><option value="50">50</option>
+                    <select 
+                        id="itemsPerPage" 
+                        value={itemsPerPage} 
+                        onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}
+                    >
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
                     </select>
                 </div>
                 
@@ -181,7 +214,6 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
                         Exportar a Excel
                     </button>
                 </div>
-
             </div>
             {loadingSales ? <p>Cargando...</p> : errorSales ? <p className="error-message">{errorSales}</p> : (
                 <>
@@ -195,9 +227,13 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
                     />
                     {totalPages > 1 && (
                         <div className="pagination-controls">
-                            <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>Anterior</button>
+                            <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>
+                                Anterior
+                            </button>
                             <span>Página {currentPage} de {totalPages}</span>
-                            <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>Siguiente</button>
+                            <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>
+                                Siguiente
+                            </button>
                         </div>
                     )}
                 </>
@@ -205,4 +241,5 @@ function SaleAdminPanel({ authenticatedFetch, userRole }) {
         </section>
     );
 }
+
 export default SaleAdminPanel;

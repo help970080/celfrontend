@@ -1,281 +1,310 @@
-/* AnalyticsDashboard.css */
+import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
+import './AnalyticsDashboard.css';
 
-.analytics-dashboard {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 20px;
-  background: #f5f5f5;
-}
+const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
+const COLORS = ['#4A90E2', '#2ECC71', '#E74C3C', '#F39C12', '#9B59B6'];
 
-.dashboard-header h2 {
-  margin: 0;
-  font-size: 28px;
-  color: #333;
-}
+function AnalyticsDashboard({ authenticatedFetch, userRole, userTiendaId }) { // ⭐ AGREGADO userTiendaId
+  const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
 
-.date-filters {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
+  // Estados
+  const [stats, setStats] = useState(null);
+  const [dailyStats, setDailyStats] = useState([]);
+  const [devices, setDevices] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [topSearches, setTopSearches] = useState([]);
+  const [hourlyConversion, setHourlyConversion] = useState([]);
 
-.date-filters input[type="date"] {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-}
+  useEffect(() => {
+    fetchData();
+  }, [dateRange]);
 
-.date-filters span {
-  color: #666;
-}
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // ⭐ NUEVO: Construir parámetros con filtro de tienda
+      const buildParams = (baseParams = {}) => {
+        const params = new URLSearchParams(baseParams);
+        
+        // Solo agregar tiendaId si NO es super_admin
+        if (userRole !== 'super_admin' && userTiendaId) {
+          params.append('tiendaId', userTiendaId);
+        }
+        
+        return params.toString();
+      };
 
-/* MÉTRICAS */
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
+      // Dashboard general
+      const dashboardParams = buildParams({
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      });
+      
+      const dashboardRes = await authenticatedFetch(
+        `${API_BASE_URL}/api/analytics/dashboard?${dashboardParams}`
+      );
+      const dashboardData = await dashboardRes.json();
 
-.metric-card {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  transition: transform 0.3s, box-shadow 0.3s;
-}
+      if (dashboardData.success) {
+        setStats(dashboardData.stats);
+        setDevices(dashboardData.devices);
+        setTopProducts(dashboardData.topProducts);
+        setTopSearches(dashboardData.topSearches);
+      }
 
-.metric-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-}
+      // Estadísticas diarias
+      const dailyParams = buildParams({ days: 30 });
+      const dailyRes = await authenticatedFetch(
+        `${API_BASE_URL}/api/analytics/daily-stats?${dailyParams}`
+      );
+      const dailyData = await dailyRes.json();
+      if (dailyData.success) {
+        setDailyStats(dailyData.data);
+      }
 
-.metric-card.highlight {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
+      // Conversión por hora
+      const hourlyParams = buildParams();
+      const hourlyRes = await authenticatedFetch(
+        `${API_BASE_URL}/api/analytics/hourly-conversion?${hourlyParams}`
+      );
+      const hourlyData = await hourlyRes.json();
+      if (hourlyData.success) {
+        setHourlyConversion(hourlyData.data);
+      }
 
-.metric-card.highlight .metric-icon {
-  background: rgba(255,255,255,0.2);
-}
+    } catch (error) {
+      console.error('Error al cargar analytics:', error);
+      toast.error('Error al cargar estadísticas');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-.metric-icon {
-  font-size: 40px;
-  background: #f0f0f0;
-  width: 70px;
-  height: 70px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-}
+  const formatDuration = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}m ${secs}s`;
+  };
 
-.metric-info h3 {
-  margin: 0;
-  font-size: 32px;
-  font-weight: 700;
-}
-
-.metric-info p {
-  margin: 4px 0 0 0;
-  font-size: 14px;
-  color: #666;
-}
-
-.metric-card.highlight .metric-info p {
-  color: rgba(255,255,255,0.9);
-}
-
-/* GRÁFICAS */
-.charts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.chart-card {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.chart-card.full-width {
-  grid-column: 1 / -1;
-}
-
-.chart-card h3 {
-  margin: 0 0 20px 0;
-  font-size: 18px;
-  color: #333;
-}
-
-/* TABLAS */
-.table-section {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
-}
-
-.table-section h3 {
-  margin: 0 0 20px 0;
-  font-size: 20px;
-  color: #333;
-}
-
-.analytics-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.analytics-table thead {
-  background: #f8f9fa;
-}
-
-.analytics-table th {
-  padding: 12px 16px;
-  text-align: left;
-  font-weight: 600;
-  color: #555;
-  border-bottom: 2px solid #e0e0e0;
-}
-
-.analytics-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  color: #333;
-}
-
-.analytics-table tbody tr:hover {
-  background: #f8f9fa;
-}
-
-.conversion-badge {
-  background: #2ECC71;
-  color: white;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-/* LOADING */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-}
-
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #4A90E2;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.loading-container p {
-  margin-top: 16px;
-  color: #666;
-  font-size: 16px;
-}
-
-/* BUTTONS */
-.btn-primary {
-  background: #4A90E2;
-  color: white;
-  padding: 8px 20px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background 0.3s;
-}
-
-.btn-primary:hover {
-  background: #357ABD;
-}
-
-/* RESPONSIVE */
-@media (max-width: 1024px) {
-  .charts-grid {
-    grid-template-columns: 1fr;
+  if (loading) {
+    return (
+      <div className="analytics-dashboard">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p>Cargando estadísticas...</p>
+        </div>
+      </div>
+    );
   }
-  
-  .dashboard-header {
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .metrics-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  }
+
+  return (
+    <div className="analytics-dashboard">
+      <div className="dashboard-header">
+        <h2>📊 Analíticas del Catálogo</h2>
+        
+        <div className="date-filters">
+          <input
+            type="date"
+            value={dateRange.startDate}
+            onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+          />
+          <span>hasta</span>
+          <input
+            type="date"
+            value={dateRange.endDate}
+            onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+          />
+          <button onClick={fetchData} className="btn-primary">Actualizar</button>
+        </div>
+      </div>
+
+      {/* RESUMEN DE MÉTRICAS */}
+      <div className="metrics-grid">
+        <div className="metric-card">
+          <div className="metric-icon">👥</div>
+          <div className="metric-info">
+            <h3>{stats?.total_sessions || 0}</h3>
+            <p>Visitas Totales</p>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon">⏱️</div>
+          <div className="metric-info">
+            <h3>{formatDuration(stats?.avg_duration || 0)}</h3>
+            <p>Tiempo Promedio</p>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon">👀</div>
+          <div className="metric-info">
+            <h3>{stats?.total_products_viewed || 0}</h3>
+            <p>Productos Vistos</p>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon">🔍</div>
+          <div className="metric-info">
+            <h3>{stats?.total_searches || 0}</h3>
+            <p>Búsquedas Realizadas</p>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon">💬</div>
+          <div className="metric-info">
+            <h3>{stats?.total_whatsapp_clicks || 0}</h3>
+            <p>Clicks en WhatsApp</p>
+          </div>
+        </div>
+
+        <div className="metric-card highlight">
+          <div className="metric-icon">📈</div>
+          <div className="metric-info">
+            <h3>{stats?.conversion_rate || 0}%</h3>
+            <p>Tasa de Conversión</p>
+          </div>
+        </div>
+      </div>
+
+      {/* GRÁFICAS */}
+      <div className="charts-grid">
+        
+        {/* VISITAS POR DÍA */}
+        <div className="chart-card">
+          <h3>📅 Visitas por Día (Últimos 30 días)</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={dailyStats}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="date" 
+                tickFormatter={(date) => new Date(date).toLocaleDateString('es-MX', { month: 'short', day: 'numeric' })}
+              />
+              <YAxis />
+              <Tooltip 
+                labelFormatter={(date) => new Date(date).toLocaleDateString('es-MX')}
+              />
+              <Legend />
+              <Line type="monotone" dataKey="total_sessions" stroke="#4A90E2" name="Visitas" strokeWidth={2} />
+              <Line type="monotone" dataKey="total_whatsapp_clicks" stroke="#2ECC71" name="Clicks WhatsApp" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* DISPOSITIVOS */}
+        <div className="chart-card">
+          <h3>📱 Dispositivos Usados</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={devices}
+                dataKey="count"
+                nameKey="device_type"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                label={(entry) => `${entry.device_type}: ${entry.count}`}
+              >
+                {devices.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* CONVERSIÓN POR HORA */}
+        <div className="chart-card full-width">
+          <h3>🕐 Mejor Hora para Conversión</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={hourlyConversion}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="hour_of_day" tickFormatter={(hour) => `${hour}:00`} />
+              <YAxis yAxisId="left" />
+              <YAxis yAxisId="right" orientation="right" />
+              <Tooltip />
+              <Legend />
+              <Bar yAxisId="left" dataKey="sessions" fill="#4A90E2" name="Visitas" />
+              <Bar yAxisId="right" dataKey="conversion_rate" fill="#2ECC71" name="Conversión %" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* PRODUCTOS MÁS VISTOS */}
+      <div className="table-section">
+        <h3>🏆 Productos Más Vistos</h3>
+        <table className="analytics-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Producto</th>
+              <th>Marca</th>
+              <th>Precio</th>
+              <th>Vistas</th>
+              <th>Clicks WhatsApp</th>
+              <th>Conversión</th>
+            </tr>
+          </thead>
+          <tbody>
+            {topProducts.map((product, index) => (
+              <tr key={product.id}>
+                <td>{index + 1}</td>
+                <td>{product.nombre}</td>
+                <td>{product.marca}</td>
+                <td>${parseFloat(product.precio).toFixed(2)}</td>
+                <td>{product.views}</td>
+                <td>{product.whatsapp_clicks}</td>
+                <td>
+                  <span className="conversion-badge">
+                    {((product.whatsapp_clicks / product.views) * 100).toFixed(1)}%
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* BÚSQUEDAS MÁS POPULARES */}
+      <div className="table-section">
+        <h3>🔎 Búsquedas Más Populares</h3>
+        <table className="analytics-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Término de Búsqueda</th>
+              <th>Veces Buscado</th>
+              <th>Resultados Promedio</th>
+            </tr>
+          </thead>
+          <tbody>
+            {topSearches.map((search, index) => (
+              <tr key={index}>
+                <td>{index + 1}</td>
+                <td><strong>{search.search_term}</strong></td>
+                <td>{search.count}</td>
+                <td>{Math.round(search.avg_results)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
-@media (max-width: 768px) {
-  .analytics-dashboard {
-    padding: 10px;
-  }
-  
-  .metrics-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .metric-card {
-    padding: 16px;
-  }
-  
-  .metric-icon {
-    width: 50px;
-    height: 50px;
-    font-size: 28px;
-  }
-  
-  .metric-info h3 {
-    font-size: 24px;
-  }
-  
-  .chart-card {
-    padding: 16px;
-  }
-  
-  .table-section {
-    overflow-x: auto;
-  }
-  
-  .analytics-table {
-    font-size: 14px;
-  }
-  
-  .analytics-table th,
-  .analytics-table td {
-    padding: 8px 12px;
-  }
-}
+export default AnalyticsDashboard;

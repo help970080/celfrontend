@@ -1,4 +1,4 @@
-// Archivo: src/components/ClientAdminPanel.jsx
+// Archivo: src/components/ClientAdminPanel.jsx - VERSIÓN MEJORADA
 
 import React, { useState, useEffect, useCallback } from 'react';
 import ClientForm from './ClientForm';
@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function ClientAdminPanel({ authenticatedFetch, userRole }) {
+function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // ⭐ AGREGADO userTiendaId como prop
     const [clients, setClients] = useState([]);
     const [loadingClients, setLoadingClients] = useState(true);
     const [errorClients, setErrorClients] = useState(null);
@@ -30,15 +30,19 @@ function ClientAdminPanel({ authenticatedFetch, userRole }) {
         setLoadingClients(true);
         setErrorClients(null);
         try {
-            // ⭐ NUEVO: Obtener tiendaId del localStorage
-            const userTiendaId = localStorage.getItem('tiendaId');
+            // ⭐ MEJORADO: Construir URL con filtros
+            const params = new URLSearchParams({
+                search: searchTerm,
+                page: currentPage,
+                limit: itemsPerPage
+            });
             
-            let url = `${API_BASE_URL}/api/clients?search=${encodeURIComponent(searchTerm)}&page=${currentPage}&limit=${itemsPerPage}`;
-            
-            // ⭐ FILTRO CRÍTICO: Agregar tiendaId si el usuario no es super_admin
+            // ⭐ FILTRO CRÍTICO: Agregar tiendaId si NO es super_admin
             if (userRole !== 'super_admin' && userTiendaId) {
-                url += `&tiendaId=${userTiendaId}`;
+                params.append('tiendaId', userTiendaId);
             }
+            
+            const url = `${API_BASE_URL}/api/clients?${params.toString()}`;
             
             const response = await authenticatedFetch(url);
             if (!response.ok) {
@@ -56,7 +60,7 @@ function ClientAdminPanel({ authenticatedFetch, userRole }) {
         } finally {
             setLoadingClients(false);
         }
-    }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage, userRole]);
+    }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage, userRole, userTiendaId]);
 
     useEffect(() => {
         fetchClients();
@@ -100,7 +104,18 @@ function ClientAdminPanel({ authenticatedFetch, userRole }) {
         }
         try {
             toast.info('Generando archivo Excel de clientes...');
-            const response = await authenticatedFetch(`${API_BASE_URL}/api/clients/export-excel`, { method: 'GET', headers: {} });
+            
+            // ⭐ NUEVO: Agregar filtro de tienda en exportación
+            let exportUrl = `${API_BASE_URL}/api/clients/export-excel`;
+            if (userRole !== 'super_admin' && userTiendaId) {
+                exportUrl += `?tiendaId=${userTiendaId}`;
+            }
+            
+            const response = await authenticatedFetch(exportUrl, { 
+                method: 'GET', 
+                headers: {} 
+            });
+            
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `Error HTTP: ${response.status}`);
@@ -137,17 +152,28 @@ function ClientAdminPanel({ authenticatedFetch, userRole }) {
                     clientToEdit={clientToEdit}
                     setClientToEdit={setClientToEdit}
                     onCancel={handleFormCancel}
+                    authenticatedFetch={authenticatedFetch} // ⭐ NUEVO: Pasar authenticatedFetch
                 />
             )}
 
             <div className="admin-controls">
                 <div className="control-group">
                     <label htmlFor="searchClient">Buscar Cliente:</label>
-                    <input type="text" id="searchClient" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder="Buscar por nombre, apellido, teléfono..."/>
+                    <input 
+                        type="text" 
+                        id="searchClient" 
+                        value={searchTerm} 
+                        onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
+                        placeholder="Buscar por nombre, apellido, teléfono..."
+                    />
                 </div>
-                 <div className="control-group">
+                <div className="control-group">
                     <label htmlFor="itemsPerPage">Ítems por página:</label>
-                    <select id="itemsPerPage" value={itemsPerPage} onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}>
+                    <select 
+                        id="itemsPerPage" 
+                        value={itemsPerPage} 
+                        onChange={(e) => { setItemsPerPage(parseInt(e.target.value, 10)); setCurrentPage(1); }}
+                    >
                         <option value="5">5</option>
                         <option value="10">10</option>
                         <option value="20">20</option>
@@ -191,4 +217,5 @@ function ClientAdminPanel({ authenticatedFetch, userRole }) {
         </section>
     );
 }
+
 export default ClientAdminPanel;
