@@ -1,4 +1,4 @@
-// CollectionManagementModal.jsx - VERSIÓN CORREGIDA CON VENTA REAL
+// CollectionManagementModal.jsx - VERSIÓN CON RUTA CORRECTA
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
@@ -17,31 +17,52 @@ function CollectionManagementModal({ client, onClose, authenticatedFetch }) {
     const [activeSaleId, setActiveSaleId] = useState(null);
     const [loadingSale, setLoadingSale] = useState(true);
 
-    // Cargar primera venta activa del cliente
+    // Cargar primera venta activa del cliente usando ruta de pagos
     useEffect(() => {
         const fetchActiveSale = async () => {
             setLoadingSale(true);
             try {
-                // Usar la ruta de estado de cuenta para obtener ventas
+                // Usar la ruta que SÍ existe: payments/:clientId
                 const response = await authenticatedFetch(
-                    `${API_BASE_URL}/api/sales/client/${client.id}/statement`
+                    `${API_BASE_URL}/api/sales/payments/${client.id}`
                 );
                 
                 if (response.ok) {
                     const data = await response.json();
-                    const sales = data.sales || [];
                     
-                    // Buscar primera venta con saldo pendiente
-                    const pendingSale = sales.find(s => s.balanceDue > 0);
+                    // La respuesta puede tener diferentes estructuras
+                    let sales = [];
                     
-                    if (pendingSale) {
-                        setActiveSaleId(pendingSale.id);
-                    } else if (sales.length > 0) {
-                        // Si no hay ventas pendientes, usar la más reciente
-                        setActiveSaleId(sales[0].id);
+                    if (data.sales) {
+                        sales = data.sales;
+                    } else if (Array.isArray(data)) {
+                        sales = data;
+                    } else if (data.client?.Sales) {
+                        sales = data.client.Sales;
+                    }
+                    
+                    console.log('Ventas encontradas:', sales);
+                    
+                    if (sales && sales.length > 0) {
+                        // Buscar primera venta con saldo pendiente
+                        const pendingSale = sales.find(s => {
+                            const balance = s.balanceDue || s.balance_due || 0;
+                            return balance > 0;
+                        });
+                        
+                        if (pendingSale) {
+                            setActiveSaleId(pendingSale.id);
+                            console.log('Venta activa seleccionada:', pendingSale.id);
+                        } else {
+                            // Si no hay ventas pendientes, usar la más reciente
+                            setActiveSaleId(sales[0].id);
+                            console.log('Usando venta más reciente:', sales[0].id);
+                        }
+                    } else {
+                        console.log('No se encontraron ventas');
                     }
                 } else {
-                    console.log('No se pudieron cargar ventas del cliente');
+                    console.log('Error al cargar ventas:', response.status);
                 }
             } catch (error) {
                 console.error('Error al cargar venta activa:', error);
@@ -98,6 +119,8 @@ function CollectionManagementModal({ client, onClose, authenticatedFetch }) {
                 nextContactDate: nextContactDate || null
             };
 
+            console.log('Enviando gestión:', logData);
+
             const response = await authenticatedFetch(
                 `${API_BASE_URL}/api/collections`,
                 {
@@ -125,7 +148,7 @@ function CollectionManagementModal({ client, onClose, authenticatedFetch }) {
             setContactResult('payment_promise');
             
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error al guardar gestión:', error);
             toast.error(error.message || 'Error al guardar gestión');
         } finally {
             setLoading(false);
@@ -276,7 +299,10 @@ function CollectionManagementModal({ client, onClose, authenticatedFetch }) {
                             marginBottom: '20px'
                         }}>
                             <p style={{ margin: 0, fontWeight: '600', color: '#856404' }}>
-                                ⚠️ Este cliente no tiene ventas registradas.
+                                ⚠️ No se pudo cargar la información de ventas de este cliente.
+                            </p>
+                            <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', color: '#856404' }}>
+                                Revisa la consola del navegador para más detalles.
                             </p>
                         </div>
                     ) : (
