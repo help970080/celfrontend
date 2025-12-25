@@ -6,14 +6,14 @@ const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:
 function PublicCatalog() {
     const [products, setProducts] = useState([]);
     const [stores, setStores] = useState([]);
-    const [selectedStore, setSelectedStore] = useState(null); // ⭐ CAMBIO: null inicial
+    const [selectedStore, setSelectedStore] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [sortBy, setSortBy] = useState('name');
     const [order, setOrder] = useState('asc');
     const [category, setCategory] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage] = useState(10);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
     const [showFilters, setShowFilters] = useState(false);
@@ -32,29 +32,28 @@ function PublicCatalog() {
         };
     };
 
-    // ⭐ EFECTO 1: Cargar tiendas desde el endpoint público
+    // ⭐ EFECTO 1: Cargar tiendas desde endpoint público
     useEffect(() => {
         const fetchStores = async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/stores/public`); // ⭐ CAMBIO
+                const response = await fetch(`${API_BASE_URL}/api/stores/public`);
                 if (response.ok) {
                     const data = await response.json();
-                    const activeStores = data.filter(store => store.isActive !== false);
-                    setStores(activeStores);
+                    setStores(data);
                     
-                    // ⭐ NUEVO: Seleccionar automáticamente la primera tienda
-                    if (activeStores.length > 0 && !selectedStore) {
-                        setSelectedStore(activeStores[0].id);
+                    // Seleccionar automáticamente la primera tienda
+                    if (data.length > 0 && !selectedStore) {
+                        setSelectedStore(data[0].id);
                     }
                 } else {
                     console.error('Error al cargar tiendas:', response.status);
-                    // ⭐ FALLBACK MEJORADO: Al menos intentar cargar productos de tienda 1
+                    // Fallback: al menos intentar cargar productos
                     setStores([{ id: 1, name: 'Celexpress' }]);
                     setSelectedStore(1);
                 }
             } catch (error) {
                 console.error('Error al cargar tiendas:', error);
-                // ⭐ FALLBACK MEJORADO
+                // Fallback
                 setStores([{ id: 1, name: 'Celexpress' }]);
                 setSelectedStore(1);
             }
@@ -64,7 +63,6 @@ function PublicCatalog() {
 
     // ⭐ EFECTO 2: Cargar productos (solo cuando selectedStore está definido)
     useEffect(() => {
-        // ⭐ NUEVO: No cargar productos hasta que tengamos una tienda seleccionada
         if (!selectedStore) return;
 
         const fetchPublicProducts = async () => {
@@ -127,7 +125,6 @@ function PublicCatalog() {
         return store ? store.name : 'Tienda';
     };
 
-    // ⭐ LOADING mejorado
     if (loading || !selectedStore) {
         return (
             <div className="mobile-catalog">
@@ -160,9 +157,9 @@ function PublicCatalog() {
 
     return (
         <div className="mobile-catalog">
-            {/* Header Mobile */}
+            {/* Header Mobile con nombre dinámico */}
             <div className="mobile-header">
-                <h1>📱 {getStoreName()}</h1> {/* ⭐ CAMBIO: Mostrar nombre dinámico */}
+                <h1>📱 {getStoreName()}</h1>
             </div>
 
             {/* Selector de Tienda Mobile */}
@@ -176,7 +173,7 @@ function PublicCatalog() {
                     >
                         {stores.map(store => (
                             <option key={store.id} value={store.id}>
-                                {store.name} {/* ⭐ AHORA DINÁMICO */}
+                                {store.name}
                             </option>
                         ))}
                     </select>
@@ -329,7 +326,7 @@ function PublicCatalog() {
                                         </div>
                                     )}
 
-                                    
+                                    <a
                                         href="https://wa.me/525665489522"
                                         target="_blank"
                                         rel="noopener noreferrer"
