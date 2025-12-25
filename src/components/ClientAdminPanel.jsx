@@ -1,4 +1,4 @@
-// Archivo: src/components/ClientAdminPanel.jsx - VERSIÓN MEJORADA
+// ClientAdminPanel.jsx - VERSIÓN CON GESTIÓN DE RIESGO
 
 import React, { useState, useEffect, useCallback } from 'react';
 import ClientForm from './ClientForm';
@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // ⭐ AGREGADO userTiendaId como prop
+function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
     const [clients, setClients] = useState([]);
     const [loadingClients, setLoadingClients] = useState(true);
     const [errorClients, setErrorClients] = useState(null);
@@ -20,6 +20,11 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // �
     const [totalItems, setTotalItems] = useState(0);
 
     const [showForm, setShowForm] = useState(false);
+    
+    // ⭐ NUEVO: Filtros de riesgo
+    const [riskFilter, setRiskFilter] = useState('all'); // 'all', 'high', 'medium', 'low'
+    const [sortBy, setSortBy] = useState('name'); // 'name', 'risk', 'balance'
+    const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
 
     const hasPermission = (roles) => {
         if (!userRole) return false;
@@ -30,14 +35,19 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // �
         setLoadingClients(true);
         setErrorClients(null);
         try {
-            // ⭐ MEJORADO: Construir URL con filtros
             const params = new URLSearchParams({
                 search: searchTerm,
                 page: currentPage,
-                limit: itemsPerPage
+                limit: itemsPerPage,
+                sortBy: sortBy,
+                sortOrder: sortOrder
             });
             
-            // ⭐ FILTRO CRÍTICO: Agregar tiendaId si NO es super_admin
+            // ⭐ NUEVO: Agregar filtro de riesgo
+            if (riskFilter !== 'all') {
+                params.append('riskLevel', riskFilter);
+            }
+            
             if (userRole !== 'super_admin' && userTiendaId) {
                 params.append('tiendaId', userTiendaId);
             }
@@ -60,7 +70,7 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // �
         } finally {
             setLoadingClients(false);
         }
-    }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage, userRole, userTiendaId]);
+    }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage, userRole, userTiendaId, riskFilter, sortBy, sortOrder]);
 
     useEffect(() => {
         fetchClients();
@@ -105,7 +115,6 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // �
         try {
             toast.info('Generando archivo Excel de clientes...');
             
-            // ⭐ NUEVO: Agregar filtro de tienda en exportación
             let exportUrl = `${API_BASE_URL}/api/clients/export-excel`;
             if (userRole !== 'super_admin' && userTiendaId) {
                 exportUrl += `?tiendaId=${userTiendaId}`;
@@ -136,6 +145,24 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // �
         }
     };
 
+    // ⭐ NUEVO: Función para cambiar filtro de riesgo
+    const handleRiskFilterChange = (risk) => {
+        setRiskFilter(risk);
+        setCurrentPage(1); // Reset a primera página
+    };
+
+    // ⭐ NUEVO: Función para cambiar ordenamiento
+    const handleSortChange = (field) => {
+        if (sortBy === field) {
+            // Si ya está ordenado por este campo, invertir orden
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(field);
+            setSortOrder('desc'); // Por defecto descendente para riesgo y balance
+        }
+        setCurrentPage(1);
+    };
+
     return (
         <section className="clients-section">
             <h2>Gestión de Clientes</h2>
@@ -152,9 +179,133 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // �
                     clientToEdit={clientToEdit}
                     setClientToEdit={setClientToEdit}
                     onCancel={handleFormCancel}
-                    authenticatedFetch={authenticatedFetch} // ⭐ NUEVO: Pasar authenticatedFetch
+                    authenticatedFetch={authenticatedFetch}
                 />
             )}
+
+            {/* ⭐ NUEVO: Filtros de Riesgo */}
+            <div className="risk-filters" style={{ 
+                display: 'flex', 
+                gap: '10px', 
+                marginBottom: '20px',
+                flexWrap: 'wrap',
+                alignItems: 'center'
+            }}>
+                <span style={{ fontWeight: '600' }}>Filtrar por riesgo:</span>
+                <button 
+                    onClick={() => handleRiskFilterChange('all')}
+                    className={riskFilter === 'all' ? 'filter-button active' : 'filter-button'}
+                    style={{
+                        padding: '8px 16px',
+                        border: riskFilter === 'all' ? '2px solid var(--primary)' : '2px solid #ddd',
+                        background: riskFilter === 'all' ? 'var(--primary)' : 'white',
+                        color: riskFilter === 'all' ? 'white' : '#333',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                    }}
+                >
+                    📊 Todos ({totalItems})
+                </button>
+                <button 
+                    onClick={() => handleRiskFilterChange('high')}
+                    className={riskFilter === 'high' ? 'filter-button active' : 'filter-button'}
+                    style={{
+                        padding: '8px 16px',
+                        border: riskFilter === 'high' ? '2px solid #dc3545' : '2px solid #ddd',
+                        background: riskFilter === 'high' ? '#dc3545' : 'white',
+                        color: riskFilter === 'high' ? 'white' : '#333',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                    }}
+                >
+                    🔴 Riesgo Alto
+                </button>
+                <button 
+                    onClick={() => handleRiskFilterChange('medium')}
+                    className={riskFilter === 'medium' ? 'filter-button active' : 'filter-button'}
+                    style={{
+                        padding: '8px 16px',
+                        border: riskFilter === 'medium' ? '2px solid #ffc107' : '2px solid #ddd',
+                        background: riskFilter === 'medium' ? '#ffc107' : 'white',
+                        color: riskFilter === 'medium' ? 'white' : '#333',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                    }}
+                >
+                    🟡 Riesgo Medio
+                </button>
+                <button 
+                    onClick={() => handleRiskFilterChange('low')}
+                    className={riskFilter === 'low' ? 'filter-button active' : 'filter-button'}
+                    style={{
+                        padding: '8px 16px',
+                        border: riskFilter === 'low' ? '2px solid #28a745' : '2px solid #ddd',
+                        background: riskFilter === 'low' ? '#28a745' : 'white',
+                        color: riskFilter === 'low' ? 'white' : '#333',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                    }}
+                >
+                    🟢 Riesgo Bajo
+                </button>
+            </div>
+
+            {/* ⭐ NUEVO: Ordenamiento */}
+            <div className="sort-controls" style={{ 
+                display: 'flex', 
+                gap: '10px', 
+                marginBottom: '20px',
+                flexWrap: 'wrap',
+                alignItems: 'center'
+            }}>
+                <span style={{ fontWeight: '600' }}>Ordenar por:</span>
+                <button 
+                    onClick={() => handleSortChange('name')}
+                    style={{
+                        padding: '8px 16px',
+                        border: '2px solid #ddd',
+                        background: sortBy === 'name' ? 'var(--primary)' : 'white',
+                        color: sortBy === 'name' ? 'white' : '#333',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                    }}
+                >
+                    Nombre {sortBy === 'name' && (sortOrder === 'asc' ? '▲' : '▼')}
+                </button>
+                <button 
+                    onClick={() => handleSortChange('balance')}
+                    style={{
+                        padding: '8px 16px',
+                        border: '2px solid #ddd',
+                        background: sortBy === 'balance' ? 'var(--danger)' : 'white',
+                        color: sortBy === 'balance' ? 'white' : '#333',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                    }}
+                >
+                    Adeudo {sortBy === 'balance' && (sortOrder === 'asc' ? '▲' : '▼')}
+                </button>
+                <button 
+                    onClick={() => handleSortChange('risk')}
+                    style={{
+                        padding: '8px 16px',
+                        border: '2px solid #ddd',
+                        background: sortBy === 'risk' ? 'var(--warning)' : 'white',
+                        color: sortBy === 'risk' ? 'white' : '#333',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                    }}
+                >
+                    Nivel de Riesgo {sortBy === 'risk' && (sortOrder === 'asc' ? '▲' : '▼')}
+                </button>
+            </div>
 
             <div className="admin-controls">
                 <div className="control-group">
@@ -183,14 +334,17 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // �
                 {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
                     <div className="control-group">
                         <button onClick={handleExportExcel} className="action-button primary-button">
-                            Exportar a Excel
+                            📊 Exportar a Excel
                         </button>
                     </div>
                 )}
             </div>
 
             {loadingClients ? (
-                <p>Cargando clientes...</p>
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <div className="spinner"></div>
+                    <p>Cargando clientes...</p>
+                </div>
             ) : errorClients ? (
                 <p className="error-message">{errorClients}</p>
             ) : (
@@ -204,11 +358,11 @@ function ClientAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // �
                     {totalPages > 1 && (
                         <div className="pagination-controls">
                             <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
-                                Anterior
+                                ← Anterior
                             </button>
                             <span>Página {currentPage} de {totalPages} ({totalItems} ítems)</span>
                             <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>
-                                Siguiente
+                                Siguiente →
                             </button>
                         </div>
                     )}
