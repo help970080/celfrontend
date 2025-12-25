@@ -172,7 +172,6 @@ function ProductAdminPanel({ authenticatedFetch, userRole }) {
             <h2>Gestión de Productos</h2>
 
             {hasPermission(['super_admin', 'regular_admin', 'inventory_admin']) && (
-                // --- INICIO DE LA MODIFICACIÓN: BOTONES DE ACCIÓN PRINCIPALES ---
                 <div className="panel-actions" style={{ marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                     <button 
                         onClick={() => { setShowForm(!showForm); if (showForm) setProductToEdit(null); }} 
@@ -190,7 +189,6 @@ function ProductAdminPanel({ authenticatedFetch, userRole }) {
                         Buscar en Google Shopping
                     </a>
                 </div>
-                // --- FIN DE LA MODIFICACIÓN ---
             )}
 
             {showForm && hasPermission(['super_admin', 'regular_admin', 'inventory_admin']) && (
@@ -198,6 +196,7 @@ function ProductAdminPanel({ authenticatedFetch, userRole }) {
                     onProductAdded={handleFormSuccess}
                     productToEdit={productToEdit}
                     setProductToEdit={setProductToEdit}
+                    authenticatedFetch={authenticatedFetch}
                 />
             )}
             
@@ -229,16 +228,14 @@ function ProductAdminPanel({ authenticatedFetch, userRole }) {
                     </select>
                 </div>
                 
-                {/* --- INICIO DE LA MODIFICACIÓN: BOTÓN EXPORTAR A EXCEL --- */}
                 {hasPermission(['super_admin', 'regular_admin', 'inventory_admin']) && (
                     <div className="control-group">
-                        <label>&nbsp;</label> {/* Espacio para alinear con los otros controles */}
+                        <label>&nbsp;</label>
                         <button onClick={handleExportExcel} className="action-button export-button">
                             Exportar a Excel
                         </button>
                     </div>
                 )}
-                {/* --- FIN DE LA MODIFICACIÓN --- */}
 
             </div>
 
