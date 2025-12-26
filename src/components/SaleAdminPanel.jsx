@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function SaleAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // ⭐ AGREGADO userTiendaId como prop
+function SaleAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
     const [sales, setSales] = useState([]);
     const [clients, setClients] = useState([]);
     const [products, setProducts] = useState([]);
@@ -35,7 +35,6 @@ function SaleAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // ⭐
         setLoadingSales(true);
         setErrorSales(null);
         try {
-            // ⭐ CORREGIDO: Construir URL con filtros
             const params = new URLSearchParams({
                 page: currentPage,
                 limit: itemsPerPage
@@ -68,11 +67,10 @@ function SaleAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // ⭐
         } finally {
             setLoadingSales(false);
         }
-    }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage, userRole, userTiendaId]); // ⭐ Agregadas dependencias
+    }, [authenticatedFetch, searchTerm, currentPage, itemsPerPage, userRole, userTiendaId]);
 
     const fetchSupportingData = useCallback(async () => {
         try {
-            // ⭐ CORREGIDO: Construir URLs con filtros
             const params = new URLSearchParams({ limit: 9999 });
             
             // ⭐ CRÍTICO: Solo si NO es super_admin
@@ -83,10 +81,15 @@ function SaleAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // ⭐
             const clientsUrl = `${API_BASE_URL}/api/clients?${params.toString()}`;
             const productsUrl = `${API_BASE_URL}/api/products?${params.toString()}`;
             
+            // ⭐ CORREGIDO: También filtrar usuarios/cobradores por tienda
+            const usersUrl = userRole !== 'super_admin' && userTiendaId
+                ? `${API_BASE_URL}/api/users?tiendaId=${userTiendaId}`
+                : `${API_BASE_URL}/api/users`;
+            
             const [clientsRes, productsRes, usersRes] = await Promise.all([
                 authenticatedFetch(clientsUrl),
                 authenticatedFetch(productsUrl),
-                authenticatedFetch(`${API_BASE_URL}/api/users`)
+                authenticatedFetch(usersUrl)
             ]);
             
             if (clientsRes.ok) setClients((await clientsRes.json()).clients || []);
@@ -98,7 +101,7 @@ function SaleAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // ⭐
         } catch (err) {
             toast.error("Error al cargar datos de soporte.");
         }
-    }, [authenticatedFetch, userRole, userTiendaId]); // ⭐ Agregadas dependencias
+    }, [authenticatedFetch, userRole, userTiendaId]);
 
     useEffect(() => {
         fetchSales();
@@ -139,7 +142,7 @@ function SaleAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // ⭐
         try {
             toast.info('Generando reporte de ventas en Excel...');
             
-            // ⭐ NUEVO: Agregar filtro de tienda en exportación
+            // ⭐ Agregar filtro de tienda en exportación
             let exportUrl = `${API_BASE_URL}/api/sales/export-excel`;
             if (userRole !== 'super_admin' && userTiendaId) {
                 exportUrl += `?tiendaId=${userTiendaId}`;
@@ -182,7 +185,8 @@ function SaleAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // ⭐
                     clients={clients}
                     products={products}
                     collectors={collectors}
-                    authenticatedFetch={authenticatedFetch} // ⭐ PASAR authenticatedFetch
+                    authenticatedFetch={authenticatedFetch}
+                    userTiendaId={userTiendaId}  // ⭐ AGREGADO
                 />
             )}
             <div className="admin-controls">
@@ -224,6 +228,7 @@ function SaleAdminPanel({ authenticatedFetch, userRole, userTiendaId }) { // ⭐
                         collectors={collectors}
                         onSaleAssigned={fetchSales}
                         authenticatedFetch={authenticatedFetch}
+                        userTiendaId={userTiendaId}  // ⭐ AGREGADO
                     />
                     {totalPages > 1 && (
                         <div className="pagination-controls">

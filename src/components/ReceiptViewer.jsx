@@ -1,4 +1,4 @@
-// Archivo: src/components/ReceiptViewer.jsx (CORREGIDO - FUNCIONAMIENTO GARANTIZADO)
+// Archivo: src/components/ReceiptViewer.jsx - VERSIÓN CORREGIDA
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
@@ -53,6 +53,14 @@ function ReceiptViewer({
 
   const fetchSaleData = useCallback(async () => {
     if (!saleId) return;
+    
+    // ⭐ VALIDACIÓN: Verificar que authenticatedFetch existe
+    if (!authenticatedFetch) {
+      setError('Error de configuración: authenticatedFetch no disponible');
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     try {
@@ -60,9 +68,17 @@ function ReceiptViewer({
         `${API_BASE_URL}/api/sales/${saleId}?_=${Date.now()}`,
         { cache: 'no-store' }
       );
+      
+      // ⭐ VALIDACIÓN: Verificar respuesta HTTP
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error ${response.status} al cargar recibo`);
+      }
+      
       const data = await response.json();
       setSale(data);
     } catch (err) {
+      console.error('Error al cargar recibo:', err);
       setError(err.message || 'No se pudo cargar el recibo.');
       toast.error('Error al cargar datos del recibo.');
     } finally {
@@ -81,7 +97,7 @@ function ReceiptViewer({
     return [...list].sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))[0];
   };
 
-  // ✅ FUNCIÓN CORREGIDA DE GENERACIÓN DE PDF
+  // Función de generación de PDF
   const generatePdfFromDom = async () => {
     const node = receiptRef.current;
     if (!node) throw new Error('No se encontró el contenedor del recibo.');
@@ -98,7 +114,6 @@ function ReceiptViewer({
     const pdfWidthMM = 80;
     const pdfHeightMM = (canvas.height * pdfWidthMM) / canvas.width;
 
-    // ✅ CORRECCIÓN: jsPDF ya es la clase directamente
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -116,7 +131,7 @@ function ReceiptViewer({
       toast.info('Generando PDF...');
       const pdf = await generatePdfFromDom();
       pdf.save(`recibo_${sale?.id || saleId}.pdf`);
-      toast.success('✅ Recibo PDF generado');
+      toast.success('Recibo PDF generado correctamente');
     } catch (e) {
       console.error(e);
       toast.error('Error al generar PDF.');
@@ -281,9 +296,15 @@ Cualquier duda, responde a este mensaje.`;
         </div>
 
         <div className="receipt-actions no-print" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-          <button onClick={handleGeneratePdf}>📥 Descargar PDF</button>
-          <button onClick={handlePrintThermal}>🖨️ Imprimir Ticket</button>
-          <button onClick={handleShareWhatsApp}>💬 Compartir WhatsApp</button>
+          <button onClick={handleGeneratePdf} className="receipt-action-btn">
+            <span className="btn-icon">↓</span> Descargar PDF
+          </button>
+          <button onClick={handlePrintThermal} className="receipt-action-btn">
+            <span className="btn-icon">⎙</span> Imprimir Ticket
+          </button>
+          <button onClick={handleShareWhatsApp} className="receipt-action-btn whatsapp-btn">
+            <span className="btn-icon">✉</span> Compartir WhatsApp
+          </button>
         </div>
       </>
     );

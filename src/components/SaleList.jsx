@@ -1,4 +1,4 @@
-// Archivo: src/components/SaleList.jsx
+// Archivo: src/components/SaleList.jsx - VERSIÓN CORREGIDA
 
 import React, { useState } from 'react';
 import ReceiptViewer from './ReceiptViewer';
@@ -12,13 +12,15 @@ dayjs.extend(timezone);
 const TIMEZONE = "America/Mexico_City";
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function SaleList({ sales, onDeleteSale, userRole, collectors, onSaleAssigned, authenticatedFetch }) {
-    console.log('🔍 SaleList renderizado');
-    console.log('🔍 UserRole recibido:', userRole);
-    console.log('🔍 ¿Es super_admin?', userRole === 'super_admin');
-    console.log('🔍 Función onDeleteSale recibida:', typeof onDeleteSale);
-    console.log('🔍 onDeleteSale existe?', !!onDeleteSale);
-    
+function SaleList({ 
+    sales, 
+    onDeleteSale, 
+    userRole, 
+    collectors, 
+    onSaleAssigned, 
+    authenticatedFetch,
+    userTiendaId  // ⭐ AGREGADO
+}) {
     const [showReceiptModal, setShowReceiptModal] = useState(false);
     const [selectedSaleIdForReceipt, setSelectedSaleIdForReceipt] = useState(null);
     const [assigningId, setAssigningId] = useState(null);
@@ -145,8 +147,8 @@ function SaleList({ sales, onDeleteSale, userRole, collectors, onSaleAssigned, a
                                         ${(sale.downPayment || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                     </td>
                                     
-                                    <td className={(sale.balanceDue || 0) > 0 ? 'highlight-balance' : ''}>
-                                        ${(sale.balanceDue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                    <td>
+                                        ${(sale.currentBalance || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                     </td>
                                     
                                     <td>
@@ -190,84 +192,22 @@ function SaleList({ sales, onDeleteSale, userRole, collectors, onSaleAssigned, a
                                         )}
                                     </td>
                                     
-                                    <td style={{ 
-                                        position: 'relative', 
-                                        zIndex: 100,
-                                        minWidth: '200px'
-                                    }}>
-                                        <div 
-                                            className="action-buttons" 
-                                            style={{ 
-                                                display: 'flex', 
-                                                gap: '8px', 
-                                                flexDirection: 'column',
-                                                minWidth: '150px',
-                                                position: 'relative',
-                                                zIndex: 100,
-                                                pointerEvents: 'auto'
-                                            }}
-                                        >
+                                    <td className="actions-cell">
+                                        <div className="action-buttons">
                                             <button 
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    console.log('🟢 Click en Ver Recibo - ID:', sale.id);
-                                                    handleOpenReceiptModal(sale.id);
-                                                }}
-                                                style={{
-                                                    padding: '6px 12px',
-                                                    cursor: 'pointer',
-                                                    backgroundColor: '#007bff',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '4px',
-                                                    fontSize: '0.85rem',
-                                                    fontWeight: '600',
-                                                    position: 'relative',
-                                                    zIndex: 101,
-                                                    pointerEvents: 'auto'
-                                                }}
+                                                className="action-button view-button"
+                                                onClick={() => handleOpenReceiptModal(sale.id)}
                                             >
                                                 Ver Recibo
                                             </button>
                                             
                                             {hasPermission('super_admin') && (
                                                 <button 
-                                                    className="delete-button" 
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        console.log('🔴 ¡¡¡CLICK EN ELIMINAR DETECTADO!!!');
-                                                        console.log('🔴 ID de venta a eliminar:', sale.id);
-                                                        console.log('🔴 Tipo de onDeleteSale:', typeof onDeleteSale);
-                                                        console.log('🔴 onDeleteSale existe?', !!onDeleteSale);
-                                                        
+                                                    className="action-button delete-button" 
+                                                    onClick={() => {
                                                         if (typeof onDeleteSale === 'function') {
                                                             onDeleteSale(sale.id);
-                                                        } else {
-                                                            console.error('❌ onDeleteSale NO es una función!');
-                                                            alert('Error: La función de eliminar no está disponible.');
                                                         }
-                                                    }}
-                                                    style={{
-                                                        padding: '6px 12px',
-                                                        cursor: 'pointer',
-                                                        backgroundColor: '#dc3545',
-                                                        color: 'white',
-                                                        border: 'none',
-                                                        borderRadius: '4px',
-                                                        fontSize: '0.85rem',
-                                                        fontWeight: '700',
-                                                        position: 'relative',
-                                                        zIndex: 102,
-                                                        pointerEvents: 'auto'
-                                                    }}
-                                                    onMouseOver={(e) => {
-                                                        console.log('🟡 Mouse sobre botón Eliminar');
-                                                        e.currentTarget.style.backgroundColor = '#c82333';
-                                                    }}
-                                                    onMouseOut={(e) => {
-                                                        e.currentTarget.style.backgroundColor = '#dc3545';
                                                     }}
                                                 >
                                                     Eliminar
@@ -285,7 +225,8 @@ function SaleList({ sales, onDeleteSale, userRole, collectors, onSaleAssigned, a
             {showReceiptModal && (
                 <ReceiptViewer 
                     saleId={selectedSaleIdForReceipt} 
-                    onClose={handleCloseReceiptModal} 
+                    onClose={handleCloseReceiptModal}
+                    authenticatedFetch={authenticatedFetch}  // ⭐ AGREGADO
                 />
             )}
         </div>
