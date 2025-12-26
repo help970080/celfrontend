@@ -1,4 +1,4 @@
-// StoreManager.jsx - VERSIÓN CORREGIDA CON API UNIFICADA
+// StoreManager.jsx - CON CAMPO DEPOSIT INFO PARA CUENTA BANCARIA
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
@@ -12,10 +12,10 @@ const StoreManager = () => {
     name: '',
     address: '',
     phone: '',
-    email: ''
+    email: '',
+    depositInfo: '' // ⭐ AGREGADO
   });
 
-  // ⭐ CORREGIDO: Usar VITE_APP_API_BASE_URL como el resto del sistema
   const API_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
   useEffect(() => {
@@ -70,7 +70,7 @@ const StoreManager = () => {
       toast.success(editingStore ? 'Tienda actualizada' : 'Tienda creada exitosamente');
       setShowForm(false);
       setEditingStore(null);
-      setFormData({ name: '', address: '', phone: '', email: '' });
+      setFormData({ name: '', address: '', phone: '', email: '', depositInfo: '' });
       fetchStores();
     } catch (error) {
       toast.error(error.message);
@@ -85,7 +85,8 @@ const StoreManager = () => {
       name: store.name,
       address: store.address || '',
       phone: store.phone || '',
-      email: store.email || ''
+      email: store.email || '',
+      depositInfo: store.depositInfo || '' // ⭐ AGREGADO
     });
     setShowForm(true);
   };
@@ -114,7 +115,7 @@ const StoreManager = () => {
   const handleCancel = () => {
     setShowForm(false);
     setEditingStore(null);
-    setFormData({ name: '', address: '', phone: '', email: '' });
+    setFormData({ name: '', address: '', phone: '', email: '', depositInfo: '' });
   };
 
   return (
@@ -178,6 +179,18 @@ const StoreManager = () => {
               </div>
             </div>
 
+            {/* ⭐ NUEVO CAMPO: Información de Depósito */}
+            <div className="form-group">
+              <label>Información de Depósito / Cuenta Bancaria</label>
+              <textarea
+                value={formData.depositInfo}
+                onChange={(e) => setFormData({ ...formData, depositInfo: e.target.value })}
+                placeholder="Ej: Deposita en OXXO a la cuenta 4152 3137 4220 8650 o CLABE: 012345678901234567"
+                rows="3"
+              />
+              <small className="field-hint">Esta información aparecerá en los recibos de venta</small>
+            </div>
+
             <div className="form-actions">
               <button type="button" onClick={handleCancel} className="btn-secondary">
                 Cancelar
@@ -213,6 +226,10 @@ const StoreManager = () => {
                 {store.email && (
                   <p><strong>✉️</strong> {store.email}</p>
                 )}
+                {/* ⭐ MOSTRAR INFO DE DEPÓSITO */}
+                {store.depositInfo && (
+                  <p className="deposit-info"><strong>💳</strong> {store.depositInfo}</p>
+                )}
               </div>
 
               <div className="store-actions">
@@ -232,7 +249,6 @@ const StoreManager = () => {
       )}
 
       <style jsx>{`
-        /* Estilos idénticos al original - mantenidos para no romper UI */
         .store-manager {
           padding: 20px;
           max-width: 1200px;
@@ -282,12 +298,26 @@ const StoreManager = () => {
           color: #555;
         }
 
-        .form-group input {
+        .form-group input,
+        .form-group textarea {
           width: 100%;
           padding: 10px;
           border: 1px solid #ddd;
           border-radius: 4px;
           font-size: 14px;
+          font-family: inherit;
+        }
+
+        .form-group textarea {
+          resize: vertical;
+          min-height: 80px;
+        }
+
+        .field-hint {
+          display: block;
+          margin-top: 4px;
+          font-size: 12px;
+          color: #888;
         }
 
         .form-actions {
@@ -363,6 +393,14 @@ const StoreManager = () => {
           color: #666;
         }
 
+        .store-info .deposit-info {
+          background: #f8f9fa;
+          padding: 8px;
+          border-radius: 4px;
+          border-left: 3px solid #28a745;
+          font-size: 13px;
+        }
+
         .store-actions {
           display: flex;
           gap: 10px;
@@ -435,6 +473,12 @@ const StoreManager = () => {
         button:disabled {
           opacity: 0.6;
           cursor: not-allowed;
+        }
+
+        @media (max-width: 600px) {
+          .form-row {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </div>
