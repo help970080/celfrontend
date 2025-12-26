@@ -30,21 +30,22 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
 
-    // Cargar modelos de face-api.js
+    // Cargar modelos de face-api.js desde CDN
     useEffect(() => {
         const loadModels = async () => {
             try {
-                const MODEL_URL = '/models'; // Los modelos deben estar en public/models
+                // ⭐ Cargar desde CDN (no necesitas descargar archivos)
+                const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
                 await Promise.all([
                     faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
                     faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                 ]);
                 setModelsLoaded(true);
-                console.log('✅ Modelos de Face-API cargados');
+                console.log('✅ Modelos de Face-API cargados desde CDN');
             } catch (error) {
                 console.error('Error cargando modelos:', error);
-                toast.warning('Verificación facial no disponible');
+                toast.warning('Verificación facial no disponible - reintenta en unos segundos');
             }
         };
         loadModels();

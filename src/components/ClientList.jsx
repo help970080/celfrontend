@@ -1,11 +1,13 @@
-// ClientList.jsx - VERSIÓN OPTIMIZADA CON ANCHOS BALANCEADOS
+// ClientList.jsx - CON BOTÓN DE DOCUMENTOS Y VERIFICACIÓN FACIAL
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import CollectionManagementModal from './CollectionManagementModal';
+import ClientDocuments from './ClientDocuments'; // ⭐ NUEVO
 
 function ClientList({ clients, onEditClient, onDeleteClient, userRole, authenticatedFetch }) {
     const [selectedClientForManagement, setSelectedClientForManagement] = useState(null);
+    const [selectedClientForDocs, setSelectedClientForDocs] = useState(null); // ⭐ NUEVO
 
     const hasPermission = (roles) => {
         if (!userRole) return false;
@@ -65,6 +67,21 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole, authentic
         }
     };
 
+    // ⭐ NUEVO: Indicador de verificación
+    const getVerificationBadge = (client) => {
+        const status = client.estadoVerificacion;
+        if (!status || status === 'pendiente') {
+            return { icon: '⏳', color: '#6c757d', text: 'Sin verificar' };
+        }
+        if (status === 'verificado') {
+            return { icon: '✅', color: '#28a745', text: 'Verificado' };
+        }
+        if (status === 'revision') {
+            return { icon: '⚠️', color: '#ffc107', text: 'En revisión' };
+        }
+        return { icon: '❌', color: '#dc3545', text: 'Rechazado' };
+    };
+
     if (clients.length === 0) {
         return (
             <div className="client-list-container">
@@ -88,14 +105,16 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole, authentic
                             <th style={{ minWidth: '130px' }}>Teléfono</th>
                             <th style={{ minWidth: '180px', width: '180px' }}>Nivel de Riesgo</th>
                             <th style={{ minWidth: '120px', width: '120px' }}>Adeudo Total</th>
+                            <th style={{ minWidth: '80px', width: '80px' }}>Verif.</th>
                             <th style={{ minWidth: '180px' }}>Email</th>
                             <th style={{ minWidth: '200px' }}>Dirección</th>
-                            <th style={{ minWidth: '300px', width: '300px' }}>Acciones</th>
+                            <th style={{ minWidth: '340px', width: '340px' }}>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {clients.map(client => {
                             const riskBadge = getRiskBadge(client.riskData);
+                            const verifBadge = getVerificationBadge(client); // ⭐ NUEVO
                             
                             return (
                                 <tr key={client.id}>
@@ -140,66 +159,51 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole, authentic
                                         <div style={{
                                             display: 'flex',
                                             flexDirection: 'column',
-                                            gap: '6px',
-                                            alignItems: 'flex-start'
+                                            gap: '0.4rem'
                                         }}>
-                                            {/* Badge de riesgo */}
                                             <span style={{
                                                 display: 'inline-flex',
                                                 alignItems: 'center',
-                                                gap: '6px',
-                                                padding: '4px 10px',
-                                                borderRadius: '6px',
-                                                fontWeight: '700',
+                                                gap: '0.35rem',
+                                                padding: '0.3rem 0.6rem',
+                                                borderRadius: '12px',
                                                 fontSize: '0.75rem',
+                                                fontWeight: '700',
+                                                backgroundColor: riskBadge.bgColor,
                                                 color: riskBadge.color,
-                                                background: riskBadge.bgColor,
-                                                border: `2px solid ${riskBadge.color}`,
-                                                whiteSpace: 'nowrap'
+                                                width: 'fit-content'
                                             }}>
-                                                <span style={{ fontSize: '1rem' }}>{riskBadge.icon}</span>
-                                                {riskBadge.text}
+                                                {riskBadge.icon} {riskBadge.text}
                                             </span>
-
-                                            {/* Días de atraso */}
+                                            
                                             {riskBadge.daysOverdue > 0 && (
                                                 <span style={{
                                                     fontSize: '0.7rem',
                                                     color: '#dc3545',
                                                     fontWeight: '600'
                                                 }}>
-                                                    ⏰ {riskBadge.daysOverdue}d
+                                                    ⚠️ {riskBadge.daysOverdue} días vencido
                                                 </span>
                                             )}
-
-                                            {/* Botón Gestionar */}
-                                            {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
+                                            
+                                            {riskBadge.totalBalance > 0 && (
                                                 <button
                                                     onClick={() => setSelectedClientForManagement(client)}
                                                     style={{
                                                         background: 'linear-gradient(135deg, #667eea, #764ba2)',
                                                         color: 'white',
                                                         border: 'none',
-                                                        padding: '4px 10px',
-                                                        borderRadius: '5px',
+                                                        padding: '0.35rem 0.6rem',
+                                                        borderRadius: '6px',
                                                         cursor: 'pointer',
                                                         fontWeight: '600',
                                                         fontSize: '0.7rem',
-                                                        transition: 'all 0.2s',
-                                                        whiteSpace: 'nowrap',
-                                                        boxShadow: '0 2px 4px rgba(102, 126, 234, 0.3)',
-                                                        width: '100%',
-                                                        maxWidth: '110px'
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.25rem',
+                                                        width: 'fit-content'
                                                     }}
                                                     title="Registrar gestión de cobranza"
-                                                    onMouseOver={(e) => {
-                                                        e.currentTarget.style.transform = 'translateY(-1px)';
-                                                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(102, 126, 234, 0.4)';
-                                                    }}
-                                                    onMouseOut={(e) => {
-                                                        e.currentTarget.style.transform = 'translateY(0)';
-                                                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(102, 126, 234, 0.3)';
-                                                    }}
                                                 >
                                                     📋 Gestionar
                                                 </button>
@@ -208,30 +212,30 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole, authentic
                                     </td>
 
                                     {/* Adeudo Total */}
-                                    <td style={{ minWidth: '120px', width: '120px' }}>
-                                        {riskBadge.totalBalance > 0 ? (
-                                            <span style={{
-                                                fontSize: '1rem',
-                                                fontWeight: '700',
-                                                color: riskBadge.totalBalance > 1000 ? '#dc3545' : '#ffc107',
-                                                display: 'block'
-                                            }}>
-                                                ${riskBadge.totalBalance.toLocaleString('es-MX', { 
-                                                    minimumFractionDigits: 2,
-                                                    maximumFractionDigits: 2 
-                                                })}
-                                            </span>
-                                        ) : (
-                                            <span style={{ 
-                                                color: '#28a745',
-                                                fontWeight: '600',
-                                                fontSize: '0.85rem'
-                                            }}>
-                                                ✓ Al corriente
-                                            </span>
-                                        )}
+                                    <td style={{ 
+                                        minWidth: '120px', 
+                                        width: '120px',
+                                        textAlign: 'right',
+                                        fontWeight: '700',
+                                        color: riskBadge.totalBalance > 0 ? 'var(--danger)' : 'var(--success)'
+                                    }}>
+                                        ${(riskBadge.totalBalance || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                     </td>
-                                    
+
+                                    {/* ⭐ NUEVO: Columna de Verificación */}
+                                    <td style={{ minWidth: '80px', width: '80px', textAlign: 'center' }}>
+                                        <span 
+                                            title={verifBadge.text}
+                                            style={{
+                                                fontSize: '1.2rem',
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={() => setSelectedClientForDocs(client)}
+                                        >
+                                            {verifBadge.icon}
+                                        </span>
+                                    </td>
+
                                     {/* Email */}
                                     <td style={{ minWidth: '180px' }}>
                                         {client.email ? (
@@ -240,7 +244,6 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole, authentic
                                                 style={{
                                                     color: 'var(--info)',
                                                     textDecoration: 'none',
-                                                    fontWeight: '500',
                                                     fontSize: '0.85rem'
                                                 }}
                                             >
@@ -259,10 +262,10 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole, authentic
                                     </td>
                                     
                                     {/* Acciones */}
-                                    <td style={{ minWidth: '300px', width: '300px' }}>
+                                    <td style={{ minWidth: '340px', width: '340px' }}>
                                         <div style={{ 
                                             display: 'grid',
-                                            gridTemplateColumns: 'repeat(2, 1fr)',
+                                            gridTemplateColumns: 'repeat(3, 1fr)',
                                             gap: '0.4rem'
                                         }}>
                                             {hasPermission(['super_admin', 'regular_admin', 'sales_admin']) && (
@@ -287,6 +290,26 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole, authentic
                                                         ✏️ Editar
                                                     </button>
                                                     
+                                                    {/* ⭐ NUEVO: Documentos */}
+                                                    <button 
+                                                        onClick={() => setSelectedClientForDocs(client)}
+                                                        style={{
+                                                            background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            padding: '0.5rem 0.6rem',
+                                                            borderRadius: 'var(--radius-sm)',
+                                                            cursor: 'pointer',
+                                                            fontWeight: '600',
+                                                            fontSize: '0.75rem',
+                                                            transition: 'var(--transition)',
+                                                            whiteSpace: 'nowrap'
+                                                        }}
+                                                        title="Ver documentos e INE"
+                                                    >
+                                                        📄 Docs
+                                                    </button>
+                                                    
                                                     {/* Cobrar */}
                                                     <Link 
                                                         to={`/admin/clients/payments/${client.id}`} 
@@ -309,7 +332,7 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole, authentic
                                                         }}
                                                         title={riskBadge.totalBalance > 0 ? "¡Gestionar cobro urgente!" : "Gestionar cobranza"}
                                                     >
-                                                        {riskBadge.totalBalance > 0 ? '🚨 Cobrar' : '💰 Cobranza'}
+                                                        {riskBadge.totalBalance > 0 ? '🚨 Cobrar' : '💰 Cobrar'}
                                                     </Link>
                                                     
                                                     {/* Estado */}
@@ -328,12 +351,11 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole, authentic
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
-                                                            whiteSpace: 'nowrap',
-                                                            gridColumn: hasPermission('super_admin') ? 'auto' : '1 / -1'
+                                                            whiteSpace: 'nowrap'
                                                         }}
                                                         title="Ver estado de cuenta"
                                                     >
-                                                        📄 Estado
+                                                        📊 Estado
                                                     </Link>
                                                 </>
                                             )}
@@ -353,7 +375,8 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole, authentic
                                                         fontWeight: '600',
                                                         fontSize: '0.75rem',
                                                         transition: 'var(--transition)',
-                                                        whiteSpace: 'nowrap'
+                                                        whiteSpace: 'nowrap',
+                                                        gridColumn: 'span 2'
                                                     }}
                                                     title="Eliminar cliente"
                                                 >
@@ -374,6 +397,16 @@ function ClientList({ clients, onEditClient, onDeleteClient, userRole, authentic
                 <CollectionManagementModal
                     client={selectedClientForManagement}
                     onClose={() => setSelectedClientForManagement(null)}
+                    authenticatedFetch={authenticatedFetch}
+                />
+            )}
+
+            {/* ⭐ NUEVO: Modal de Documentos */}
+            {selectedClientForDocs && (
+                <ClientDocuments
+                    clientId={selectedClientForDocs.id}
+                    clientName={`${selectedClientForDocs.name} ${selectedClientForDocs.lastName}`}
+                    onClose={() => setSelectedClientForDocs(null)}
                     authenticatedFetch={authenticatedFetch}
                 />
             )}
