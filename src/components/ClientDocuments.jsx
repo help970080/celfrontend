@@ -488,16 +488,53 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                                 textAlign: 'center',
                                 marginBottom: '20px'
                             }}>
-                                <video
-                                    ref={videoRef}
-                                    autoPlay
-                                    playsInline
-                                    style={{
-                                        width: '100%',
-                                        maxWidth: '400px',
-                                        borderRadius: '8px'
-                                    }}
-                                />
+                                {/* ⭐ Contenedor con guía visual */}
+                                <div style={{
+                                    position: 'relative',
+                                    display: 'inline-block',
+                                    maxWidth: '400px',
+                                    width: '100%'
+                                }}>
+                                    <video
+                                        ref={videoRef}
+                                        autoPlay
+                                        playsInline
+                                        style={{
+                                            width: '100%',
+                                            borderRadius: '8px',
+                                            transform: 'scaleX(-1)' // Espejo para selfie
+                                        }}
+                                    />
+                                    {/* ⭐ Óvalo guía */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        transform: 'translate(-50%, -50%)',
+                                        width: '60%',
+                                        height: '75%',
+                                        border: '3px solid #00ff00',
+                                        borderRadius: '50%',
+                                        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
+                                        pointerEvents: 'none'
+                                    }} />
+                                    {/* ⭐ Texto guía */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        bottom: '10px',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                        color: '#00ff00',
+                                        padding: '8px 16px',
+                                        borderRadius: '20px',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        whiteSpace: 'nowrap'
+                                    }}>
+                                        Centra tu rostro en el óvalo
+                                    </div>
+                                </div>
                                 <canvas ref={canvasRef} style={{ display: 'none' }} />
                                 <div style={{ marginTop: '15px' }}>
                                     <button
