@@ -1,4 +1,4 @@
-// Archivo: src/components/ReceiptViewer.jsx - VERSIÓN CORREGIDA
+// Archivo: src/components/ReceiptViewer.jsx - VERSIÓN MULTI-TENANT
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
@@ -33,13 +33,27 @@ function ReceiptViewer({
   const [error, setError] = useState(null);
   const receiptRef = useRef(null);
 
-  const appName = 'CelExpress Pro';
-  const businessInfo = {
-    name: 'Celexpress Tu Tienda de Celulares',
-    address: 'Morelos Sn.col.Centro Juchitepec,EdoMex',
-    phone: '56 66548 9522',
-    email: 'contacto@tuempresa.com',
-    deposit: 'Deposita en OXXO a la cuenta 4152 3137 4220 8650',
+  // ⭐ CONFIGURACIÓN POR DEFECTO (fallback si no hay datos de tienda)
+  const defaultBusinessInfo = {
+    name: 'Mi Tienda',
+    address: 'Dirección no configurada',
+    phone: 'Teléfono no configurado',
+    email: 'correo@ejemplo.com',
+    deposit: 'Información de depósito no configurada',
+  };
+
+  // ⭐ OBTENER INFO DE TIENDA DINÁMICAMENTE
+  const getBusinessInfo = () => {
+    if (sale?.store) {
+      return {
+        name: sale.store.name || defaultBusinessInfo.name,
+        address: sale.store.address || defaultBusinessInfo.address,
+        phone: sale.store.phone || defaultBusinessInfo.phone,
+        email: sale.store.email || defaultBusinessInfo.email,
+        deposit: sale.store.depositInfo || defaultBusinessInfo.deposit, // ⭐ USA depositInfo DE LA TIENDA
+      };
+    }
+    return defaultBusinessInfo;
   };
 
   const toE164 = (rawPhone) => {
@@ -54,7 +68,6 @@ function ReceiptViewer({
   const fetchSaleData = useCallback(async () => {
     if (!saleId) return;
     
-    // ⭐ VALIDACIÓN: Verificar que authenticatedFetch existe
     if (!authenticatedFetch) {
       setError('Error de configuración: authenticatedFetch no disponible');
       setLoading(false);
@@ -69,7 +82,6 @@ function ReceiptViewer({
         { cache: 'no-store' }
       );
       
-      // ⭐ VALIDACIÓN: Verificar respuesta HTTP
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error ${response.status} al cargar recibo`);
@@ -97,7 +109,6 @@ function ReceiptViewer({
     return [...list].sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))[0];
   };
 
-  // Función de generación de PDF
   const generatePdfFromDom = async () => {
     const node = receiptRef.current;
     if (!node) throw new Error('No se encontró el contenedor del recibo.');
@@ -143,13 +154,14 @@ function ReceiptViewer({
       return toast.error('Cliente sin teléfono registrado.');
     }
 
+    const businessInfo = getBusinessInfo(); // ⭐ Usar info dinámica
     const phoneE164 = toE164(sale.client.phone);
     const payment = getPaymentToShare(sale);
     const fmt = (n) =>
       Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const message = payment
-      ? `¡Hola ${sale.client.name || 'cliente'}! Tu RECIBO DE ABONO #${payment.id} de ${appName}.
+      ? `¡Hola ${sale.client.name || 'cliente'}! Tu RECIBO DE ABONO #${payment.id} de ${businessInfo.name}.
 Fecha: ${dayjs(payment.paymentDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')}
 Monto del abono: $${fmt(payment.amount)}
 Saldo pendiente: $${fmt(sale.balanceDue)}
@@ -157,7 +169,7 @@ Saldo pendiente: $${fmt(sale.balanceDue)}
 ${businessInfo.deposit}
 
 Cualquier duda, responde a este mensaje.`
-      : `¡Hola ${sale.client.name || 'cliente'}! Tu RECIBO DE VENTA #${sale?.id || saleId} de ${appName}.
+      : `¡Hola ${sale.client.name || 'cliente'}! Tu RECIBO DE VENTA #${sale?.id || saleId} de ${businessInfo.name}.
 Monto Total: $${fmt(sale?.totalAmount)}
 
 ${businessInfo.deposit}
@@ -207,6 +219,8 @@ Cualquier duda, responde a este mensaje.`;
     if (error) return <p className="error-message">{error}</p>;
     if (!sale) return <p>No se encontraron datos para este recibo.</p>;
 
+    const businessInfo = getBusinessInfo(); // ⭐ Usar info dinámica
+    
     const saleDate = sale?.saleDate
       ? dayjs(sale.saleDate).tz(TIMEZONE).format('DD/MM/YYYY HH:mm')
       : '';
