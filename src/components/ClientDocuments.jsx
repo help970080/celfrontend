@@ -34,10 +34,10 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
     useEffect(() => {
         const loadModels = async () => {
             try {
-                // ⭐ Cargar desde CDN (no necesitas descargar archivos)
+                // ⭐ Cargar desde CDN - usando SSD para mejor precisión
                 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
                 await Promise.all([
-                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL), // Mejor detector
                     faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                 ]);
@@ -196,13 +196,14 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
             const selfieImage = await faceapi.fetchImage(documents.selfie);
 
             // Detectar rostros
+            // Detectar rostros usando SSD (más preciso)
             const ineDetection = await faceapi
-                .detectSingleFace(ineImage, new faceapi.TinyFaceDetectorOptions())
+                .detectSingleFace(ineImage)
                 .withFaceLandmarks()
                 .withFaceDescriptor();
 
             const selfieDetection = await faceapi
-                .detectSingleFace(selfieImage, new faceapi.TinyFaceDetectorOptions())
+                .detectSingleFace(selfieImage)
                 .withFaceLandmarks()
                 .withFaceDescriptor();
 
@@ -224,9 +225,18 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                 selfieDetection.descriptor
             );
 
-            // Convertir distancia a porcentaje (menor distancia = mayor similitud)
-            // Distancia típica: 0 = idéntico, 0.6+ = diferentes personas
-            const similarity = Math.max(0, Math.min(100, (1 - distance / 0.6) * 100));
+            // ⭐ NUEVA FÓRMULA: más generosa
+            // Distancia típica: 0 = idéntico, 0.4 = misma persona, 0.6+ = diferentes
+            // Convertimos a porcentaje donde 0.4 o menos = 100%
+            let similarity;
+            if (distance <= 0.4) {
+                similarity = 100;
+            } else if (distance >= 1.0) {
+                similarity = 0;
+            } else {
+                // Escala lineal entre 0.4 y 1.0
+                similarity = Math.max(0, (1 - (distance - 0.4) / 0.6) * 100);
+            }
             const score = parseFloat(similarity.toFixed(1));
 
             // Guardar resultado en backend
@@ -244,9 +254,9 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                     verifiedAt: result.verifiedAt
                 });
 
-                if (score >= 70) {
+                if (score >= 50) {
                     toast.success(`✅ Verificación exitosa: ${score}% de coincidencia`);
-                } else if (score >= 50) {
+                } else if (score >= 30) {
                     toast.warning(`⚠️ Coincidencia media: ${score}% - Requiere revisión manual`);
                 } else {
                     toast.error(`❌ Coincidencia baja: ${score}% - Los rostros no coinciden`);
