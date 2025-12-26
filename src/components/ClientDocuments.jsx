@@ -502,37 +502,60 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                                         style={{
                                             width: '100%',
                                             borderRadius: '8px',
-                                            transform: 'scaleX(-1)' // Espejo para selfie
+                                            transform: 'scaleX(-1)'
                                         }}
                                     />
-                                    {/* ⭐ Óvalo guía */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '50%',
-                                        left: '50%',
-                                        transform: 'translate(-50%, -50%)',
-                                        width: '60%',
-                                        height: '75%',
-                                        border: '3px solid #00ff00',
-                                        borderRadius: '50%',
-                                        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
-                                        pointerEvents: 'none'
-                                    }} />
+                                    {/* ⭐ SVG Overlay con óvalo */}
+                                    <svg
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            pointerEvents: 'none'
+                                        }}
+                                        viewBox="0 0 100 100"
+                                        preserveAspectRatio="none"
+                                    >
+                                        {/* Fondo semi-transparente */}
+                                        <defs>
+                                            <mask id="faceMask">
+                                                <rect x="0" y="0" width="100" height="100" fill="white" />
+                                                <ellipse cx="50" cy="45" rx="28" ry="38" fill="black" />
+                                            </mask>
+                                        </defs>
+                                        <rect 
+                                            x="0" y="0" 
+                                            width="100" height="100" 
+                                            fill="rgba(0,0,0,0.6)" 
+                                            mask="url(#faceMask)" 
+                                        />
+                                        {/* Borde del óvalo */}
+                                        <ellipse 
+                                            cx="50" cy="45" 
+                                            rx="28" ry="38" 
+                                            fill="none" 
+                                            stroke="#00ff00" 
+                                            strokeWidth="0.8"
+                                            strokeDasharray="3,2"
+                                        />
+                                    </svg>
                                     {/* ⭐ Texto guía */}
                                     <div style={{
                                         position: 'absolute',
-                                        bottom: '10px',
+                                        bottom: '15px',
                                         left: '50%',
                                         transform: 'translateX(-50%)',
-                                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
                                         color: '#00ff00',
                                         padding: '8px 16px',
                                         borderRadius: '20px',
-                                        fontSize: '14px',
+                                        fontSize: '13px',
                                         fontWeight: '600',
                                         whiteSpace: 'nowrap'
                                     }}>
-                                        Centra tu rostro en el óvalo
+                                        👤 Centra tu rostro aquí
                                     </div>
                                 </div>
                                 <canvas ref={canvasRef} style={{ display: 'none' }} />
