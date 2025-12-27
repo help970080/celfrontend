@@ -1,4 +1,4 @@
-// src/components/MdmAdminPanel.jsx - Panel de Administración MDM
+// src/components/MdmAdminPanel.jsx - Panel de Administración MDM con acciones
 import React, { useState, useEffect } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://celbackend.onrender.com';
@@ -14,7 +14,9 @@ const MdmAdminPanel = () => {
   const [status, setStatus] = useState(null);
   const [testingId, setTestingId] = useState(null);
   const [viewingDevices, setViewingDevices] = useState(null);
+  const [viewingAccountId, setViewingAccountId] = useState(null);
   const [devices, setDevices] = useState([]);
+  const [actionLoading, setActionLoading] = useState(null); // Para botones de acción
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -171,6 +173,7 @@ const MdmAdminPanel = () => {
   // Ver dispositivos
   const handleViewDevices = async (id, nombre) => {
     setViewingDevices(nombre);
+    setViewingAccountId(id);
     setDevices([]);
 
     try {
@@ -182,6 +185,100 @@ const MdmAdminPanel = () => {
     } catch (err) {
       setError('Error al cargar dispositivos');
       setViewingDevices(null);
+    }
+  };
+
+  // ⭐ NUEVO: Bloquear dispositivo
+  const handleLockDevice = async (imei, deviceName) => {
+    if (!window.confirm(`¿Bloquear dispositivo "${deviceName}"?`)) return;
+    
+    setActionLoading(imei);
+    setError('');
+    setSuccess('');
+
+    try {
+      const res = await fetch(`${API_URL}/api/mdm/devices/${imei}/lock`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          message: 'Dispositivo bloqueado por CelExpress.',
+          reason: 'Bloqueo manual desde panel'
+        })
+      });
+      
+      if (res.ok) {
+        setSuccess(`🔒 Dispositivo "${deviceName}" bloqueado exitosamente`);
+        // Recargar dispositivos
+        if (viewingAccountId) {
+          handleViewDevices(viewingAccountId, viewingDevices);
+        }
+      } else {
+        const data = await res.json();
+        throw new Error(data.error || 'Error al bloquear');
+      }
+    } catch (err) {
+      setError(`Error al bloquear: ${err.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // ⭐ NUEVO: Desbloquear dispositivo
+  const handleUnlockDevice = async (imei, deviceName) => {
+    if (!window.confirm(`¿Desbloquear dispositivo "${deviceName}"?`)) return;
+    
+    setActionLoading(imei);
+    setError('');
+    setSuccess('');
+
+    try {
+      const res = await fetch(`${API_URL}/api/mdm/devices/${imei}/unlock`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          reason: 'Desbloqueo manual desde panel'
+        })
+      });
+      
+      if (res.ok) {
+        setSuccess(`🔓 Dispositivo "${deviceName}" desbloqueado exitosamente`);
+        // Recargar dispositivos
+        if (viewingAccountId) {
+          handleViewDevices(viewingAccountId, viewingDevices);
+        }
+      } else {
+        const data = await res.json();
+        throw new Error(data.error || 'Error al desbloquear');
+      }
+    } catch (err) {
+      setError(`Error al desbloquear: ${err.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // ⭐ NUEVO: Sonar alarma
+  const handleRingDevice = async (imei, deviceName) => {
+    setActionLoading(imei);
+    setError('');
+    setSuccess('');
+
+    try {
+      const res = await fetch(`${API_URL}/api/mdm/devices/${imei}/ring`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      
+      if (res.ok) {
+        setSuccess(`🔔 Alarma activada en "${deviceName}"`);
+      } else {
+        const data = await res.json();
+        throw new Error(data.error || 'Error al activar alarma');
+      }
+    } catch (err) {
+      setError(`Error: ${err.message}`);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -251,6 +348,10 @@ const MdmAdminPanel = () => {
     },
     btnSuccess: {
       backgroundColor: '#10b981',
+      color: 'white'
+    },
+    btnWarning: {
+      backgroundColor: '#f59e0b',
       color: 'white'
     },
     btnSmall: {
@@ -384,7 +485,7 @@ const MdmAdminPanel = () => {
       backgroundColor: 'white',
       borderRadius: '10px',
       padding: '25px',
-      maxWidth: '500px',
+      maxWidth: '600px',
       width: '90%',
       maxHeight: '80vh',
       overflow: 'auto'
@@ -407,11 +508,22 @@ const MdmAdminPanel = () => {
       overflow: 'auto'
     },
     deviceItem: {
-      padding: '10px',
+      padding: '12px',
       borderBottom: '1px solid #e5e7eb',
       display: 'flex',
       justifyContent: 'space-between',
-      alignItems: 'center'
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: '10px'
+    },
+    deviceInfo: {
+      flex: '1',
+      minWidth: '200px'
+    },
+    deviceActions: {
+      display: 'flex',
+      gap: '5px',
+      flexWrap: 'wrap'
     }
   };
 
@@ -680,42 +792,79 @@ const MdmAdminPanel = () => {
         </div>
       )}
 
-      {/* Modal Dispositivos */}
+      {/* Modal Dispositivos con acciones */}
       {viewingDevices && (
         <div style={styles.modal}>
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
               <h2>📱 Dispositivos - {viewingDevices}</h2>
-              <button style={styles.closeBtn} onClick={() => setViewingDevices(null)}>×</button>
+              <button style={styles.closeBtn} onClick={() => { setViewingDevices(null); setViewingAccountId(null); }}>×</button>
             </div>
 
             <div style={styles.deviceList}>
               {devices.length === 0 ? (
-                <p style={{ textAlign: 'center', color: '#6b7280' }}>Cargando dispositivos...</p>
+                <p style={{ textAlign: 'center', color: '#6b7280', padding: '20px' }}>Cargando dispositivos...</p>
               ) : (
-                devices.map(device => (
-                  <div key={device.deviceId} style={styles.deviceItem}>
-                    <div>
-                      <strong>{device.deviceName}</strong>
-                      <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                        {device.model} | IMEI: {Array.isArray(device.imei) ? device.imei[0] : device.imei}
+                devices.map(device => {
+                  const imei = Array.isArray(device.imei) ? device.imei[0] : device.imei;
+                  const isLocked = device.isLostMode === true || device.isLostMode === 'true';
+                  
+                  return (
+                    <div key={device.deviceId} style={styles.deviceItem}>
+                      <div style={styles.deviceInfo}>
+                        <strong>{device.deviceName}</strong>
+                        <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                          {device.model} | IMEI: {imei}
+                        </div>
+                        <span style={{
+                          ...styles.badge,
+                          ...(isLocked ? styles.badgeError : styles.badgeSuccess),
+                          marginTop: '5px',
+                          display: 'inline-block'
+                        }}>
+                          {isLocked ? '🔒 Bloqueado' : '✓ Activo'}
+                        </span>
+                      </div>
+                      
+                      <div style={styles.deviceActions}>
+                        {isLocked ? (
+                          <button
+                            style={{ ...styles.btn, ...styles.btnSuccess, ...styles.btnSmall }}
+                            onClick={() => handleUnlockDevice(imei, device.deviceName)}
+                            disabled={actionLoading === imei}
+                          >
+                            {actionLoading === imei ? '...' : '🔓 Desbloquear'}
+                          </button>
+                        ) : (
+                          <button
+                            style={{ ...styles.btn, ...styles.btnDanger, ...styles.btnSmall }}
+                            onClick={() => handleLockDevice(imei, device.deviceName)}
+                            disabled={actionLoading === imei}
+                          >
+                            {actionLoading === imei ? '...' : '🔒 Bloquear'}
+                          </button>
+                        )}
+                        <button
+                          style={{ ...styles.btn, ...styles.btnWarning, ...styles.btnSmall }}
+                          onClick={() => handleRingDevice(imei, device.deviceName)}
+                          disabled={actionLoading === imei}
+                        >
+                          {actionLoading === imei ? '...' : '🔔 Alarma'}
+                        </button>
                       </div>
                     </div>
-                    <span style={{
-                      ...styles.badge,
-                      ...(device.isLostMode ? styles.badgeError : styles.badgeSuccess)
-                    }}>
-                      {device.isLostMode ? '🔒 Bloqueado' : '✓ Activo'}
-                    </span>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
-            <div style={{ marginTop: '15px', textAlign: 'right' }}>
+            <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                {devices.length} dispositivo(s)
+              </span>
               <button
                 style={{ ...styles.btn, ...styles.btnSecondary }}
-                onClick={() => setViewingDevices(null)}
+                onClick={() => { setViewingDevices(null); setViewingAccountId(null); }}
               >
                 Cerrar
               </button>
