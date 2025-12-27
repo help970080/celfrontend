@@ -1,6 +1,5 @@
-// src/pages/MdmAdminPanel.jsx - Panel de Administración MDM
+// src/components/MdmAdminPanel.jsx - Panel de Administración MDM
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://celbackend.onrender.com';
 
@@ -28,17 +27,19 @@ const MdmAdminPanel = () => {
   });
 
   const getAuthHeaders = () => ({
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
   });
 
   // Cargar cuentas
   const fetchAccounts = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/api/mdm-admin/accounts`, getAuthHeaders());
-      setAccounts(res.data.accounts || []);
+      const res = await fetch(`${API_URL}/api/mdm-admin/accounts`, { headers: getAuthHeaders() });
+      const data = await res.json();
+      setAccounts(data.accounts || []);
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al cargar cuentas');
+      setError('Error al cargar cuentas');
     } finally {
       setLoading(false);
     }
@@ -47,8 +48,9 @@ const MdmAdminPanel = () => {
   // Cargar estado general
   const fetchStatus = async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/mdm-admin/status`, getAuthHeaders());
-      setStatus(res.data);
+      const res = await fetch(`${API_URL}/api/mdm-admin/status`, { headers: getAuthHeaders() });
+      const data = await res.json();
+      setStatus(data);
     } catch (err) {
       console.error('Error al cargar estado:', err);
     }
@@ -57,8 +59,9 @@ const MdmAdminPanel = () => {
   // Cargar tiendas
   const fetchStores = async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/mdm-admin/stores`, getAuthHeaders());
-      setStores(res.data.stores || []);
+      const res = await fetch(`${API_URL}/api/mdm-admin/stores`, { headers: getAuthHeaders() });
+      const data = await res.json();
+      setStores(data.stores || []);
     } catch (err) {
       console.error('Error al cargar tiendas:', err);
     }
@@ -77,23 +80,34 @@ const MdmAdminPanel = () => {
     setSuccess('');
 
     try {
+      let res;
       if (editingAccount) {
-        await axios.put(
-          `${API_URL}/api/mdm-admin/accounts/${editingAccount.id}`,
-          formData,
-          getAuthHeaders()
-        );
-        setSuccess('Cuenta actualizada correctamente');
-      } else {
-        const res = await axios.post(
-          `${API_URL}/api/mdm-admin/accounts`,
-          formData,
-          getAuthHeaders()
-        );
-        if (res.data.connectionTest?.success) {
-          setSuccess(`Cuenta creada y conexión verificada. ${res.data.connectionTest.deviceCount} dispositivos encontrados.`);
+        res = await fetch(`${API_URL}/api/mdm-admin/accounts/${editingAccount.id}`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(formData)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setSuccess('Cuenta actualizada correctamente');
         } else {
-          setSuccess('Cuenta creada. Verifica las credenciales.');
+          throw new Error(data.message || 'Error al actualizar');
+        }
+      } else {
+        res = await fetch(`${API_URL}/api/mdm-admin/accounts`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(formData)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (data.connectionTest?.success) {
+            setSuccess(`Cuenta creada y conexión verificada. ${data.connectionTest.deviceCount} dispositivos encontrados.`);
+          } else {
+            setSuccess('Cuenta creada. Verifica las credenciales.');
+          }
+        } else {
+          throw new Error(data.message || 'Error al crear');
         }
       }
       
@@ -103,7 +117,7 @@ const MdmAdminPanel = () => {
       fetchAccounts();
       fetchStatus();
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al guardar cuenta');
+      setError(err.message || 'Error al guardar cuenta');
     }
   };
 
@@ -112,12 +126,19 @@ const MdmAdminPanel = () => {
     if (!window.confirm(`¿Eliminar cuenta "${nombre}"?`)) return;
 
     try {
-      await axios.delete(`${API_URL}/api/mdm-admin/accounts/${id}`, getAuthHeaders());
-      setSuccess('Cuenta eliminada');
-      fetchAccounts();
-      fetchStatus();
+      const res = await fetch(`${API_URL}/api/mdm-admin/accounts/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      if (res.ok) {
+        setSuccess('Cuenta eliminada');
+        fetchAccounts();
+        fetchStatus();
+      } else {
+        throw new Error('Error al eliminar');
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al eliminar');
+      setError(err.message || 'Error al eliminar');
     }
   };
 
@@ -128,20 +149,20 @@ const MdmAdminPanel = () => {
     setSuccess('');
 
     try {
-      const res = await axios.post(
-        `${API_URL}/api/mdm-admin/accounts/${id}/test`,
-        {},
-        getAuthHeaders()
-      );
+      const res = await fetch(`${API_URL}/api/mdm-admin/accounts/${id}/test`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      const data = await res.json();
       
-      if (res.data.test?.success) {
-        setSuccess(`✅ Conexión exitosa: ${res.data.test.deviceCount} dispositivos`);
+      if (data.test?.success) {
+        setSuccess(`✅ Conexión exitosa: ${data.test.deviceCount} dispositivos`);
       } else {
-        setError(`❌ Error: ${res.data.test?.error || 'Conexión fallida'}`);
+        setError(`❌ Error: ${data.test?.error || 'Conexión fallida'}`);
       }
       fetchAccounts();
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al probar conexión');
+      setError('Error al probar conexión');
     } finally {
       setTestingId(null);
     }
@@ -153,11 +174,11 @@ const MdmAdminPanel = () => {
     setDevices([]);
 
     try {
-      const res = await axios.get(
-        `${API_URL}/api/mdm-admin/accounts/${id}/devices`,
-        getAuthHeaders()
-      );
-      setDevices(res.data.devices || []);
+      const res = await fetch(`${API_URL}/api/mdm-admin/accounts/${id}/devices`, {
+        headers: getAuthHeaders()
+      });
+      const data = await res.json();
+      setDevices(data.devices || []);
     } catch (err) {
       setError('Error al cargar dispositivos');
       setViewingDevices(null);
