@@ -20,6 +20,7 @@ import ClientPortalDashboard from './components/ClientPortalDashboard';
 import RouteTracker from './components/RouteTracker';
 import StoreManager from './components/StoreManager';
 import UserManager from './components/UserManager';
+import MdmAdminPanel from './components/MdmAdminPanel'; // ⭐ MDM AGREGADO
 
 import './App.css';
 
@@ -136,6 +137,9 @@ function App() {
                 {hasRole('super_admin') && (
                   <Link to="/admin/users-manager" className="nav-button">👥 Usuarios</Link>
                 )}
+                {hasRole('super_admin') && (
+                  <Link to="/admin/mdm" className="nav-button">🔐 MDM</Link>
+                )}
                 {hasRole('collector_agent') && (
                   <Link to="/admin/my-collections" className="nav-button">Mis Cobranzas</Link>
                 )}
@@ -171,7 +175,6 @@ function App() {
               </ClientPrivateRoute>
             } />
 
-            {/* ⭐ CORREGIDO: Agregado userTiendaId */}
             <Route path="/admin/sales" element={
               <PrivateRoute isAuthenticated={!!token}>
                 <SaleAdminPanel 
@@ -215,6 +218,13 @@ function App() {
             <Route path="/admin/users-manager" element={
               <PrivateRoute isAuthenticated={!!token}>
                 <UserManager authenticatedFetch={authenticatedFetch} userRole={userRole} />
+              </PrivateRoute>
+            } />
+            
+            {/* ⭐ MDM ADMIN PANEL - Solo Super Admin */}
+            <Route path="/admin/mdm" element={
+              <PrivateRoute isAuthenticated={!!token}>
+                <MdmAdminPanel />
               </PrivateRoute>
             } />
             
