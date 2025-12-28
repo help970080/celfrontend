@@ -182,20 +182,6 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
         return true;
     };
 
-    // Estilos para el campo IMEI
-    const imeiInputStyle = {
-        borderColor: imeiStatus === 'valid' ? '#10b981' : imeiStatus === 'invalid' ? '#ef4444' : '#d1d5db',
-        borderWidth: '2px'
-    };
-
-    const imeiStatusBadge = {
-        padding: '4px 8px',
-        borderRadius: '4px',
-        fontSize: '12px',
-        marginLeft: '10px',
-        fontWeight: 'bold'
-    };
-
     return (
         <div className="sale-form-container">
             <h2>Registrar Nueva Venta</h2>
@@ -325,22 +311,22 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
                             <label>
                                 📱 IMEI del Dispositivo (para bloqueo automático):
                                 {imeiStatus === 'valid' && (
-                                    <span style={{ ...imeiStatusBadge, backgroundColor: '#d1fae5', color: '#065f46' }}>
+                                    <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', marginLeft: '10px', fontWeight: 'bold', backgroundColor: '#d1fae5', color: '#065f46' }}>
                                         ✓ Verificado
                                     </span>
                                 )}
                                 {imeiStatus === 'invalid' && (
-                                    <span style={{ ...imeiStatusBadge, backgroundColor: '#fee2e2', color: '#991b1b' }}>
+                                    <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', marginLeft: '10px', fontWeight: 'bold', backgroundColor: '#fee2e2', color: '#991b1b' }}>
                                         ✗ No encontrado
                                     </span>
                                 )}
                                 {imeiStatus === 'checking' && (
-                                    <span style={{ ...imeiStatusBadge, backgroundColor: '#fef3c7', color: '#92400e' }}>
+                                    <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', marginLeft: '10px', fontWeight: 'bold', backgroundColor: '#fef3c7', color: '#92400e' }}>
                                         Verificando...
                                     </span>
                                 )}
                             </label>
-                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '8px' }}>
                                 <input 
                                     type="text" 
                                     value={imei} 
@@ -352,27 +338,35 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
                                     }}
                                     placeholder="Ej: 860734072994372"
                                     maxLength={15}
-                                    style={{ ...imeiInputStyle, flex: 1 }}
+                                    style={{ 
+                                        flex: 1,
+                                        padding: '10px',
+                                        fontSize: '16px',
+                                        border: imeiStatus === 'valid' ? '2px solid #10b981' : imeiStatus === 'invalid' ? '2px solid #ef4444' : '2px solid #d1d5db',
+                                        borderRadius: '5px',
+                                        minWidth: '200px'
+                                    }}
                                 />
                                 <button 
                                     type="button" 
                                     onClick={verifyImei}
                                     disabled={imei.length < 15 || imeiStatus === 'checking'}
                                     style={{
-                                        padding: '8px 16px',
-                                        backgroundColor: '#7c3aed',
+                                        padding: '10px 20px',
+                                        backgroundColor: imei.length < 15 ? '#9ca3af' : '#7c3aed',
                                         color: 'white',
                                         border: 'none',
                                         borderRadius: '5px',
                                         cursor: imei.length < 15 ? 'not-allowed' : 'pointer',
-                                        opacity: imei.length < 15 ? 0.5 : 1
+                                        fontSize: '14px',
+                                        fontWeight: '500'
                                     }}
                                 >
                                     {imeiStatus === 'checking' ? '...' : 'Verificar'}
                                 </button>
                             </div>
                             {imeiDevice && (
-                                <p style={{ fontSize: '12px', color: '#059669', marginTop: '5px' }}>
+                                <p style={{ fontSize: '12px', color: '#059669', marginTop: '8px' }}>
                                     📱 {imeiDevice.deviceName || imeiDevice.model} - {imeiDevice.platform}
                                 </p>
                             )}
