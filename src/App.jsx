@@ -108,7 +108,8 @@ function App() {
   return (
     <Router>
       <RouteTracker />
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+      {/* ⭐ CORREGIDO: zIndex alto para que los toasts aparezcan sobre los modales */}
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} style={{ zIndex: 99999 }} />
       <div className="App">
         <header className="app-header">
           <nav className="main-nav">
