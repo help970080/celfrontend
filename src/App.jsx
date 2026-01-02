@@ -20,7 +20,8 @@ import ClientPortalDashboard from './components/ClientPortalDashboard';
 import RouteTracker from './components/RouteTracker';
 import StoreManager from './components/StoreManager';
 import UserManager from './components/UserManager';
-import MdmAdminPanel from './components/MdmAdminPanel'; // ⭐ MDM AGREGADO
+import MdmAdminPanel from './components/MdmAdminPanel';
+import TandasAdminPanel from './components/TandasAdminPanel'; // ⭐ TANDAS AGREGADO
 
 import './App.css';
 
@@ -141,6 +142,10 @@ function App() {
                 {hasRole('super_admin') && (
                   <Link to="/admin/mdm" className="nav-button">🔐 MDM</Link>
                 )}
+                {/* ⭐ TANDAS - Solo Super Admin */}
+                {hasRole('super_admin') && (
+                  <Link to="/admin/tandas" className="nav-button">🏦 Tandas</Link>
+                )}
                 {hasRole('collector_agent') && (
                   <Link to="/admin/my-collections" className="nav-button">Mis Cobranzas</Link>
                 )}
@@ -226,6 +231,13 @@ function App() {
             <Route path="/admin/mdm" element={
               <PrivateRoute isAuthenticated={!!token}>
                 <MdmAdminPanel />
+              </PrivateRoute>
+            } />
+            
+            {/* ⭐ TANDAS ADMIN PANEL - Solo Super Admin */}
+            <Route path="/admin/tandas" element={
+              <PrivateRoute isAuthenticated={!!token}>
+                <TandasAdminPanel authenticatedFetch={authenticatedFetch} />
               </PrivateRoute>
             } />
             
