@@ -1,4 +1,5 @@
 // src/components/ClientDocuments.jsx - MODAL DE DOCUMENTOS Y VERIFICACIÓN FACIAL
+// ⭐ MEJORADO: Compresión de imágenes + Cámara nativa en móvil
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
@@ -6,6 +7,54 @@ import { toast } from 'react-toastify';
 import * as faceapi from 'face-api.js';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
+
+// ⭐ FUNCIÓN DE COMPRESIÓN DE IMAGEN
+const compressImage = (file, maxWidth = 800, quality = 0.7) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // Redimensionar si es muy grande
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob(
+                    (blob) => {
+                        if (blob) {
+                            const compressedFile = new File([blob], file.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            console.log(`📦 Imagen comprimida: ${(file.size / 1024).toFixed(0)}KB → ${(blob.size / 1024).toFixed(0)}KB`);
+                            resolve(compressedFile);
+                        } else {
+                            reject(new Error('Error al comprimir'));
+                        }
+                    },
+                    'image/jpeg',
+                    quality
+                );
+            };
+            img.onerror = reject;
+        };
+        reader.onerror = reject;
+    });
+};
 
 function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) {
     const [documents, setDocuments] = useState({
@@ -22,22 +71,27 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
     });
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState({});
+    const [uploadProgress, setUploadProgress] = useState({});
     const [modelsLoaded, setModelsLoaded] = useState(false);
     const [verifying, setVerifying] = useState(false);
     const [showCamera, setShowCamera] = useState(false);
     const [cameraStream, setCameraStream] = useState(null);
+    const [cameraError, setCameraError] = useState(null);
     
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
+    const selfieInputRef = useRef(null);
+
+    // Detectar si es móvil
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     // Cargar modelos de face-api.js desde CDN
     useEffect(() => {
         const loadModels = async () => {
             try {
-                // ⭐ Cargar desde CDN - usando SSD para mejor precisión
                 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
                 await Promise.all([
-                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL), // Mejor detector
+                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
                     faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                 ]);
@@ -81,15 +135,22 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
         }
     };
 
+    // ⭐ SUBIDA CON COMPRESIÓN
     const handleFileUpload = async (docType, file) => {
         if (!file) return;
 
         setUploading(prev => ({ ...prev, [docType]: true }));
+        setUploadProgress(prev => ({ ...prev, [docType]: 'Comprimiendo...' }));
         
-        const formData = new FormData();
-        formData.append('image', file);
-
         try {
+            // Comprimir imagen antes de subir
+            const compressedFile = await compressImage(file, 800, 0.7);
+            
+            setUploadProgress(prev => ({ ...prev, [docType]: 'Subiendo...' }));
+            
+            const formData = new FormData();
+            formData.append('image', compressedFile);
+
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_BASE_URL}/api/clients/${clientId}/documents/${docType}`, {
                 method: 'POST',
@@ -111,6 +172,7 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
             toast.error(`Error al subir: ${error.message}`);
         } finally {
             setUploading(prev => ({ ...prev, [docType]: false }));
+            setUploadProgress(prev => ({ ...prev, [docType]: null }));
         }
     };
 
@@ -125,24 +187,55 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
         return labels[docType] || docType;
     };
 
-    // Iniciar cámara para selfie
+    // ⭐ INICIAR CÁMARA MEJORADA
     const startCamera = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'user', width: 640, height: 480 } 
-            });
-            setCameraStream(stream);
-            setShowCamera(true);
-            
-            // Esperar a que el video esté listo
-            setTimeout(() => {
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
+        setCameraError(null);
+        
+        // En móvil, usar input nativo como fallback
+        if (isMobile) {
+            // Intentar getUserMedia primero
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'user',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                setCameraStream(stream);
+                setShowCamera(true);
+                
+                setTimeout(() => {
+                    if (videoRef.current) {
+                        videoRef.current.srcObject = stream;
+                    }
+                }, 100);
+            } catch (error) {
+                console.log('getUserMedia falló, usando input nativo');
+                // Fallback: abrir selector de cámara nativo
+                if (selfieInputRef.current) {
+                    selfieInputRef.current.click();
                 }
-            }, 100);
-        } catch (error) {
-            toast.error('No se pudo acceder a la cámara');
-            console.error('Error de cámara:', error);
+            }
+        } else {
+            // En desktop, usar getUserMedia normal
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user', width: 640, height: 480 } 
+                });
+                setCameraStream(stream);
+                setShowCamera(true);
+                
+                setTimeout(() => {
+                    if (videoRef.current) {
+                        videoRef.current.srcObject = stream;
+                    }
+                }, 100);
+            } catch (error) {
+                toast.error('No se pudo acceder a la cámara');
+                setCameraError('No se pudo acceder a la cámara. Usa el botón "Subir desde galería".');
+                console.error('Error de cámara:', error);
+            }
         }
     };
 
@@ -152,8 +245,10 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
             setCameraStream(null);
         }
         setShowCamera(false);
+        setCameraError(null);
     };
 
+    // ⭐ CAPTURA CON COMPRESIÓN
     const capturePhoto = async () => {
         if (!videoRef.current || !canvasRef.current) return;
 
@@ -161,18 +256,27 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
         const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0);
+        // Usar resolución reducida
+        const targetWidth = 640;
+        const targetHeight = 480;
+        
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        
+        // Dibujar con espejo
+        context.translate(targetWidth, 0);
+        context.scale(-1, 1);
+        context.drawImage(video, 0, 0, targetWidth, targetHeight);
 
-        // Convertir a blob
+        // Convertir a blob con compresión
         canvas.toBlob(async (blob) => {
             if (blob) {
                 const file = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
+                console.log(`📷 Selfie capturada: ${(blob.size / 1024).toFixed(0)}KB`);
                 await handleFileUpload('selfie', file);
                 stopCamera();
             }
-        }, 'image/jpeg', 0.9);
+        }, 'image/jpeg', 0.7); // Calidad 70%
     };
 
     // Verificación facial
@@ -191,12 +295,9 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
         toast.info('Analizando rostros...');
 
         try {
-            // Cargar imágenes
             const ineImage = await faceapi.fetchImage(documents.ineFrente);
             const selfieImage = await faceapi.fetchImage(documents.selfie);
 
-            // Detectar rostros
-            // Detectar rostros usando SSD (más preciso)
             const ineDetection = await faceapi
                 .detectSingleFace(ineImage)
                 .withFaceLandmarks()
@@ -219,27 +320,21 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                 return;
             }
 
-            // Comparar rostros
             const distance = faceapi.euclideanDistance(
                 ineDetection.descriptor,
                 selfieDetection.descriptor
             );
 
-            // ⭐ NUEVA FÓRMULA: más generosa
-            // Distancia típica: 0 = idéntico, 0.4 = misma persona, 0.6+ = diferentes
-            // Convertimos a porcentaje donde 0.4 o menos = 100%
             let similarity;
             if (distance <= 0.4) {
                 similarity = 100;
             } else if (distance >= 1.0) {
                 similarity = 0;
             } else {
-                // Escala lineal entre 0.4 y 1.0
                 similarity = Math.max(0, (1 - (distance - 0.4) / 0.6) * 100);
             }
             const score = parseFloat(similarity.toFixed(1));
 
-            // Guardar resultado en backend
             const response = await authenticatedFetch(`${API_BASE_URL}/api/clients/${clientId}/verification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -295,7 +390,8 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
         );
     };
 
-    const renderDocumentSlot = (docType, label, icon) => (
+    // ⭐ RENDER SLOT MEJORADO CON CAPTURE PARA MÓVIL
+    const renderDocumentSlot = (docType, label, icon, useCamera = false) => (
         <div className="doc-slot" style={{
             border: '2px dashed #ddd',
             borderRadius: '12px',
@@ -341,18 +437,53 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
             )}
             
             <div style={{ marginTop: '10px' }}>
+                {/* ⭐ INPUT CON CAPTURE PARA CÁMARA NATIVA EN MÓVIL */}
                 <input
                     type="file"
                     accept="image/*"
+                    capture={useCamera ? "environment" : undefined}
                     id={`file-${docType}`}
                     style={{ display: 'none' }}
                     onChange={(e) => handleFileUpload(docType, e.target.files[0])}
                     disabled={uploading[docType]}
                 />
+                
+                {/* Botón para tomar foto (abre cámara nativa en móvil) */}
+                {isMobile && (
+                    <>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            id={`camera-${docType}`}
+                            style={{ display: 'none' }}
+                            onChange={(e) => handleFileUpload(docType, e.target.files[0])}
+                            disabled={uploading[docType]}
+                        />
+                        <label
+                            htmlFor={`camera-${docType}`}
+                            style={{
+                                padding: '8px 12px',
+                                backgroundColor: uploading[docType] ? '#ccc' : '#28a745',
+                                color: 'white',
+                                borderRadius: '6px',
+                                cursor: uploading[docType] ? 'not-allowed' : 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-block',
+                                marginRight: '5px',
+                                marginBottom: '5px'
+                            }}
+                        >
+                            📷 Tomar foto
+                        </label>
+                    </>
+                )}
+                
+                {/* Botón para subir de galería */}
                 <label
                     htmlFor={`file-${docType}`}
                     style={{
-                        padding: '8px 16px',
+                        padding: '8px 12px',
                         backgroundColor: uploading[docType] ? '#ccc' : '#6c757d',
                         color: 'white',
                         borderRadius: '6px',
@@ -361,7 +492,9 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                         display: 'inline-block'
                     }}
                 >
-                    {uploading[docType] ? 'Subiendo...' : (documents[docType] ? 'Cambiar' : 'Subir')}
+                    {uploading[docType] 
+                        ? (uploadProgress[docType] || 'Procesando...') 
+                        : (documents[docType] ? '🔄 Cambiar' : '📁 Galería')}
                 </label>
             </div>
         </div>
@@ -480,6 +613,16 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                             📸 Selfie para Verificación
                         </h3>
                         
+                        {/* ⭐ INPUT OCULTO PARA SELFIE CON CÁMARA FRONTAL */}
+                        <input
+                            ref={selfieInputRef}
+                            type="file"
+                            accept="image/*"
+                            capture="user"
+                            style={{ display: 'none' }}
+                            onChange={(e) => handleFileUpload('selfie', e.target.files[0])}
+                        />
+                        
                         {showCamera ? (
                             <div style={{
                                 backgroundColor: '#000',
@@ -488,7 +631,6 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                                 textAlign: 'center',
                                 marginBottom: '20px'
                             }}>
-                                {/* ⭐ Contenedor con guía visual */}
                                 <div style={{
                                     position: 'relative',
                                     display: 'inline-block',
@@ -499,13 +641,14 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                                         ref={videoRef}
                                         autoPlay
                                         playsInline
+                                        muted
                                         style={{
                                             width: '100%',
                                             borderRadius: '8px',
                                             transform: 'scaleX(-1)'
                                         }}
                                     />
-                                    {/* ⭐ SVG Overlay con óvalo */}
+                                    {/* SVG Overlay con óvalo */}
                                     <svg
                                         style={{
                                             position: 'absolute',
@@ -518,7 +661,6 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                                         viewBox="0 0 100 100"
                                         preserveAspectRatio="none"
                                     >
-                                        {/* Fondo semi-transparente */}
                                         <defs>
                                             <mask id="faceMask">
                                                 <rect x="0" y="0" width="100" height="100" fill="white" />
@@ -531,7 +673,6 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                                             fill="rgba(0,0,0,0.6)" 
                                             mask="url(#faceMask)" 
                                         />
-                                        {/* Borde del óvalo */}
                                         <ellipse 
                                             cx="50" cy="45" 
                                             rx="28" ry="38" 
@@ -541,7 +682,6 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                                             strokeDasharray="3,2"
                                         />
                                     </svg>
-                                    {/* ⭐ Texto guía */}
                                     <div style={{
                                         position: 'absolute',
                                         bottom: '15px',
@@ -598,6 +738,7 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                                 gap: '15px',
                                 marginBottom: '25px'
                             }}>
+                                {/* ⭐ BOTONES MEJORADOS PARA SELFIE */}
                                 <div style={{
                                     border: '2px dashed #007bff',
                                     borderRadius: '12px',
@@ -606,20 +747,74 @@ function ClientDocuments({ clientId, clientName, onClose, authenticatedFetch }) 
                                     backgroundColor: '#f0f7ff'
                                 }}>
                                     <div style={{ fontSize: '40px', marginBottom: '10px' }}>📷</div>
-                                    <button
-                                        onClick={startCamera}
-                                        style={{
-                                            padding: '12px 25px',
-                                            backgroundColor: '#007bff',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '8px',
-                                            cursor: 'pointer',
-                                            fontWeight: '600'
-                                        }}
-                                    >
-                                        Abrir Cámara
-                                    </button>
+                                    
+                                    {cameraError && (
+                                        <p style={{ color: '#dc3545', fontSize: '12px', marginBottom: '10px' }}>
+                                            {cameraError}
+                                        </p>
+                                    )}
+                                    
+                                    {isMobile ? (
+                                        <>
+                                            {/* En móvil: botón que abre cámara nativa */}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                capture="user"
+                                                id="selfie-camera"
+                                                style={{ display: 'none' }}
+                                                onChange={(e) => handleFileUpload('selfie', e.target.files[0])}
+                                                disabled={uploading.selfie}
+                                            />
+                                            <label
+                                                htmlFor="selfie-camera"
+                                                style={{
+                                                    padding: '12px 25px',
+                                                    backgroundColor: uploading.selfie ? '#ccc' : '#007bff',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '8px',
+                                                    cursor: uploading.selfie ? 'not-allowed' : 'pointer',
+                                                    fontWeight: '600',
+                                                    display: 'inline-block',
+                                                    marginBottom: '10px'
+                                                }}
+                                            >
+                                                {uploading.selfie ? (uploadProgress.selfie || 'Procesando...') : '📷 Tomar Selfie'}
+                                            </label>
+                                            <br />
+                                            <button
+                                                onClick={startCamera}
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    backgroundColor: '#6c757d',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '8px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '12px'
+                                                }}
+                                            >
+                                                🎥 Usar vista previa
+                                            </button>
+                                        </>
+                                    ) : (
+                                        /* En desktop: abrir cámara con preview */
+                                        <button
+                                            onClick={startCamera}
+                                            style={{
+                                                padding: '12px 25px',
+                                                backgroundColor: '#007bff',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                fontWeight: '600'
+                                            }}
+                                        >
+                                            Abrir Cámara
+                                        </button>
+                                    )}
                                 </div>
                                 {renderDocumentSlot('selfie', 'Selfie', '🤳')}
                             </div>
