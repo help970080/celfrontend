@@ -119,6 +119,26 @@ const TandasAdminPanel = ({ authenticatedFetch }) => {
         }
     };
 
+    const deleteTanda = async (tanda) => {
+        if (!window.confirm(`¿Eliminar la tanda "${tanda.nombre}"?\n\nEsta acción no se puede deshacer.`)) return;
+        
+        try {
+            const res = await authenticatedFetch(`${API_URL}/api/tandas/${tanda.id}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success('Tanda eliminada');
+                fetchTandas();
+                fetchDashboard();
+            } else {
+                toast.error(data.message || 'Error al eliminar');
+            }
+        } catch (error) {
+            toast.error('Error al eliminar tanda');
+        }
+    };
+
     const resetTandaForm = () => {
         setTandaForm({
             nombre: '', descripcion: '', montoTurno: '', aportacion: '',
@@ -375,7 +395,10 @@ const TandasAdminPanel = ({ authenticatedFetch }) => {
                                 <td style={styles.td}>{tanda.participantes?.length || 0}/{tanda.numParticipantes}</td>
                                 <td style={styles.td}>{tanda.frecuencia}</td>
                                 <td style={styles.td}><span style={{ ...styles.badge, ...(tanda.estado === 'activa' ? styles.badgeGreen : tanda.estado === 'completada' ? styles.badgeGray : styles.badgeRed) }}>{tanda.estado}</span></td>
-                                <td style={styles.td}><button style={{ ...styles.btn, ...styles.btnPrimary, ...styles.btnSmall }} onClick={() => { fetchTandaDetalle(tanda.id); setActiveTab('detalle'); }}>👁️ Ver</button></td>
+                                <td style={styles.td}>
+                                    <button style={{ ...styles.btn, ...styles.btnPrimary, ...styles.btnSmall, marginRight: '5px' }} onClick={() => { fetchTandaDetalle(tanda.id); setActiveTab('detalle'); }}>👁️ Ver</button>
+                                    <button style={{ ...styles.btn, ...styles.btnDanger, ...styles.btnSmall }} onClick={() => deleteTanda(tanda)}>🗑️</button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
