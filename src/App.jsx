@@ -21,7 +21,8 @@ import RouteTracker from './components/RouteTracker';
 import StoreManager from './components/StoreManager';
 import UserManager from './components/UserManager';
 import MdmAdminPanel from './components/MdmAdminPanel';
-import TandasAdminPanel from './components/TandasAdminPanel'; // ⭐ TANDAS AGREGADO
+import TandasAdminPanel from './components/TandasAdminPanel';
+import LlamadasPanel from './components/LlamadasPanel'; // ⭐ LLAMADAS AGREGADO
 
 import './App.css';
 
@@ -109,7 +110,6 @@ function App() {
   return (
     <Router>
       <RouteTracker />
-      {/* ⭐ CORREGIDO: zIndex alto para que los toasts aparezcan sobre los modales */}
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} style={{ zIndex: 99999 }} />
       <div className="App">
         <header className="app-header">
@@ -142,9 +142,12 @@ function App() {
                 {hasRole('super_admin') && (
                   <Link to="/admin/mdm" className="nav-button">🔐 MDM</Link>
                 )}
-                {/* ⭐ TANDAS - Solo Super Admin */}
                 {hasRole('super_admin') && (
                   <Link to="/admin/tandas" className="nav-button">🏦 Tandas</Link>
+                )}
+                {/* ⭐ LLAMADAS - Solo Super Admin */}
+                {hasRole('super_admin') && (
+                  <Link to="/admin/llamadas" className="nav-button">📞 Llamadas</Link>
                 )}
                 {hasRole('collector_agent') && (
                   <Link to="/admin/my-collections" className="nav-button">Mis Cobranzas</Link>
@@ -227,17 +230,22 @@ function App() {
               </PrivateRoute>
             } />
             
-            {/* ⭐ MDM ADMIN PANEL - Solo Super Admin */}
             <Route path="/admin/mdm" element={
               <PrivateRoute isAuthenticated={!!token}>
                 <MdmAdminPanel />
               </PrivateRoute>
             } />
             
-            {/* ⭐ TANDAS ADMIN PANEL - Solo Super Admin */}
             <Route path="/admin/tandas" element={
               <PrivateRoute isAuthenticated={!!token}>
                 <TandasAdminPanel authenticatedFetch={authenticatedFetch} />
+              </PrivateRoute>
+            } />
+            
+            {/* ⭐ LLAMADAS PANEL */}
+            <Route path="/admin/llamadas" element={
+              <PrivateRoute isAuthenticated={!!token}>
+                <LlamadasPanel authenticatedFetch={authenticatedFetch} />
               </PrivateRoute>
             } />
             
