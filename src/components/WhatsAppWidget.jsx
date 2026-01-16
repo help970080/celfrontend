@@ -1,4 +1,4 @@
-// WhatsAppWidget.jsx - Versión corregida sin CSS externo
+// WhatsAppWidget.jsx - Con código "join" pre-rellenado
 import { useEffect } from 'react';
 
 const WhatsAppWidget = () => {
@@ -104,7 +104,7 @@ const WhatsAppWidget = () => {
     <>
       <style>{styles}</style>
       <a
-        href="https://wa.me/14155238886?text=Hola"
+        href="https://wa.me/14155238886?text=join%20found-expression"
         className="whatsapp-float"
         target="_blank"
         rel="noopener noreferrer"
