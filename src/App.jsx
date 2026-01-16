@@ -22,7 +22,8 @@ import StoreManager from './components/StoreManager';
 import UserManager from './components/UserManager';
 import MdmAdminPanel from './components/MdmAdminPanel';
 import TandasAdminPanel from './components/TandasAdminPanel';
-import LlamadasPanel from './components/LlamadasPanel'; // ⭐ LLAMADAS AGREGADO
+import LlamadasPanel from './components/LlamadasPanel';
+import WhatsAppWidget from './components/WhatsAppWidget'; // ⭐ NUEVO
 
 import './App.css';
 
@@ -111,6 +112,10 @@ function App() {
     <Router>
       <RouteTracker />
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} style={{ zIndex: 99999 }} />
+      
+      {/* ⭐ WIDGET DE WHATSAPP - SIEMPRE VISIBLE */}
+      <WhatsAppWidget />
+      
       <div className="App">
         <header className="app-header">
           <nav className="main-nav">
@@ -140,12 +145,11 @@ function App() {
                   <Link to="/admin/users-manager" className="nav-button">👥 Usuarios</Link>
                 )}
                 {hasRole('super_admin') && (
-                  <Link to="/admin/mdm" className="nav-button">🔐 MDM</Link>
+                  <Link to="/admin/mdm" className="nav-button">🔒 MDM</Link>
                 )}
                 {hasRole('super_admin') && (
                   <Link to="/admin/tandas" className="nav-button">🏦 Tandas</Link>
                 )}
-                {/* ⭐ LLAMADAS - Solo Super Admin */}
                 {hasRole('super_admin') && (
                   <Link to="/admin/llamadas" className="nav-button">📞 Llamadas</Link>
                 )}
@@ -242,7 +246,6 @@ function App() {
               </PrivateRoute>
             } />
             
-            {/* ⭐ LLAMADAS PANEL */}
             <Route path="/admin/llamadas" element={
               <PrivateRoute isAuthenticated={!!token}>
                 <LlamadasPanel authenticatedFetch={authenticatedFetch} />
