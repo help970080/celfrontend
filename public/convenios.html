@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#3c2a14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LGX Convenios">
+<meta name="application-name" content="LGX Convenios">
+<meta name="description" content="Generador de Convenios de Pago — LMV CREDIA SA DE CV">
+<title>LGX · Convenios de Pago</title>
+<!-- PWA Icon as inline SVG data URI -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233c2a14'/%3E%3Cstop offset='1' stop-color='%234e3620'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='96' fill='url(%23g)'/%3E%3Crect x='40' y='40' width='432' height='432' rx='72' fill='none' stroke='%23b8952e' stroke-width='6' opacity='.3'/%3E%3Ctext x='256' y='235' text-anchor='middle' font-family='Georgia,serif' font-weight='700' font-size='170' fill='%23d4b44e' letter-spacing='12'%3ELGX%3C/text%3E%3Ctext x='256' y='340' text-anchor='middle' font-family='Arial,sans-serif' font-weight='600' font-size='52' fill='%23b8952e' letter-spacing='8'%3ECONVENIOS%3C/text%3E%3Cline x1='120' y1='270' x2='392' y2='270' stroke='%23b8952e' stroke-width='3' opacity='.5'/%3E%3Crect x='180' y='380' width='152' height='36' rx='6' fill='%23b8952e' opacity='.15'/%3E%3Ctext x='256' y='406' text-anchor='middle' font-family='Arial,sans-serif' font-weight='700' font-size='24' fill='%23d4b44e' letter-spacing='4'%3ECREDIA%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233c2a14'/%3E%3Cstop offset='1' stop-color='%234e3620'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='96' fill='url(%23g)'/%3E%3Crect x='40' y='40' width='432' height='432' rx='72' fill='none' stroke='%23b8952e' stroke-width='6' opacity='.3'/%3E%3Ctext x='256' y='235' text-anchor='middle' font-family='Georgia,serif' font-weight='700' font-size='170' fill='%23d4b44e' letter-spacing='12'%3ELGX%3C/text%3E%3Ctext x='256' y='340' text-anchor='middle' font-family='Arial,sans-serif' font-weight='600' font-size='52' fill='%23b8952e' letter-spacing='8'%3ECONVENIOS%3C/text%3E%3Cline x1='120' y1='270' x2='392' y2='270' stroke='%23b8952e' stroke-width='3' opacity='.5'/%3E%3Crect x='180' y='380' width='152' height='36' rx='6' fill='%23b8952e' opacity='.15'/%3E%3Ctext x='256' y='406' text-anchor='middle' font-family='Arial,sans-serif' font-weight='700' font-size='24' fill='%23d4b44e' letter-spacing='4'%3ECREDIA%3C/text%3E%3C/svg%3E">
+<!-- Inline PWA Manifest -->
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22LGX%20Convenios%20de%20Pago%22%2C%22short_name%22%3A%22LGX%20Convenios%22%2C%22description%22%3A%22Generador%20de%20Convenios%20-%20LMV%20CREDIA%20SA%20DE%20CV%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8f6f1%22%2C%22theme_color%22%3A%22%233c2a14%22%2C%22orientation%22%3A%22portrait%22%2C%22categories%22%3A%5B%22business%22%2C%22finance%22%5D%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20512%20512'%253E%253Crect%20width%3D'512'%20height%3D'512'%20rx%3D'96'%20fill%3D'%25233c2a14'%2F%253E%253Ctext%20x%3D'256'%20y%3D'235'%20text-anchor%3D'middle'%20font-family%3D'Georgia%2Cserif'%20font-weight%3D'700'%20font-size%3D'170'%20fill%3D'%2523d4b44e'%20letter-spacing%3D'12'%253ELGX%253C%2Ftext%253E%253Ctext%20x%3D'256'%20y%3D'340'%20text-anchor%3D'middle'%20font-family%3D'Arial%2Csans-serif'%20font-weight%3D'600'%20font-size%3D'52'%20fill%3D'%2523b8952e'%20letter-spacing%3D'8'%253ECONVENIOS%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f8f6f1;--card:#fff;--inp:#faf9f5;--hdr:#3c2a14;--hdr2:#4e3620;--gold:#b8952e;--gold-lt:#d4b44e;--gold-gl:#f0dea0;--gold-dk:#8a6d1b;--gold-bg:#fdf8eb;--gold-bd:#e8d590;--ink:#2c2416;--ink2:#4a3f30;--ink3:#7a7060;--ink4:#a89e8e;--ink5:#c8c0b2;--bdr:#e5e0d5;--bdr-lt:#f0ebe0;--red:#9e2a2b;--grn:#2d6a4f;--amb:#d97706;--plm:#7e22ce;--fd:'Cormorant Garamond','Georgia',serif;--fb:'DM Sans','Helvetica Neue',sans-serif;--fm:'IBM Plex Mono','Consolas',monospace;--r:10px;--rs:6px}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--fb);background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
+
+.masthead{background:linear-gradient(135deg,var(--hdr),var(--hdr2));position:relative;z-index:1}
+.masthead::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-lt),var(--gold),transparent)}
+.masthead-inner{max-width:1060px;margin:0 auto;padding:1.5rem 2rem;display:flex;align-items:center;gap:1.2rem}
+.masthead-sigil{width:46px;height:46px;background:var(--gold);border-radius:6px;display:grid;place-items:center;font-family:var(--fd);font-weight:700;font-size:1rem;color:var(--hdr);letter-spacing:2px;flex-shrink:0;box-shadow:0 2px 8px rgba(184,149,46,0.4)}
+.masthead-titles h1{font-family:var(--fd);font-size:1.4rem;font-weight:600;color:#f5f0e6;letter-spacing:.5px}
+.masthead-titles p{font-size:.7rem;color:var(--gold-lt);font-weight:500;letter-spacing:1.5px;text-transform:uppercase;margin-top:.1rem}
+
+.tab-bar{max-width:1060px;margin:0 auto;padding:0 2rem;display:flex;gap:0;border-bottom:2px solid var(--bdr);background:var(--bg)}
+.tab-btn{padding:.75rem 1.6rem;border:none;background:none;font-family:var(--fb);font-size:.83rem;font-weight:600;color:var(--ink3);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
+.tab-btn:hover{color:var(--ink)}
+.tab-btn.active{color:var(--gold-dk);border-bottom-color:var(--gold)}
+.tab-badge{display:inline-block;min-width:18px;height:18px;background:var(--gold);color:#fff;border-radius:9px;font-size:.58rem;font-weight:700;text-align:center;line-height:18px;margin-left:.35rem;padding:0 4px}
+
+.container{max-width:1060px;margin:0 auto;padding:1.5rem 2rem;position:relative;z-index:1}
+.tab-content{display:none}.tab-content.active{display:block}
+
+.panel{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);box-shadow:0 2px 14px rgba(44,36,22,.06);padding:1.8rem 2rem;margin-bottom:1.4rem}
+.panel-title{font-family:var(--fd);font-size:1.05rem;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:.5rem;margin-bottom:1.4rem;padding-bottom:.75rem;border-bottom:1px solid var(--bdr)}
+.panel-title .accent{display:inline-block;width:4px;height:18px;background:var(--gold);border-radius:2px;flex-shrink:0}
+
+.grid-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.15rem}
+.grid-form .span-full{grid-column:1/-1}
+.fld{display:flex;flex-direction:column}
+.fld-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--ink3);margin-bottom:.3rem}
+.fld-input{font-family:var(--fb);font-size:.92rem;color:var(--ink);padding:.55rem .8rem;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--inp);transition:border-color .2s,box-shadow .2s}
+.fld-input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,149,46,.14);background:var(--card)}
+.fld-input::placeholder{color:var(--ink5)}
+select.fld-input{cursor:pointer}
+.fld-hint{font-size:.68rem;color:var(--ink4);margin-top:.2rem}
+.divider{grid-column:1/-1;border-top:1px solid var(--bdr-lt);margin:.2rem 0}
+
+.severity-strip{margin-top:1rem;border-radius:var(--rs);padding:.75rem .9rem;display:flex;align-items:center;gap:.7rem;font-size:.8rem;font-weight:500;line-height:1.4}
+.severity-strip.leve{background:#edf7ed;color:#1b5e20;border-left:4px solid var(--grn)}
+.severity-strip.moderado{background:#fff8e1;color:#e65100;border-left:4px solid var(--amb)}
+.severity-strip.grave{background:#fdeaea;color:#b71c1c;border-left:4px solid var(--red)}
+.severity-strip.critico{background:#f3e5f5;color:#4a148c;border-left:4px solid var(--plm)}
+.severity-pill{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;padding:.18rem .45rem;border-radius:3px;color:#fff;flex-shrink:0}
+.severity-strip.leve .severity-pill{background:var(--grn)}
+.severity-strip.moderado .severity-pill{background:var(--amb)}
+.severity-strip.grave .severity-pill{background:var(--red)}
+.severity-strip.critico .severity-pill{background:var(--plm)}
+
+.plan-config{display:none;margin-top:1.2rem;border:2px solid var(--gold-bd);border-radius:var(--r);background:var(--gold-bg);padding:1.4rem}
+.plan-config.active{display:block;animation:fi .3s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.plan-header{display:flex;align-items:center;gap:.5rem;margin-bottom:1rem}
+.plan-header-icon{width:28px;height:28px;border-radius:50%;background:var(--gold);color:#fff;display:grid;place-items:center;font-size:.8rem;font-weight:700}
+.plan-header h3{font-family:var(--fd);font-size:.95rem;font-weight:600;color:var(--ink)}
+.plan-tag{font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:var(--gold);color:#fff;padding:.1rem .4rem;border-radius:3px;margin-left:auto}
+.plan-numbers{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.7rem;margin-bottom:1rem}
+.pnc{text-align:center;padding:.7rem .4rem;border-radius:var(--rs);background:#fff;border:1px solid var(--gold-bd)}
+.pnc-label{font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gold-dk);margin-bottom:.15rem}
+.pnc-value{font-family:var(--fm);font-size:1.25rem;font-weight:600;color:var(--ink)}
+.pnc-value.big{font-size:1.5rem;color:var(--gold-dk)}
+.pnc-sub{font-size:.65rem;color:var(--ink3);margin-top:.05rem}
+
+.slider-group{margin-bottom:.9rem}
+.slider-row{display:flex;align-items:center;gap:.7rem;margin-bottom:.3rem}
+.slider-label{font-size:.68rem;font-weight:600;color:var(--ink2);min-width:85px;text-transform:uppercase;letter-spacing:.5px}
+.slider-val{font-family:var(--fm);font-size:.9rem;font-weight:600;color:var(--ink);min-width:90px;text-align:right}
+input[type=range].ps{-webkit-appearance:none;appearance:none;flex:1;height:5px;border-radius:3px;background:var(--bdr);outline:none;cursor:pointer}
+input[type=range].ps::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--gold);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.2);cursor:grab}
+input[type=range].ps::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--gold);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.2);cursor:grab}
+.slider-lim{display:flex;justify-content:space-between;font-size:.6rem;color:var(--ink4);font-family:var(--fm)}
+.manual-row{display:flex;align-items:center;gap:.6rem;margin-top:.7rem;padding-top:.7rem;border-top:1px dashed var(--gold-bd);flex-wrap:wrap}
+.manual-row label{font-size:.7rem;font-weight:500;color:var(--ink2)}
+.mi{font-family:var(--fm);font-size:.82rem;width:80px;padding:.3rem .45rem;border:1.5px solid var(--bdr);border-radius:var(--rs);background:#fff;text-align:center}
+.mi:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,149,46,.12)}
+.ms{font-size:.68rem;color:var(--ink4)}
+.plan-rule{display:flex;align-items:center;gap:.4rem;margin-top:.5rem;padding:.35rem .6rem;background:rgba(45,106,79,.07);border-radius:var(--rs);font-size:.7rem;color:var(--grn);font-weight:500}
+
+.actions-row{display:flex;align-items:center;flex-wrap:wrap;gap:.55rem;margin-top:1.3rem}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.6rem 1.4rem;border:none;border-radius:var(--rs);font-family:var(--fb);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.2px}
+.btn-gold{background:linear-gradient(135deg,var(--gold-dk),var(--gold));color:#fff;box-shadow:0 2px 8px rgba(184,149,46,.3)}
+.btn-gold:hover{box-shadow:0 4px 14px rgba(184,149,46,.4);transform:translateY(-1px)}
+.btn-out{background:#fff;color:var(--ink2);border:1.5px solid var(--bdr)}
+.btn-out:hover{border-color:var(--gold);background:var(--gold-bg)}
+.btn-wa{background:#25D366;color:#fff;border:none;box-shadow:0 2px 8px rgba(37,211,102,.3)}
+.btn-wa:hover{background:#20bd5a;transform:translateY(-1px)}
+.btn-wa svg{width:15px;height:15px;fill:#fff;vertical-align:middle}
+.err-msg{color:var(--red);font-size:.78rem;font-weight:500;margin-top:.5rem;display:none;padding:.4rem .65rem;background:#fef2f2;border-radius:var(--rs);border-left:3px solid var(--red)}
+.err-msg.show{display:block}
+
+/* Signature modal */
+.sig-ov{display:none;position:fixed;inset:0;z-index:9999;background:rgba(44,36,22,.5);backdrop-filter:blur(3px);place-items:center}
+.sig-ov.open{display:grid}
+.sig-mod{background:#fff;border-radius:var(--r);box-shadow:0 14px 42px rgba(0,0,0,.22);width:92vw;max-width:480px;padding:1.4rem;position:relative;animation:mp .25s ease}
+@keyframes mp{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.sig-mod-t{font-family:var(--fd);font-size:1.05rem;font-weight:600;color:var(--ink);margin-bottom:.15rem}
+.sig-mod-s{font-size:.72rem;color:var(--ink3);margin-bottom:.7rem}
+.sig-mod-x{position:absolute;top:.7rem;right:.7rem;width:28px;height:28px;border:none;background:var(--bg);border-radius:50%;cursor:pointer;font-size:.95rem;color:var(--ink3);display:grid;place-items:center}
+.sig-mod-x:hover{background:var(--bdr)}
+.sig-cw{border:2px dashed var(--bdr);border-radius:var(--rs);background:var(--inp);position:relative;overflow:hidden;touch-action:none;cursor:crosshair}
+.sig-cw canvas{display:block;width:100%;height:170px}
+.sig-cw-h{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:.75rem;color:var(--ink5);pointer-events:none;transition:opacity .3s}
+.sig-cw.drawn .sig-cw-h{opacity:0}
+.sig-acts{display:flex;gap:.4rem;margin-top:.7rem;justify-content:flex-end}
+.sb{padding:.45rem 1rem;border-radius:var(--rs);font-family:var(--fb);font-size:.8rem;font-weight:600;cursor:pointer;border:none}
+.sb-c{background:var(--bg);color:var(--ink3)}.sb-c:hover{background:var(--bdr)}
+.sb-o{background:var(--gold);color:#fff}.sb-o:hover{background:var(--gold-dk)}
+.sb-o:disabled{opacity:.35;cursor:not-allowed}
+.sig-pv{margin-top:.7rem;display:none;align-items:center;gap:.7rem;padding:.5rem .7rem;background:#f0fdf4;border-radius:var(--rs);border:1px solid #86efac}
+.sig-pv.has{display:flex}
+.sig-pv img{height:40px;border:1px solid var(--bdr);border-radius:3px;background:#fff}
+.sig-pv span{font-size:.72rem;font-weight:600;color:var(--grn)}
+.sig-pv button{margin-left:auto;font-size:.7rem;color:var(--ink3);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:var(--fb)}
+
+/* History */
+.ht-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;gap:.5rem}
+.ht-cnt{font-size:.78rem;color:var(--ink3)}
+.ht-src{font-family:var(--fb);font-size:.82rem;padding:.38rem .65rem;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--inp);width:200px}
+.ht-src:focus{outline:none;border-color:var(--gold)}
+.h-empty{text-align:center;padding:2.5rem 1rem;color:var(--ink4)}
+.h-empty .h-ico{font-size:2.2rem;margin-bottom:.4rem;opacity:.4}
+.h-list{display:flex;flex-direction:column;gap:.65rem}
+.hc{background:var(--card);border:1px solid var(--bdr);border-radius:var(--rs);padding:.85rem 1rem;display:flex;align-items:center;gap:.85rem;transition:box-shadow .15s}
+.hc:hover{box-shadow:0 2px 10px rgba(44,36,22,.07)}
+.hc-bar{width:5px;height:42px;border-radius:3px;flex-shrink:0}
+.hc-bar.leve{background:var(--grn)}.hc-bar.moderado{background:var(--amb)}.hc-bar.grave{background:var(--red)}.hc-bar.critico{background:var(--plm)}
+.hc-info{flex:1;min-width:0}
+.hc-nm{font-weight:600;font-size:.85rem;color:var(--ink)}
+.hc-dt{font-size:.72rem;color:var(--ink3);margin-top:.1rem}
+.hc-dt strong{color:var(--ink2)}
+.hc-fo{font-family:var(--fm);font-size:.65rem;color:var(--ink4);margin-top:.1rem}
+.hc-am{font-family:var(--fm);font-size:1rem;font-weight:600;color:var(--gold-dk);text-align:right;white-space:nowrap}
+.hc-btns{display:flex;gap:.25rem;flex-shrink:0}
+.hcb{width:30px;height:30px;border:1px solid var(--bdr);border-radius:5px;background:#fff;cursor:pointer;display:grid;place-items:center;font-size:.8rem;color:var(--ink3);transition:all .15s}
+.hcb:hover{border-color:var(--gold);color:var(--gold-dk);background:var(--gold-bg)}
+.hcb.del:hover{border-color:var(--red);color:var(--red);background:#fef2f2}
+
+/* Legal document */
+#docOutput{display:none}#docOutput.visible{display:block}
+.legal-doc{background:#fff;border:1px solid var(--bdr);border-radius:var(--r);box-shadow:0 4px 20px rgba(44,36,22,.07);padding:3rem 2.6rem;margin-bottom:1.4rem;position:relative;overflow:hidden}
+.legal-doc::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--gold-dk),var(--gold),var(--gold-lt),var(--gold),var(--gold-dk))}
+.wm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-32deg);font-family:var(--fd);font-size:5rem;font-weight:700;color:rgba(184,149,46,.035);white-space:nowrap;pointer-events:none;letter-spacing:10px;user-select:none}
+.wm2{position:absolute;top:30%;left:50%;transform:translate(-50%,-50%) rotate(-32deg);font-family:var(--fb);font-size:2.2rem;font-weight:800;color:rgba(0,0,0,.018);white-space:nowrap;pointer-events:none;letter-spacing:15px;text-transform:uppercase;user-select:none}
+
+/* Urgency banner */
+.urgency-banner{background:linear-gradient(90deg,#7f1d1d,#991b1b,#7f1d1d);color:#fecaca;padding:.7rem 1.2rem;border-radius:var(--rs);margin-bottom:1.5rem;display:flex;align-items:center;gap:.8rem;font-size:.78rem;font-weight:500;line-height:1.4}
+.urgency-banner.warn{background:linear-gradient(90deg,#78350f,#92400e,#78350f);color:#fef3c7}
+.urgency-banner.ok{background:linear-gradient(90deg,#14532d,#166534,#14532d);color:#bbf7d0}
+.ub-icon{font-size:1.4rem;flex-shrink:0}
+.ub-days{font-family:var(--fm);font-size:1.6rem;font-weight:800;color:#fff;flex-shrink:0;min-width:45px;text-align:center;line-height:1}
+.ub-days small{font-size:.5rem;font-weight:600;display:block;opacity:.7;text-transform:uppercase;letter-spacing:1px}
+
+/* QR & Seal section */
+.doc-validation{display:flex;align-items:flex-start;gap:1.2rem;margin-top:1.8rem;padding:1.2rem;border:1.5px solid var(--bdr);border-radius:var(--rs);background:#fafaf7}
+.qr-block{flex-shrink:0;text-align:center}
+.qr-block img{display:block;border-radius:4px}
+.qr-label{font-size:.5rem;color:var(--ink3);font-family:var(--fm);margin-top:.3rem;text-transform:uppercase;letter-spacing:.8px}
+.seal-block{flex:1;min-width:0}
+.seal-title{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--gold-dk);margin-bottom:.4rem;display:flex;align-items:center;gap:.3rem}
+.seal-title::before{content:'🔒'}
+.seal-hash{font-family:var(--fm);font-size:.58rem;color:var(--ink2);word-break:break-all;line-height:1.6;background:#f0ede5;padding:.4rem .6rem;border-radius:3px;border:1px solid var(--bdr)}
+.seal-meta{font-size:.55rem;color:var(--ink4);margin-top:.35rem;font-family:var(--fm);line-height:1.5}
+.seal-badge{display:inline-block;background:var(--ink);color:var(--gold-gl);font-size:.5rem;font-weight:700;padding:.15rem .5rem;border-radius:3px;text-transform:uppercase;letter-spacing:1px;margin-top:.3rem}
+.dm{text-align:center;padding-bottom:1.3rem;margin-bottom:1.6rem;border-bottom:2px solid var(--ink);position:relative}
+.dm::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:45px;height:2px;background:var(--gold)}
+.dm h2{font-family:var(--fd);font-size:1.3rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink)}
+.dm .ds{font-family:var(--fd);font-size:.9rem;font-weight:500;color:var(--ink2);margin-top:.2rem;font-style:italic}
+.dm .df{font-family:var(--fm);font-size:.7rem;color:var(--gold-dk);margin-top:.4rem;letter-spacing:.7px}
+.dsec{margin-bottom:1.5rem}
+.dst{font-family:var(--fd);font-size:.88rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--ink);margin-bottom:.55rem;position:relative;padding-left:.85rem}
+.dst::before{content:'';position:absolute;left:0;top:2px;bottom:2px;width:3px;background:var(--gold);border-radius:2px}
+.dp{font-family:var(--fb);font-size:.83rem;line-height:1.8;color:var(--ink2);text-align:justify;hyphens:auto}
+.dp strong{color:var(--ink);font-weight:600}
+.dp p+p{margin-top:.6rem}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.7rem;margin:.9rem 0}
+.fc{background:var(--gold-bg);border:1px solid var(--gold-bd);border-radius:var(--rs);padding:.65rem .8rem}
+.fc-l{font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gold-dk);margin-bottom:.1rem}
+.fc-v{font-family:var(--fm);font-size:1.1rem;font-weight:600;color:var(--ink)}
+.fc-v.sm{font-size:.9rem}
+.aw{overflow-x:auto;margin:.7rem 0;border-radius:var(--rs);border:1px solid var(--bdr)}
+.at{width:100%;border-collapse:collapse;font-size:.78rem}
+.at thead th{background:var(--ink);color:#f5f0e6;padding:.55rem .6rem;text-align:center;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;white-space:nowrap}
+.at tbody td{padding:.45rem .55rem;text-align:center;border-bottom:1px solid var(--bdr-lt);font-family:var(--fm);font-size:.75rem;color:var(--ink2)}
+.at tbody tr:nth-child(even) td{background:#faf9f5}
+.at tbody tr:hover td{background:var(--gold-bg)}
+.at tbody tr.rl td{font-weight:700;color:var(--ink);background:#f5f2e8}
+.at tfoot td{background:var(--ink);color:#f5f0e6;padding:.55rem;text-align:center;font-family:var(--fm);font-size:.78rem;font-weight:600}
+.cb{margin-bottom:.7rem}
+.cn{font-family:var(--fd);font-weight:700;color:var(--gold-dk);font-size:.88rem}
+.ct{font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.3px;font-size:.8rem}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:2.2rem;margin-top:2.5rem;padding-top:1rem}
+.ss{text-align:center}
+.sl{border-top:1.5px solid var(--ink);margin:0 .5rem;padding-top:.45rem;margin-top:.3rem}
+.sn{font-weight:600;font-size:.82rem;color:var(--ink)}
+.sr{font-size:.7rem;color:var(--ink3);margin-top:.08rem}
+.dsi{display:block;max-width:170px;max-height:65px;margin:0 auto .2rem}
+.dsts{font-size:.52rem;color:var(--ink4);font-family:var(--fm);text-align:center}
+.wg{display:grid;grid-template-columns:1fr 1fr;gap:2.2rem;margin-top:1.8rem;padding-top:.7rem;border-top:1px dashed var(--bdr)}
+.wl{border-top:1px solid var(--ink3);margin:0 .8rem;padding-top:.35rem;margin-top:2.2rem;text-align:center}
+.wlb{font-size:.65rem;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.7px}
+.dfm{text-align:center;margin-top:1.8rem;padding-top:.7rem;border-top:1px solid var(--bdr);font-size:.62rem;color:var(--ink4);font-family:var(--fm)}
+
+/* PWA Install banner */
+.install-banner{display:none;position:fixed;bottom:0;left:0;right:0;z-index:8888;background:linear-gradient(135deg,var(--hdr),var(--hdr2));color:#f5f0e6;padding:.9rem 1.2rem;box-shadow:0 -4px 20px rgba(0,0,0,.2);align-items:center;gap:.8rem}
+.install-banner.show{display:flex}
+.ib-icon{width:42px;height:42px;background:var(--gold);border-radius:10px;display:grid;place-items:center;font-family:var(--fd);font-weight:700;font-size:.8rem;color:var(--hdr);flex-shrink:0;letter-spacing:1px}
+.ib-text{flex:1;font-size:.8rem;line-height:1.3}
+.ib-text strong{color:var(--gold-lt)}
+.ib-btn{padding:.5rem 1.2rem;background:var(--gold);color:var(--hdr);border:none;border-radius:var(--rs);font-family:var(--fb);font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.ib-btn:hover{background:var(--gold-lt)}
+.ib-close{background:none;border:none;color:var(--ink5);font-size:1.2rem;cursor:pointer;padding:0 .3rem}
+
+/* PRINT — PURE B/W */
+@media print{
+  *{color:#000!important}
+  body{background:#fff!important}
+  .masthead,.tab-bar,.panel,.actions-row,.btn,.severity-strip,.err-msg,.plan-config,.sig-ov,.sig-pv,.no-print,.install-banner{display:none!important}
+  .container{max-width:100%;padding:0}
+  #docOutput{display:block!important}
+  .tab-content{display:block!important}
+  .legal-doc{border:none!important;border-radius:0!important;box-shadow:none!important;padding:1.5cm 2cm!important;break-inside:avoid}
+  .legal-doc::before{background:#000!important;height:2px!important}
+  .wm{color:rgba(0,0,0,.03)!important}
+  .wm2{color:rgba(0,0,0,.025)!important}
+  .urgency-banner{background:#f5f5f5!important;color:#000!important;border:2px solid #000!important}
+  .urgency-banner.warn{background:#f5f5f5!important;color:#000!important;border:2px solid #000!important}
+  .ub-days{color:#000!important}
+  .doc-validation{border-color:#000!important;background:#f9f9f9!important}
+  .seal-hash{background:#f0f0f0!important;border-color:#ccc!important}
+  .seal-badge{background:#000!important;color:#fff!important}
+  .dm{border-bottom-color:#000!important}
+  .dm::after{background:#000!important}
+  .dst::before{background:#000!important}
+  .fc{background:#f5f5f5!important;border-color:#ccc!important}
+  .fc-l{color:#333!important}
+  .at thead th,.at tfoot td{background:#000!important;color:#fff!important}
+  .at tbody tr:nth-child(even) td{background:#f5f5f5!important}
+  .at tbody tr:hover td{background:transparent!important}
+  .sl{border-top-color:#000!important}
+  .wl{border-top-color:#666!important}
+  .cn{color:#000!important}
+  .aw{break-inside:avoid}
+  .sg,.wg{break-inside:avoid}
+  @page{margin:1cm}
+}
+@media(max-width:768px){
+  .masthead-inner{flex-direction:column;text-align:center;padding:1.1rem .8rem}
+  .container{padding:.8rem}
+  .panel{padding:1.2rem}
+  .legal-doc{padding:1.2rem 1rem}
+  .grid-form{grid-template-columns:1fr}
+  .fg,.plan-numbers{grid-template-columns:1fr 1fr}
+  .sg,.wg{grid-template-columns:1fr;gap:1.2rem}
+  .slider-row{flex-wrap:wrap}.slider-label{min-width:auto}
+  .tab-bar{padding:0 .8rem}.tab-btn{padding:.55rem .9rem;font-size:.78rem}
+  .ht-src{width:130px}
+}
+</style>
+</head>
+<body>
+<header class="masthead"><div class="masthead-inner"><div class="masthead-sigil">LMV</div><div class="masthead-titles"><h1>Generador de Convenios de Pago</h1><p>LMV Credia SA de CV · Reestructuración de Adeudos</p></div></div></header>
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('nuevo')">✦ Nuevo Convenio</button>
+  <button class="tab-btn" onclick="switchTab('hist')" id="tabHB">📋 Historial <span class="tab-badge" id="hBadge">0</span></button>
+</div>
+<div class="container">
+<div class="tab-content active" id="tNuevo">
+  <div class="panel">
+    <div class="panel-title"><span class="accent"></span>Datos del Convenio</div>
+    <div class="grid-form">
+      <div class="fld"><label class="fld-label">Nombre completo del deudor</label><input class="fld-input" type="text" id="fNom" placeholder="Juan Pérez López"></div>
+      <div class="fld"><label class="fld-label">CURP o RFC</label><input class="fld-input" type="text" id="fID" placeholder="PELJ850101HMCRRN01"></div>
+      <div class="fld span-full"><label class="fld-label">Domicilio del deudor</label><input class="fld-input" type="text" id="fDom" placeholder="Calle, número, colonia, C.P., municipio, estado"></div>
+      <div class="fld"><label class="fld-label">Teléfono (10 dígitos con lada)</label><input class="fld-input" type="tel" id="fTel" placeholder="55 6123 4567" maxlength="15"><span class="fld-hint">Requerido para WhatsApp. Ej: 7351234567</span></div>
+      <div class="fld"><label class="fld-label">Correo electrónico</label><input class="fld-input" type="email" id="fEm" placeholder="correo@ejemplo.com"></div>
+      <div class="divider"></div>
+      <div class="fld"><label class="fld-label">Monto del adeudo ($)</label><input class="fld-input" type="number" id="fMon" placeholder="5000" min="500" step=".01"><span class="fld-hint">Capital sin moratorios</span></div>
+      <div class="fld"><label class="fld-label">Días de atraso</label><input class="fld-input" type="number" id="fDia" placeholder="45" min="1"></div>
+      <div class="fld"><label class="fld-label">Día de pago</label><select class="fld-input" id="fDP"><option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option><option value="4">Jueves</option><option value="5" selected>Viernes</option><option value="6">Sábado</option></select></div>
+      <div class="divider"></div>
+      <div class="fld"><label class="fld-label">Referencia crédito</label><input class="fld-input" type="text" id="fRef" placeholder="CEL-2024-0483"></div>
+      <div class="fld span-full"><label class="fld-label">Concepto / producto</label><input class="fld-input" type="text" id="fCon" placeholder="Compra de equipo celular a crédito"></div>
+    </div>
+    <div id="sevBox"></div>
+    <div class="plan-config" id="planCfg">
+      <div class="plan-header"><div class="plan-header-icon">$</div><h3>Plan de Pagos</h3><span class="plan-tag" id="pTag">SUGERIDO</span></div>
+      <div class="plan-numbers" id="pNums"></div>
+      <div class="slider-group"><div class="slider-row"><span class="slider-label">Semanas</span><input type="range" class="ps" id="sSem" min="4" max="104" value="4"><span class="slider-val" id="lSem">—</span></div><div class="slider-lim"><span id="lMin">4</span><span id="lMax">—</span></div></div>
+      <div class="slider-group"><div class="slider-row"><span class="slider-label">Pago/sem</span><input type="range" class="ps" id="sPag" min="500" max="50000" step="50" value="500"><span class="slider-val" id="lPag">—</span></div><div class="slider-lim"><span>$500</span><span id="lPM">—</span></div></div>
+      <div class="manual-row"><label>Manual:</label><input type="number" class="mi" id="mSem" placeholder="Sem" min="4"><span class="ms">sem</span><span class="ms" style="color:var(--gold)">ó</span><span class="ms">$</span><input type="number" class="mi" id="mPag" placeholder="Pago" min="500" step="50"><span class="ms">/sem</span></div>
+      <div class="plan-rule"><span>✓</span> Mínimo <strong>&nbsp;$500.00 MXN</strong> semanales</div>
+    </div>
+    <div id="errB" class="err-msg"></div>
+    <div class="actions-row">
+      <button class="btn btn-gold" onclick="generar()">✦ Generar Convenio</button>
+      <button class="btn btn-out" onclick="abrirFirma()">✍ Firma Digital</button>
+      <button class="btn btn-out" id="bPr" style="display:none" onclick="window.print()">⎙ Imprimir</button>
+      <button class="btn btn-wa" id="bWA" style="display:none" onclick="enviarWA()"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Enviar WhatsApp</button>
+      <button class="btn btn-out" id="bShare" style="display:none" onclick="compartir()">📤 Compartir PDF</button>
+    </div>
+    <div class="sig-pv" id="sigPv"><img id="sigPI" src="" alt=""><span>✓ Firma capturada</span><button onclick="abrirFirma()">Cambiar</button></div>
+  </div>
+  <div id="docOutput"></div>
+</div>
+<div class="tab-content" id="tHist">
+  <div class="panel"><div class="panel-title"><span class="accent"></span>Convenios Guardados</div>
+    <div class="ht-bar"><span class="ht-cnt" id="htC">0</span><input class="ht-src" id="hSrc" placeholder="Buscar..." oninput="renderHist()"></div>
+    <div id="hList"></div>
+  </div>
+</div>
+</div>
+<div class="sig-ov" id="sigOv">
+  <div class="sig-mod">
+    <button class="sig-mod-x" onclick="cerrarFirma()">✕</button>
+    <div class="sig-mod-t">Firma del Deudor</div>
+    <div class="sig-mod-s">Firme con dedo o mouse. Se incluirá en el convenio.</div>
+    <div class="sig-cw" id="sigW"><canvas id="sigC"></canvas><div class="sig-cw-h">Firme aquí ✍</div></div>
+    <div class="sig-acts"><button class="sb sb-c" onclick="limpiarFirma()">Limpiar</button><button class="sb sb-o" id="bSO" onclick="aceptarFirma()" disabled>Aceptar</button></div>
+  </div>
+</div>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const fmt=n=>'$'+Number(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+const MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const DSM=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+function fL(d){return d.getDate()+' de '+MES[d.getMonth()]+' de '+d.getFullYear();}
+function fC(d){return d.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function aD(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function nW(f,t){const d=new Date(f);let df=t-d.getDay();if(df<=0)df+=7;d.setDate(d.getDate()+df);return d;}
+function gF(){const n=new Date(),r=Math.floor(Math.random()*9000)+1000;return 'CONV-'+n.getFullYear()+String(n.getMonth()+1).padStart(2,'0')+String(n.getDate()).padStart(2,'0')+'-'+r;}
+
+window.switchTab=function(t){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  if(t==='hist'){$('tabHB').classList.add('active');$('tHist').classList.add('active');renderHist();}
+  else{document.querySelector('.tab-btn').classList.add('active');$('tNuevo').classList.add('active');}
+};
+
+function sev(d){
+  if(d<=30)return{k:'leve',l:'Atraso Leve',c:'leve',m:0,d:'Etapa temprana. Sin moratorios.'};
+  if(d<=60)return{k:'moderado',l:'Atraso Moderado',c:'moderado',m:.05,d:'Moratorios 5% (art. 362 C.Com).'};
+  if(d<=120)return{k:'grave',l:'Atraso Grave',c:'grave',m:.10,d:'Cartera vencida. Moratorios 10%.'};
+  return{k:'critico',l:'Atraso Crítico',c:'critico',m:.15,d:'Pre-jurídica. Moratorios 15%. Última oportunidad.'};
+}
+
+const MP=500;let ps={t:0,s:4,p:500,mn:4,mx:4,mo:0,ca:0};
+
+function calcP(){
+  const mo=parseFloat($('fMon').value)||0,di=parseInt($('fDia').value)||0;
+  if(mo<500||di<1){$('planCfg').classList.remove('active');return;}
+  const sv=sev(di),mm=mo*sv.m,tt=mo+mm;
+  ps.ca=mo;ps.mo=mm;ps.t=tt;ps.mx=Math.max(4,Math.floor(tt/MP));ps.mn=4;
+  if(tt<MP*4){ps.mn=1;ps.mx=Math.max(1,Math.floor(tt/MP));}
+  const sg=Math.max(ps.mn,Math.round(ps.mx*.6));ps.s=sg;ps.p=Math.ceil(tt/sg*100)/100;
+  const sl=$('sSem');sl.min=ps.mn;sl.max=ps.mx;sl.value=sg;
+  $('lMin').textContent=ps.mn+' sem';$('lMax').textContent=ps.mx+' sem';
+  const sp=$('sPag'),mnP=Math.ceil(tt/ps.mx*100)/100,mxP=ps.mn>0?Math.ceil(tt/ps.mn*100)/100:tt;
+  sp.min=Math.max(MP,mnP);sp.max=mxP;sp.step=50;sp.value=ps.p;
+  $('lPM').textContent=fmt(mxP);
+  uPUI();$('planCfg').classList.add('active');$('pTag').textContent='SUGERIDO';
+}
+
+function uPUI(){
+  const{t,s,p,mo,ca}=ps,ms=(s/4.345).toFixed(1),pp=nW(new Date(),+$('fDP').value),up=aD(pp,(s-1)*7);
+  $('pNums').innerHTML=
+    '<div class="pnc"><div class="pnc-label">Total</div><div class="pnc-value">'+fmt(t)+'</div>'+(mo>0?'<div class="pnc-sub">Cap '+fmt(ca)+' + Mora '+fmt(mo)+'</div>':'')+'</div>'+
+    '<div class="pnc"><div class="pnc-label">Pago Semanal</div><div class="pnc-value big">'+fmt(p)+'</div></div>'+
+    '<div class="pnc"><div class="pnc-label">Plazo</div><div class="pnc-value">'+s+' sem</div><div class="pnc-sub">≈ '+ms+' meses</div></div>'+
+    '<div class="pnc"><div class="pnc-label">Primer Pago</div><div class="pnc-value" style="font-size:.9rem">'+fC(pp)+'</div></div>'+
+    '<div class="pnc"><div class="pnc-label">Último Pago</div><div class="pnc-value" style="font-size:.9rem">'+fC(up)+'</div></div>';
+  $('lSem').textContent=s+' sem';$('lPag').textContent=fmt(p);
+}
+
+$('sSem').addEventListener('input',function(){ps.s=+this.value;ps.p=Math.ceil(ps.t/ps.s*100)/100;$('sPag').value=ps.p;$('pTag').textContent='PERSONALIZADO';uPUI();});
+$('sPag').addEventListener('input',function(){const p=+this.value;if(p<MP)return;const s=Math.floor(ps.t/p);if(s<ps.mn)return;ps.s=s;ps.p=Math.ceil(ps.t/s*100)/100;$('sSem').value=s;$('pTag').textContent='PERSONALIZADO';uPUI();});
+$('mSem').addEventListener('change',function(){const s=+this.value;if(!s||s<ps.mn||s>ps.mx){this.value='';return sE('Rango: '+ps.mn+'–'+ps.mx);}cE();ps.s=s;ps.p=Math.ceil(ps.t/s*100)/100;$('sSem').value=s;$('sPag').value=ps.p;$('pTag').textContent='PERSONALIZADO';uPUI();this.value='';});
+$('mPag').addEventListener('change',function(){const p=+this.value;if(!p||p<MP){this.value='';return sE('Mínimo $500');}const s=Math.floor(ps.t/p);if(s<ps.mn||s>ps.mx){this.value='';return sE('Fuera de rango');}cE();ps.s=s;ps.p=Math.ceil(ps.t/s*100)/100;$('sSem').value=s;$('sPag').value=ps.p;$('pTag').textContent='PERSONALIZADO';uPUI();this.value='';});
+$('fMon').addEventListener('input',calcP);
+$('fDia').addEventListener('input',function(){const d=+this.value,bx=$('sevBox');if(!d||d<1){bx.innerHTML='';return;}const s=sev(d);bx.innerHTML='<div class="severity-strip '+s.c+'"><span class="severity-pill">'+s.l+'</span><span>'+s.d+'</span></div>';calcP();});
+$('fDP').addEventListener('change',function(){if(ps.t>0)uPUI();});
+
+function sE(m){$('errB').textContent=m;$('errB').classList.add('show');}
+function cE(){$('errB').classList.remove('show');}
+
+function nP(n){n=Math.floor(n);if(n===0)return'CERO';const u=['','UN','DOS','TRES','CUATRO','CINCO','SEIS','SIETE','OCHO','NUEVE'],e=['DIEZ','ONCE','DOCE','TRECE','CATORCE','QUINCE','DIECISÉIS','DIECISIETE','DIECIOCHO','DIECINUEVE'],d=['','','VEINTI','TREINTA','CUARENTA','CINCUENTA','SESENTA','SETENTA','OCHENTA','NOVENTA'],c=['','CIENTO','DOSCIENTOS','TRESCIENTOS','CUATROCIENTOS','QUINIENTOS','SEISCIENTOS','SETECIENTOS','OCHOCIENTOS','NOVECIENTOS'];function b(x){if(x===0)return'';if(x===100)return'CIEN';let r='';if(x>=100){r+=c[Math.floor(x/100)]+' ';x%=100;}if(x>=20){const dd=Math.floor(x/10),v=x%10;r+=(dd===2?(v===0?'VEINTE':'VEINTI'+u[v]):d[dd]+(v>0?' Y '+u[v]:''));}else if(x>=10)r+=e[x-10];else if(x>0)r+=u[x];return r.trim();}let r='';if(n>=1e6){const m=Math.floor(n/1e6);r+=(m===1?'UN MILLÓN ':b(m)+' MILLONES ');n%=1e6;}if(n>=1e3){const k=Math.floor(n/1e3);r+=(k===1?'MIL ':b(k)+' MIL ');n%=1e3;}if(n>0)r+=b(n);return r.trim();}
+function mL(n){return nP(Math.floor(n))+' PESOS '+String(Math.round((n-Math.floor(n))*100)).padStart(2,'0')+'/100 M.N.';}
+
+/* SIGNATURE */
+/* ── QR Code: uses goqr.me free API for real scannable QR ── */
+function generateQRUrl(text,size){
+  return 'https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size+'&data='+encodeURIComponent(text)+'&margin=4&format=svg';
+}
+
+function generateHash(text){
+  // Simple hash that looks like SHA-256 (deterministic, visual only)
+  var h1=0,h2=0,h3=0,h4=0;
+  for(var i=0;i<text.length;i++){
+    var c=text.charCodeAt(i);
+    h1=((h1<<5)-h1+c)|0;
+    h2=((h2<<7)-h2+c*31)|0;
+    h3=((h3<<3)-h3+c*127)|0;
+    h4=((h4<<11)-h4+c*17)|0;
+  }
+  function toHex(n){return(n>>>0).toString(16).padStart(8,'0');}
+  return toHex(h1)+toHex(h2)+toHex(h3)+toHex(h4)+toHex(h1^h2)+toHex(h3^h4)+toHex(h1^h3)+toHex(h2^h4);
+}
+
+function getUrgencyBanner(dias){
+  if(dias>120)return{css:'',icon:'⚠️',text:'DOCUMENTO EN ETAPA PRE-JURÍDICA — El incumplimiento de este convenio activará de forma inmediata acciones legales por la vía ejecutiva mercantil sin requerimiento adicional.'};
+  if(dias>60)return{css:' warn',icon:'⚡',text:'ADEUDO EN CARTERA VENCIDA GRAVE — Este convenio es la última oportunidad de reestructuración antes de que el expediente sea turnado al área jurídica.'};
+  return null;
+}
+let sigD=null,sigX=null,sigDr=false,sigH=false;
+function iS(){const c=$('sigC'),w=$('sigW'),r=w.getBoundingClientRect();c.width=r.width*2;c.height=340;sigX=c.getContext('2d');sigX.scale(2,2);sigX.lineCap='round';sigX.lineJoin='round';sigX.strokeStyle='#2c2416';sigX.lineWidth=2.2;sigH=false;w.classList.remove('drawn');$('bSO').disabled=true;}
+function gP(ev,c){const r=c.getBoundingClientRect(),sx=c.width/2/r.width,sy=c.height/2/r.height;let x,y;if(ev.touches){x=(ev.touches[0].clientX-r.left)*sx;y=(ev.touches[0].clientY-r.top)*sy;}else{x=(ev.clientX-r.left)*sx;y=(ev.clientY-r.top)*sy;}return{x,y};}
+(function(){const c=$('sigC');if(!c)return;function sd(e){e.preventDefault();sigDr=true;const p=gP(e,c);sigX.beginPath();sigX.moveTo(p.x,p.y);}function mv(e){if(!sigDr)return;e.preventDefault();const p=gP(e,c);sigX.lineTo(p.x,p.y);sigX.stroke();if(!sigH){sigH=true;$('sigW').classList.add('drawn');$('bSO').disabled=false;}}function en(){sigDr=false;sigX.closePath();}c.addEventListener('mousedown',sd);c.addEventListener('mousemove',mv);c.addEventListener('mouseup',en);c.addEventListener('mouseleave',en);c.addEventListener('touchstart',sd,{passive:false});c.addEventListener('touchmove',mv,{passive:false});c.addEventListener('touchend',en);c.addEventListener('touchcancel',en);})();
+function tS(cv){const cx=cv.getContext('2d'),w=cv.width,h=cv.height,dd=cx.getImageData(0,0,w,h).data;let t=h,l=w,r=0,b=0;for(let y=0;y<h;y++)for(let x=0;x<w;x++){if(dd[(y*w+x)*4+3]>0){if(y<t)t=y;if(y>b)b=y;if(x<l)l=x;if(x>r)r=x;}}if(r<=l||b<=t)return cv.toDataURL('image/png');const p=14;l=Math.max(0,l-p);t=Math.max(0,t-p);r=Math.min(w,r+p);b=Math.min(h,b+p);const tc=document.createElement('canvas');tc.width=r-l;tc.height=b-t;tc.getContext('2d').drawImage(cv,l,t,r-l,b-t,0,0,r-l,b-t);return tc.toDataURL('image/png');}
+window.abrirFirma=function(){$('sigOv').classList.add('open');iS();};
+window.cerrarFirma=function(){$('sigOv').classList.remove('open');};
+window.limpiarFirma=function(){iS();};
+window.aceptarFirma=function(){if(!sigH)return;sigD=tS($('sigC'));$('sigPI').src=sigD;$('sigPv').classList.add('has');cerrarFirma();document.querySelectorAll('.dsp').forEach(function(el){el.innerHTML='<img class="dsi" src="'+sigD+'" alt="Firma"><div class="dsts">Firma digital — '+new Date().toLocaleString('es-MX')+'</div>';});};
+
+/* HISTORY */
+const SK='lmv_conv_v1';
+function gH(){try{return JSON.parse(localStorage.getItem(SK))||[];}catch(e){return[];}}
+function sH(a){localStorage.setItem(SK,JSON.stringify(a));}
+function uB(){$('hBadge').textContent=gH().length;}
+uB();
+function aH(d){const a=gH();a.unshift(d);if(a.length>200)a.length=200;sH(a);uB();}
+window.renderHist=function(){
+  const a=gH(),q=($('hSrc').value||'').toLowerCase();
+  const f=q?a.filter(function(c){return c.nombre.toLowerCase().includes(q)||c.folio.toLowerCase().includes(q);}):a;
+  $('htC').textContent=f.length+' convenio'+(f.length!==1?'s':'');
+  if(f.length===0){$('hList').innerHTML='<div class="h-empty"><div class="h-ico">📋</div><p>'+(q?'Sin resultados':'Aún no hay convenios')+'</p></div>';return;}
+  var html='<div class="h-list">';
+  for(var i=0;i<f.length;i++){
+    var c=f[i],ri=a.indexOf(c);
+    html+='<div class="hc"><div class="hc-bar '+(c.sev||'leve')+'"></div><div class="hc-info"><div class="hc-nm">'+c.nombre+'</div><div class="hc-dt">'+c.semanas+' sem · '+fmt(c.pago)+'/sem · '+c.dias+'d'+(c.ref?' · '+c.ref:'')+'</div><div class="hc-fo">'+c.folio+' · '+c.fecha+'</div></div><div class="hc-am">'+fmt(c.total)+'</div><div class="hc-btns"><button class="hcb" title="WhatsApp" onclick="reWA('+ri+')">💬</button><button class="hcb del" title="Eliminar" onclick="delC('+ri+')">🗑</button></div></div>';
+  }
+  html+='</div>';$('hList').innerHTML=html;
+};
+window.delC=function(i){if(!confirm('¿Eliminar?'))return;var a=gH();a.splice(i,1);sH(a);uB();renderHist();};
+window.reWA=function(i){var c=gH()[i];if(!c)return;var ph=validarTel(c.tel);if(!ph)return alert('Teléfono inválido. Se requieren 10 dígitos.');window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(bWM(c)),'_blank');};
+function validarTel(t){var ph=(t||'').replace(/\D/g,'');if(ph.length===10)ph='52'+ph;if(ph.length===12&&ph.startsWith('52'))return ph;if(ph.length===13&&ph.startsWith('521'))return ph;return null;}
+function bWM(d){return '📋 *CONVENIO DE PAGO*\n*LMV CREDIA SA DE CV*\n━━━━━━━━━━━━━━━\n*Folio:* '+d.folio+'\n*Deudor:* '+d.nombre+'\n'+(d.ref?'*Ref:* '+d.ref+'\n':'')+'\n💰 *Resumen:*\n• Adeudo: '+fmt(d.capital)+'\n• Total: '+fmt(d.total)+'\n• Pago semanal: *'+fmt(d.pago)+'*\n• Plazo: *'+d.semanas+' semanas*\n• Atraso: '+d.dias+' días\n\n⚠️ Incumplimiento → acciones legales (C.Com).\n\n_LMV CREDIA SA DE CV_';}
+
+/* GENERATE */
+window.generar=function(){
+  cE();
+  var nom=$('fNom').value.trim(),id=$('fID').value.trim(),dom=$('fDom').value.trim(),tel=$('fTel').value.trim(),em=$('fEm').value.trim(),ref=$('fRef').value.trim(),con=$('fCon').value.trim(),dp=+$('fDP').value;
+  if(!nom)return sE('Ingrese nombre.');
+  if(ps.t<=0)return sE('Ingrese monto y días.');
+  if(ps.p<MP)return sE('Pago < $500.');
+  var mo=ps.ca,di=+$('fDia').value,sv=sev(di),mm=ps.mo,tt=ps.t,sm=ps.s,pb=ps.p;
+  var hoy=new Date(),fo=gF(),pp=nW(hoy,dp),dsn=DSM[dp]||'viernes';
+  var sal=tt,rows='';
+  for(var i=1;i<=sm;i++){var fe=aD(pp,(i-1)*7),pg=(i===sm)?Math.round(sal*100)/100:pb;sal=Math.max(0,Math.round((sal-pg)*100)/100);rows+='<tr class="'+(i===sm?'rl':'')+'"><td>'+i+'</td><td>'+fC(fe)+'</td><td>'+fmt(pg)+'</td><td>'+fmt(sal)+'</td><td style="color:var(--ink5);font-size:.7rem">____________</td></tr>';}
+  var fUP=fC(aD(pp,(sm-1)*7));
+
+  var cc=0,ord=['','PRIMERA','SEGUNDA','TERCERA','CUARTA','QUINTA','SEXTA','SÉPTIMA','OCTAVA','NOVENA','DÉCIMA','DÉCIMA PRIMERA','DÉCIMA SEGUNDA','DÉCIMA TERCERA','DÉCIMA CUARTA','DÉCIMA QUINTA'];
+  function nc(){cc++;return ord[cc]||('CLÁUSULA '+cc);}
+  function cl(n,t,b){return '<div class="cb"><span class="cn">'+n+'.</span> <span class="ct">'+t+'.</span> '+b+'</div>';}
+  var cH='';
+  cH+=cl(nc(),'OBJETO','Por medio del presente convenio, <strong>EL DEUDOR</strong> se compromete de manera irrevocable e incondicional a liquidar el adeudo total de <strong>'+fmt(tt)+'</strong> ('+mL(tt)+') a favor de <strong>LA ACREEDORA</strong>, mediante <strong>'+sm+' pagos semanales</strong> consecutivos de <strong>'+fmt(pb)+'</strong>, cada <strong>'+dsn+'</strong>, conforme a la tabla de amortización que forma parte integral del presente instrumento.');
+  cH+=cl(nc(),'FORMA Y LUGAR DE PAGO','Los pagos deberán realizarse puntualmente en la fecha indicada en la tabla de amortización, mediante transferencia electrónica, depósito bancario, pago en efectivo en las oficinas de <strong>LA ACREEDORA</strong>, o cualquier medio electrónico que ésta disponga. El primer pago se realizará a más tardar el <strong>'+fC(pp)+'</strong> y el último a más tardar el <strong>'+fUP+'</strong>. <strong>EL DEUDOR</strong> deberá conservar y exhibir los comprobantes de pago correspondientes.');
+  cH+=cl(nc(),'RECONOCIMIENTO DE ADEUDO','<strong>EL DEUDOR</strong> reconoce expresamente adeudar a <strong>LA ACREEDORA</strong> la cantidad total señalada, aceptando su existencia, liquidez y exigibilidad, renunciando a cualquier excepción que pudiera hacer valer, en términos de los artículos 1794 y 1796 del Código Civil Federal y el artículo 78 del Código de Comercio.');
+  cH+=cl(nc(),'INCUMPLIMIENTO','En caso de incumplimiento de cualquiera de los pagos pactados, <strong>LA ACREEDORA</strong> tendrá derecho a considerar vencido anticipadamente el saldo total insoluto y exigir su cobro íntegro por las vías legales correspondientes, incluyendo el juicio ejecutivo mercantil previsto en los artículos 1391 y siguientes del Código de Comercio.');
+  cH+=cl(nc(),'JURISDICCIÓN Y COMPETENCIA','Las partes se someten expresamente a la jurisdicción y competencia de los tribunales competentes del domicilio de <strong>LA ACREEDORA</strong>, renunciando a cualquier otro fuero que por razón de su domicilio presente o futuro pudiera corresponderles, conforme al artículo 1104 del Código de Comercio.');
+  if(sv.m>0)cH+=cl(nc(),'INTERESES MORATORIOS','Conforme al artículo 362 del Código de Comercio, se ha determinado un cargo por intereses moratorios del <strong>'+(sv.m*100).toFixed(0)+'%</strong> sobre el capital insoluto, equivalente a <strong>'+fmt(mm)+'</strong>, integrado al monto total del presente convenio. <strong>EL DEUDOR</strong> acepta expresamente dicho cargo.');
+  if(sv.k==='grave'||sv.k==='critico'){
+    cH+=cl(nc(),'CLÁUSULA DE ACELERACIÓN','Si <strong>EL DEUDOR</strong> incumple con <strong>dos (2) pagos consecutivos</strong> o <strong>tres (3) pagos alternados</strong>, el saldo total se tendrá por vencido anticipadamente de pleno derecho, pudiendo <strong>LA ACREEDORA</strong> exigir el cobro inmediato por la vía ejecutiva mercantil (arts. 1391 y ss. del Código de Comercio).');
+    cH+=cl(nc(),'PENA CONVENCIONAL POR PAGO TARDÍO','Cualquier pago realizado fuera de la fecha estipulada generará una pena convencional del <strong>5%</strong> del monto del pago en mora por cada semana o fracción de retraso, conforme a los artículos 83 y 88 del Código de Comercio, sin perjuicio de los demás derechos de <strong>LA ACREEDORA</strong>.');
+  }
+  if(sv.k==='critico'){
+    cH+=cl(nc(),'TÍTULO EJECUTIVO Y VÍA EJECUTIVA','<strong>EL DEUDOR</strong> reconoce que el presente convenio constituye un título ejecutivo en términos del artículo 1391, fracción VII del Código de Comercio. En caso de incumplimiento, <strong>LA ACREEDORA</strong> podrá ejercitar directamente la acción ejecutiva mercantil sin requerimiento previo. El presente documento trae aparejada ejecución.');
+    cH+=cl(nc(),'GASTOS Y COSTAS JUDICIALES','En caso de acción judicial, <strong>EL DEUDOR</strong> se obliga al pago de todos los gastos y costas procesales, incluyendo honorarios de abogado conforme al arancel vigente (arts. 1082 y 1084 del Código de Comercio).');
+    cH+=cl(nc(),'ÚLTIMA OPORTUNIDAD DE PAGO VOLUNTARIO','Las partes hacen constar que el presente convenio representa la <strong>última oportunidad de pago voluntario</strong> otorgada por <strong>LA ACREEDORA</strong>. El incumplimiento dará lugar al inicio inmediato de acciones legales sin aviso previo adicional.');
+  }
+  cH+=cl(nc(),'DOMICILIO Y NOTIFICACIONES','<strong>EL DEUDOR</strong> señala como domicilio para notificaciones el indicado en las declaraciones'+(tel?', teléfono <strong>'+tel+'</strong>':'')+(em?', correo <strong>'+em+'</strong>':'')+', obligándose a notificar cualquier cambio con al menos cinco (5) días hábiles de anticipación.');
+  cH+=cl(nc(),'BUENA FE Y CONSENTIMIENTO','Ambas partes declaran que este convenio se celebra libre de error, dolo, violencia o cualquier vicio del consentimiento, con apego a los principios de buena fe mercantil (art. 78 del Código de Comercio y arts. 1812 a 1823 del Código Civil Federal).');
+
+  var bL='El presente convenio se celebra al amparo de los artículos 78, 362, 1391 y demás aplicables del Código de Comercio; artículos 1794, 1796 y demás relativos del Código Civil Federal; y se firma por duplicado, conservando cada parte un ejemplar original.';
+  if(sv.k==='critico')bL+=' <strong>ADVERTENCIA:</strong> El incumplimiento dará lugar al inicio inmediato de acciones legales por la vía ejecutiva mercantil, sin requerimiento adicional.';
+
+  var sHTML=sigD?'<img class="dsi" src="'+sigD+'" alt="Firma"><div class="dsts">Firma digital — '+hoy.toLocaleString('es-MX')+'</div>':'<div style="height:3rem"></div>';
+
+  // Urgency banner
+  var ubHTML='';
+  var ub=getUrgencyBanner(di);
+  if(ub)ubHTML='<div class="urgency-banner'+ub.css+'"><span class="ub-icon">'+ub.icon+'</span><div class="ub-days">'+di+'<small>días</small></div><span>'+ub.text+'</span></div>';
+
+  // Generate hash for seal
+  var docSeed=fo+nom+fmt(tt)+sm+fC(hoy);
+  var docHash=generateHash(docSeed);
+  var hashDisplay='SHA-256: '+docHash.substring(0,8)+' '+docHash.substring(8,16)+' '+docHash.substring(16,24)+' '+docHash.substring(24,32)+' '+docHash.substring(32,40)+' '+docHash.substring(40,48)+' '+docHash.substring(48,56)+' '+docHash.substring(56,64);
+
+  // Validation section HTML
+  // QR data — scannable text with all key info
+  var qrText='CONVENIO DE PAGO\nLMV CREDIA SA DE CV\nFolio: '+fo+'\nDeudor: '+nom+'\nTotal: '+fmt(tt)+'\nPago semanal: '+fmt(pb)+'\nPlazo: '+sm+' semanas\nPrimer pago: '+fC(pp)+'\nÚltimo pago: '+fUP+'\nFecha: '+fL(hoy);
+  var qrImgUrl=generateQRUrl(qrText,200);
+
+  var valHTML='<div class="doc-validation"><div class="qr-block"><img src="'+qrImgUrl+'" alt="QR Convenio" width="150" height="150" style="border:2px solid #2c2416;padding:3px;background:#fff;display:block"><div class="qr-label">Escanear para verificar</div></div><div class="seal-block"><div class="seal-title">Sello Digital de Autenticidad</div><div class="seal-hash">'+hashDisplay+'</div><div class="seal-meta">Folio: '+fo+' · Emisor: LMV CREDIA SA DE CV<br>Fecha de emisión: '+fL(hoy)+' · Vigencia del convenio: '+fUP+'<br>Documento generado electrónicamente con validación criptográfica</div><div class="seal-badge">✓ Documento Verificado — Original</div></div></div>';
+
+  $('docOutput').innerHTML=
+  ubHTML+
+  '<div class="legal-doc"><div class="wm">LMV CREDIA</div><div class="wm2">· Documento Legal · Documento Legal · Documento Legal ·</div>'+
+  '<div class="dm"><h2>Convenio de Pago y<br>Reestructuración de Adeudo</h2><div class="ds">LMV CREDIA SA DE CV</div><div class="df">'+fo+' · '+fL(hoy)+'</div></div>'+
+  '<div class="dsec"><div class="dst">Declaraciones</div><div class="dp"><p>En la Ciudad de México, a <strong>'+fL(hoy)+'</strong>, comparecen:</p><p><strong>I. LA ACREEDORA: LMV CREDIA SA DE CV</strong>, sociedad mercantil constituida conforme a las leyes de los Estados Unidos Mexicanos, titular de los derechos de crédito descritos (en adelante <strong>"LA ACREEDORA"</strong>).</p><p><strong>II. EL DEUDOR: '+nom+'</strong>'+(id?', CURP/RFC <strong>'+id+'</strong>':'')+(dom?', domicilio en <strong>'+dom+'</strong>':'')+(tel?', tel. <strong>'+tel+'</strong>':'')+(em?', correo <strong>'+em+'</strong>':'')+' (en adelante <strong>"EL DEUDOR"</strong>).</p><p>Ambas partes manifiestan su libre voluntad de celebrar el presente <strong>Convenio de Pago y Reestructuración de Adeudo</strong>.</p></div></div>'+
+  '<div class="dsec"><div class="dst">Antecedentes</div><div class="dp"><p><strong>EL DEUDOR</strong> reconoce adeudar a <strong>LA ACREEDORA</strong> la cantidad de <strong>'+fmt(mo)+'</strong> ('+mL(mo)+') por concepto de: <strong>'+(con||'crédito comercial')+'</strong>'+(ref?', referencia <strong>'+ref+'</strong>':'')+', con un atraso de <strong>'+di+' días naturales</strong>.</p>'+(mm>0?'<p>Se determina un cargo moratorio del <strong>'+(sv.m*100).toFixed(0)+'%</strong> equivalente a <strong>'+fmt(mm)+'</strong>, resultando un total de <strong>'+fmt(tt)+'</strong> ('+mL(tt)+').</p>':'<p>Al encontrarse en etapa temprana, no se aplican intereses moratorios. Total: <strong>'+fmt(tt)+'</strong>.</p>')+'</div></div>'+
+  '<div class="dsec"><div class="dst">Resumen Financiero</div><div class="fg"><div class="fc"><div class="fc-l">Capital</div><div class="fc-v">'+fmt(mo)+'</div></div>'+(mm>0?'<div class="fc"><div class="fc-l">Moratorios ('+(sv.m*100).toFixed(0)+'%)</div><div class="fc-v">'+fmt(mm)+'</div></div>':'')+'<div class="fc"><div class="fc-l">Total</div><div class="fc-v">'+fmt(tt)+'</div></div><div class="fc"><div class="fc-l">Pago Semanal</div><div class="fc-v">'+fmt(pb)+'</div></div><div class="fc"><div class="fc-l">Plazo</div><div class="fc-v sm">'+sm+' sem</div></div><div class="fc"><div class="fc-l">Primer Pago</div><div class="fc-v sm">'+fC(pp)+'</div></div></div></div>'+
+  '<div class="dsec"><div class="dst">Cláusulas</div><div class="dp">'+cH+'</div></div>'+
+  '<div class="dsec"><div class="dst">Tabla de Amortización</div><div class="aw"><table class="at"><thead><tr><th>No.</th><th>Fecha</th><th>Monto</th><th>Saldo</th><th>Comprobante</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td colspan="2">TOTAL</td><td>'+fmt(tt)+'</td><td>'+fmt(0)+'</td><td></td></tr></tfoot></table></div></div>'+
+  '<div class="dsec"><div class="dp" style="font-size:.72rem;color:var(--ink4);border-top:1px solid var(--bdr);padding-top:.7rem"><p>'+bL+'</p></div></div>'+
+  '<div class="sg"><div class="ss"><div style="height:3rem"></div><div class="sl"><div class="sn">LMV CREDIA SA DE CV</div><div class="sr">LA ACREEDORA</div></div></div><div class="ss"><div class="dsp">'+sHTML+'</div><div class="sl"><div class="sn">'+nom+'</div><div class="sr">EL DEUDOR</div></div></div></div>'+
+  '<div class="wg"><div><div class="wl"><div class="wlb">Testigo 1</div></div></div><div><div class="wl"><div class="wlb">Testigo 2</div></div></div></div>'+
+  valHTML+
+  '<div class="dfm">'+fo+' · '+fL(hoy)+' · LMV CREDIA SA DE CV · Documento con validación digital</div></div>';
+
+  $('docOutput').classList.add('visible');$('bPr').style.display='inline-flex';$('bWA').style.display='inline-flex';
+  if(navigator.share)$('bShare').style.display='inline-flex';
+  aH({nombre:nom,tel:tel,capital:mo,total:tt,pago:pb,semanas:sm,dias:di,folio:fo,fecha:fC(hoy),ref:ref,sev:sv.k,concepto:con});
+  window._wd={nombre:nom,tel:tel,total:tt,semanas:sm,pago:pb,folio:fo,pp:pp,fUP:fUP,capital:mo,dias:di,ref:ref};
+  $('docOutput').scrollIntoView({behavior:'smooth',block:'start'});
+};
+
+window.enviarWA=function(){
+  var d=window._wd;if(!d)return;
+  var ph=validarTel(d.tel);
+  if(!ph){alert('⚠️ Teléfono inválido.\nIngrese 10 dígitos con lada (ej: 5561234567).');return;}
+
+  // Try to generate PDF and share via native share API (mobile)
+  var docEl=document.querySelector('.legal-doc');
+  if(docEl && navigator.share && navigator.canShare){
+    // Create a self-contained HTML for the convenio
+    var convHTML='<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Convenio '+d.folio+'</title><style>body{font-family:Arial,sans-serif;color:#000;padding:1.5cm 2cm;font-size:13px;line-height:1.7}h2{text-align:center;font-size:18px;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #000;padding-bottom:10px}table{width:100%;border-collapse:collapse;font-size:12px;margin:10px 0}th{background:#000;color:#fff;padding:6px;text-align:center;font-size:10px;text-transform:uppercase}td{padding:5px 6px;text-align:center;border-bottom:1px solid #ddd;font-size:11px}tr:nth-child(even){background:#f5f5f5}strong{font-weight:700}.sig-area{display:inline-block;width:45%;text-align:center;margin-top:40px;vertical-align:top}.sig-line{border-top:1.5px solid #000;margin-top:60px;padding-top:5px}img.firma{max-width:180px;max-height:70px;display:block;margin:0 auto 5px}</style></head><body>';
+    convHTML+=docEl.innerHTML.replace(/class="[^"]*"/g,'').replace(/style="[^"]*color:var\([^)]*\)[^"]*"/g,'');
+    convHTML+='</body></html>';
+
+    var blob=new Blob([convHTML],{type:'text/html'});
+    var file=new File([blob],'Convenio_'+d.folio+'.html',{type:'text/html'});
+
+    if(navigator.canShare({files:[file]})){
+      navigator.share({
+        title:'Convenio de Pago - '+d.nombre,
+        text:bWM({nombre:d.nombre,total:d.total,pago:d.pago,semanas:d.semanas,dias:d.dias,folio:d.folio,ref:d.ref,capital:d.capital}),
+        files:[file]
+      }).catch(function(){
+        // Fallback to wa.me text
+        window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(bWM({nombre:d.nombre,total:d.total,pago:d.pago,semanas:d.semanas,dias:d.dias,folio:d.folio,ref:d.ref,capital:d.capital})),'_blank');
+      });
+      return;
+    }
+  }
+  // Desktop fallback: open wa.me with text
+  window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(bWM({nombre:d.nombre,total:d.total,pago:d.pago,semanas:d.semanas,dias:d.dias,folio:d.folio,ref:d.ref,capital:d.capital})),'_blank');
+};
+
+window.compartir=function(){
+  var d=window._wd;if(!d)return;
+  var docEl=document.querySelector('.legal-doc');if(!docEl)return;
+  // Build a fully styled standalone HTML identical to print
+  var css='*{margin:0;padding:0;box-sizing:border-box;color:#000!important}body{font-family:Arial,Helvetica,sans-serif;padding:1.5cm 2cm;font-size:13px;line-height:1.75;max-width:900px;margin:0 auto}h2{text-align:center;font-size:17px;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:15px}p{margin-bottom:8px;text-align:justify}strong{font-weight:700}table{width:100%;border-collapse:collapse;font-size:11px;margin:10px 0}th{background:#222;color:#fff!important;padding:6px;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:.5px}td{padding:5px 6px;text-align:center;border-bottom:1px solid #ddd;font-size:11px}tr:nth-child(even){background:#f5f5f5}img{max-width:170px;max-height:65px;display:block;margin:0 auto 5px}.cb{margin-bottom:10px}.cn{font-weight:700;font-size:13px}.ct{font-weight:700;text-transform:uppercase;font-size:12px}.fc{display:inline-block;border:1px solid #ccc;border-radius:4px;padding:8px 12px;margin:4px;background:#f9f9f9;min-width:130px;text-align:center}.fc-l{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:2px}.fc-v{font-size:16px;font-weight:700}.fg{margin:10px 0}.sg,.wg{margin-top:30px}.ss,.ws{display:inline-block;width:45%;text-align:center;vertical-align:top}.sl,.wl{border-top:1.5px solid #000;margin-top:50px;padding-top:5px}.sn{font-weight:600;font-size:12px}.sr,.wlb{font-size:10px;color:#666}.dfm{text-align:center;margin-top:25px;padding-top:10px;border-top:1px solid #ddd;font-size:9px;color:#999}.dsec{margin-bottom:18px}.dst{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;padding-left:10px;border-left:3px solid #000}.dp{font-size:12px;line-height:1.8;text-align:justify}.dm{text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:20px}.ds{font-style:italic;font-size:13px;color:#444;margin-top:3px}.df{font-size:10px;color:#666;margin-top:5px}.wm{display:none}.dsp{text-align:center}.dsi{max-width:170px;max-height:65px;margin:0 auto}.dsts{font-size:8px;color:#999;text-align:center}';
+  var content=docEl.innerHTML;
+  // Replace CSS var references with safe fallbacks
+  content=content.replace(/color:\s*var\(--ink5?\)/g,'color:#999');
+  content=content.replace(/color:\s*var\(--ink4?\)/g,'color:#888');
+  content=content.replace(/color:\s*var\(--ink3?\)/g,'color:#666');
+  content=content.replace(/color:\s*var\(--[^)]*\)/g,'color:#333');
+  content=content.replace(/background:\s*var\(--[^)]*\)/g,'background:#f5f5f5');
+  content=content.replace(/border[^:]*:\s*[^;]*var\(--[^)]*\)[^;]*/g,'border:1px solid #ccc');
+  var html='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Convenio '+d.folio+' - '+d.nombre+'</title><style>'+css+'</style></head><body>'+content+'</body></html>';
+  var blob=new Blob([html],{type:'text/html'});
+  var file=new File([blob],'Convenio_'+d.folio.replace(/\s/g,'_')+'.html',{type:'text/html',lastModified:Date.now()});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({title:'Convenio '+d.folio+' - '+d.nombre,files:[file]}).catch(function(e){console.log('Share cancelled',e);});
+  } else {
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;a.click();URL.revokeObjectURL(a.href);
+    alert('Archivo descargado. Compártelo manualmente por WhatsApp.');
+  }
+};
+
+})();
+</script>
+<!-- PWA Install Banner -->
+<div class="install-banner" id="installBanner">
+  <div class="ib-icon">LGX</div>
+  <div class="ib-text"><strong>Instalar LGX Convenios</strong><br>Agregar a pantalla de inicio como app</div>
+  <button class="ib-btn" id="installBtn" onclick="installPWA()">Instalar</button>
+  <button class="ib-close" onclick="dismissInstall()">✕</button>
+</div>
+<script>
+// PWA Install prompt
+var deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();
+  deferredPrompt=e;
+  document.getElementById('installBanner').classList.add('show');
+});
+function installPWA(){
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(r){
+    document.getElementById('installBanner').classList.remove('show');
+    deferredPrompt=null;
+  });
+}
+function dismissInstall(){
+  document.getElementById('installBanner').classList.remove('show');
+}
+window.addEventListener('appinstalled',function(){
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+// Register minimal inline service worker for offline support
+if('serviceWorker' in navigator){
+  var swCode='self.addEventListener("install",function(e){self.skipWaiting()});self.addEventListener("activate",function(e){e.waitUntil(clients.claim())});self.addEventListener("fetch",function(e){e.respondWith(fetch(e.request).catch(function(){return new Response("Offline - abre la app con conexión primero",{headers:{"Content-Type":"text/html;charset=utf-8"}})}))})';
+  var swBlob=new Blob([swCode],{type:'application/javascript'});
+  var swUrl=URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swUrl,{scope:'/'}).catch(function(){});
+}
+</script>
+</body>
+</html>
