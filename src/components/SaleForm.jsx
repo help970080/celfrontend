@@ -1,4 +1,8 @@
-// SaleForm.jsx - IMEI OPCIONAL VÍA CHECKBOX (solo si la venta incluye celular)
+// SaleForm.jsx - VALIDA IMEI EN ZOHO ANTES DE CREAR VENTA
+// Usa SOLO endpoints existentes:
+//   - GET  /api/mdm/devices/search/:imei  (verificar IMEI en Zoho)
+//   - POST /api/sales                      (crear venta clásico)
+//   - POST /api/mdm/sales/:saleId/link-device  (vincular IMEI a venta)
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
@@ -19,16 +23,14 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
     const [paymentFrequency, setPaymentFrequency] = useState('weekly');
     const [numberOfPayments, setNumberOfPayments] = useState('');
 
-    // ⭐ Checkbox: ¿esta venta incluye un celular que requiere IMEI/MDM?
+    // Checkbox: ¿la venta incluye celular?
     const [includesPhone, setIncludesPhone] = useState(false);
 
-    // Campos IMEI / dispositivo (solo si includesPhone)
+    // Campos IMEI (solo si includesPhone)
     const [imei, setImei] = useState('');
-    const [imeiStatus, setImeiStatus] = useState(null); // null | 'checking' | 'valid' | 'invalid' | 'ocupado'
+    const [imeiStatus, setImeiStatus] = useState(null); // null | 'checking' | 'valid' | 'invalid' | 'not_in_zoho'
     const [imeiMessage, setImeiMessage] = useState('');
-    const [imeiExisting, setImeiExisting] = useState(null);
-    const [deviceBrand, setDeviceBrand] = useState('');
-    const [deviceModel, setDeviceModel] = useState('');
+    const [imeiZohoInfo, setImeiZohoInfo] = useState(null); // {deviceName, model, account, imei}
 
     useEffect(() => {
         const newTotal = selectedProducts.reduce((sum, item) => {
@@ -38,57 +40,79 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
         setTotalAmount(parseFloat(newTotal.toFixed(2)));
     }, [selectedProducts, products]);
 
-    // Si destildan el checkbox o cambian a contado, limpiar IMEI
+    // Limpiar IMEI cuando se destilda el checkbox o se cambia a contado
     useEffect(() => {
         if (!isCredit || !includesPhone) {
             setImei('');
             setImeiStatus(null);
             setImeiMessage('');
-            setImeiExisting(null);
-            setDeviceBrand('');
-            setDeviceModel('');
+            setImeiZohoInfo(null);
         }
     }, [isCredit, includesPhone]);
 
-    // Si pasa a contado, destildar el checkbox también
     useEffect(() => {
         if (!isCredit) setIncludesPhone(false);
     }, [isCredit]);
 
-    // ⭐ Verificación automática del IMEI al alcanzar 14+ dígitos (debounce)
+    // ⭐ Verificación automática del IMEI contra Zoho (debounce 500ms)
     useEffect(() => {
         if (!includesPhone || !imei || imei.length < 14) {
             setImeiStatus(null);
             setImeiMessage('');
-            setImeiExisting(null);
+            setImeiZohoInfo(null);
+            return;
+        }
+
+        // Validación de formato (solo dígitos)
+        if (imei.length < 14 || imei.length > 17) {
+            setImeiStatus('invalid');
+            setImeiMessage('IMEI debe tener 14-17 dígitos');
+            setImeiZohoInfo(null);
             return;
         }
 
         const timer = setTimeout(async () => {
             setImeiStatus('checking');
-            setImeiMessage('Verificando IMEI...');
+            setImeiMessage('Verificando IMEI en Zoho MDM...');
+            setImeiZohoInfo(null);
+
             try {
-                const response = await authenticatedFetch(`${API_BASE_URL}/api/imei/check/${imei}`);
+                // ⭐ Usa el endpoint EXISTENTE de mdmRoutes.js
+                const response = await authenticatedFetch(
+                    `${API_BASE_URL}/api/mdm/devices/search/${imei}`
+                );
                 const data = await response.json();
 
-                if (!response.ok) {
-                    setImeiStatus('invalid');
-                    setImeiMessage(data.message || 'IMEI inválido');
+                if (response.status === 404) {
+                    setImeiStatus('not_in_zoho');
+                    setImeiMessage('❌ Este IMEI NO está enrolado en Zoho MDM. Enrólalo antes de vender.');
+                    setImeiZohoInfo(null);
                     return;
                 }
 
-                if (data.available) {
+                if (!response.ok) {
+                    setImeiStatus('invalid');
+                    setImeiMessage(data.message || 'Error al verificar IMEI');
+                    return;
+                }
+
+                if (data.success && data.device) {
                     setImeiStatus('valid');
-                    setImeiMessage('✓ IMEI disponible');
-                    setImeiExisting(null);
+                    setImeiMessage(`✓ IMEI encontrado en cuenta Zoho: ${data.account}`);
+                    setImeiZohoInfo({
+                        deviceName: data.device.deviceName,
+                        model: data.device.model,
+                        account: data.account,
+                        imei: data.device.imei,
+                        isLostMode: data.device.isLostMode
+                    });
                 } else {
-                    setImeiStatus('ocupado');
-                    setImeiMessage(data.message || 'IMEI ya vendido a otro cliente');
-                    setImeiExisting(data.existing);
+                    setImeiStatus('not_in_zoho');
+                    setImeiMessage('IMEI no encontrado en Zoho');
                 }
             } catch (err) {
                 setImeiStatus('invalid');
-                setImeiMessage('Error de red al verificar');
+                setImeiMessage('Error de red al verificar en Zoho');
             }
         }, 500);
 
@@ -107,9 +131,7 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
         setImei('');
         setImeiStatus(null);
         setImeiMessage('');
-        setImeiExisting(null);
-        setDeviceBrand('');
-        setDeviceModel('');
+        setImeiZohoInfo(null);
         setError(null);
     };
 
@@ -142,13 +164,14 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
         setLoading(true);
         setError(null);
 
+        // Validaciones básicas
         if (!clientId || selectedProducts.length === 0) {
             toast.error('Cliente y productos son obligatorios.');
             setLoading(false);
             return;
         }
 
-        // ⭐ Solo validar IMEI si se marcó el checkbox
+        // ⭐ VALIDACIÓN DURA: si hay celular, IMEI debe estar verificado en Zoho
         if (isCredit && includesPhone) {
             if (!imei || imei.length < 14) {
                 toast.error('IMEI es obligatorio cuando la venta incluye un celular');
@@ -156,76 +179,92 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
                 return;
             }
             if (imeiStatus !== 'valid') {
-                toast.error('El IMEI no está disponible. Verifica antes de continuar.');
+                toast.error('El IMEI no está verificado en Zoho. No se puede continuar.');
+                setLoading(false);
+                return;
+            }
+
+            // ⭐ DOBLE VERIFICACIÓN antes de submit (por si pasó tiempo desde la última)
+            try {
+                const recheck = await authenticatedFetch(
+                    `${API_BASE_URL}/api/mdm/devices/search/${imei}`
+                );
+                if (!recheck.ok) {
+                    toast.error('❌ El IMEI ya no está disponible en Zoho. Verifica de nuevo.');
+                    setImeiStatus('not_in_zoho');
+                    setLoading(false);
+                    return;
+                }
+            } catch (err) {
+                toast.error('No se pudo confirmar IMEI en Zoho. Reintenta.');
                 setLoading(false);
                 return;
             }
         }
-        
-        const numPayments = parseInt(numberOfPayments, 10);
-        const remainingForCalc = totalAmount - parseFloat(downPayment || 0);
-        const installment = isCredit && remainingForCalc > 0 && numPayments > 0
-            ? parseFloat((remainingForCalc / numPayments).toFixed(2))
-            : 0;
 
-        // ⭐ Decisión de endpoint: SOLO usa el endpoint con IMEI si hay celular
-        const usaImeiEndpoint = isCredit && includesPhone && imei && imei.length >= 14;
-
+        // ⭐ FLUJO DE CREACIÓN DE VENTA (usa tus endpoints existentes)
         try {
-            let response, responseData;
+            // 1) Crear venta con el endpoint clásico
+            const saleData = {
+                clientId: parseInt(clientId),
+                saleItems: selectedProducts,
+                isCredit,
+                downPayment: isCredit ? parseFloat(downPayment || 0) : totalAmount,
+                assignedCollectorId: isCredit && assignedCollectorId ? parseInt(assignedCollectorId, 10) : null,
+                paymentFrequency: isCredit ? paymentFrequency : null,
+                numberOfPayments: isCredit ? parseInt(numberOfPayments, 10) : null,
+            };
 
-            if (usaImeiEndpoint) {
-                // POST atómico: crea venta + vincula IMEI en una transacción
-                const payload = {
-                    clientId: parseInt(clientId),
-                    saleItems: selectedProducts,
-                    totalAmount,
-                    isCredit: true,
-                    downPayment: parseFloat(downPayment || 0),
-                    interestRate: 0,
-                    paymentFrequency,
-                    numberOfPayments: numPayments,
-                    weeklyPaymentAmount: installment,
-                    balanceDue: remainingForCalc,
-                    assignedCollectorId: assignedCollectorId ? parseInt(assignedCollectorId, 10) : null,
-                    status: 'pending',
-                    imei,
-                    deviceBrand: deviceBrand || null,
-                    deviceModel: deviceModel || null
-                };
+            const saleResponse = await authenticatedFetch(`${API_BASE_URL}/api/sales`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(saleData)
+            });
 
-                response = await authenticatedFetch(`${API_BASE_URL}/api/sales/create-with-imei`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                responseData = await response.json();
+            const newSale = await saleResponse.json();
 
-                if (!response.ok) {
-                    throw new Error(responseData.message || responseData.error || "Error al registrar venta con IMEI.");
+            if (!saleResponse.ok) {
+                throw new Error(newSale.message || 'Error al registrar la venta.');
+            }
+
+            // 2) Si lleva celular, vincular IMEI a la venta usando el endpoint EXISTENTE
+            if (isCredit && includesPhone && imei) {
+                try {
+                    const linkResponse = await authenticatedFetch(
+                        `${API_BASE_URL}/api/mdm/sales/${newSale.id}/link-device`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ imei })
+                        }
+                    );
+
+                    const linkData = await linkResponse.json();
+
+                    if (!linkResponse.ok) {
+                        // ⚠️ La venta ya se creó pero no se pudo vincular
+                        // Esto NO debería pasar porque ya validamos 2 veces, pero por seguridad:
+                        toast.warn(
+                            `⚠️ Venta #${newSale.id} creada, pero la vinculación del IMEI falló. ` +
+                            `Vincula manualmente desde el panel MDM. Error: ${linkData.message}`,
+                            { autoClose: 10000 }
+                        );
+                    } else {
+                        toast.success(
+                            `✅ Venta #${newSale.id} registrada.\n` +
+                            `📱 IMEI vinculado a cuenta Zoho: ${imeiZohoInfo?.account || 'OK'}`,
+                            { autoClose: 6000 }
+                        );
+                    }
+                } catch (linkErr) {
+                    toast.warn(
+                        `⚠️ Venta #${newSale.id} creada, pero error de red al vincular IMEI. ` +
+                        `Vincula manualmente desde el panel MDM.`,
+                        { autoClose: 10000 }
+                    );
                 }
-
-                toast.success(`¡Venta #${responseData.sale.id} registrada! 📱 Dispositivo ${responseData.action === 'created' ? 'enrolado' : 'vinculado'}.`);
             } else {
-                // Endpoint clásico: contado, o crédito sin celular (accesorios, fundas, audífonos, chips, etc.)
-                const saleData = {
-                    clientId: parseInt(clientId),
-                    saleItems: selectedProducts,
-                    isCredit,
-                    downPayment: isCredit ? parseFloat(downPayment || 0) : totalAmount,
-                    assignedCollectorId: isCredit && assignedCollectorId ? parseInt(assignedCollectorId, 10) : null,
-                    paymentFrequency: isCredit ? paymentFrequency : null,
-                    numberOfPayments: isCredit ? numPayments : null,
-                };
-
-                response = await authenticatedFetch(`${API_BASE_URL}/api/sales`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(saleData)
-                });
-                responseData = await response.json();
-                if (!response.ok) throw new Error(responseData.message || "Error al registrar la venta.");
-                toast.success(isCredit ? "¡Venta a crédito registrada!" : "¡Venta de contado registrada!");
+                toast.success(isCredit ? '¡Venta a crédito registrada!' : '¡Venta de contado registrada!');
             }
 
             onSaleAdded();
@@ -237,20 +276,20 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
             setLoading(false);
         }
     };
-    
+
     const remainingForCalculation = totalAmount - parseFloat(downPayment || 0);
     const numPayments = parseInt(numberOfPayments, 10);
     const calculatedInstallment = isCredit && remainingForCalculation > 0 && numPayments > 0 
         ? parseFloat((remainingForCalculation / numPayments).toFixed(2)) 
         : 0;
-    
+
     const isFormValid = () => {
         if (!clientId || selectedProducts.length === 0) return false;
         if (isCredit) {
             if (downPayment === '' || parseFloat(downPayment) < 0 || parseFloat(downPayment) > totalAmount) return false;
             if (!numberOfPayments || parseInt(numberOfPayments, 10) <= 0) return false;
             if (!assignedCollectorId) return false;
-            // ⭐ IMEI solo se exige si se marcó el checkbox
+            // ⭐ IMEI debe estar VERIFICADO en Zoho si se marcó celular
             if (includesPhone) {
                 if (!imei || imei.length < 14 || imeiStatus !== 'valid') return false;
             }
@@ -261,13 +300,13 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
     const imeiBorderColor =
         imeiStatus === 'valid' ? '#10b981' :
         imeiStatus === 'invalid' ? '#ef4444' :
-        imeiStatus === 'ocupado' ? '#ef4444' :
+        imeiStatus === 'not_in_zoho' ? '#ef4444' :
         imeiStatus === 'checking' ? '#f59e0b' :
         '#d1d5db';
 
     const imeiBadge =
-        imeiStatus === 'valid' ? { bg: '#d1fae5', fg: '#065f46', txt: '✓ Disponible' } :
-        imeiStatus === 'ocupado' ? { bg: '#fee2e2', fg: '#991b1b', txt: '✗ Ya vendido' } :
+        imeiStatus === 'valid' ? { bg: '#d1fae5', fg: '#065f46', txt: '✓ En Zoho' } :
+        imeiStatus === 'not_in_zoho' ? { bg: '#fee2e2', fg: '#991b1b', txt: '✗ No enrolado' } :
         imeiStatus === 'invalid' ? { bg: '#fee2e2', fg: '#991b1b', txt: '✗ Inválido' } :
         imeiStatus === 'checking' ? { bg: '#fef3c7', fg: '#92400e', txt: 'Verificando...' } :
         null;
@@ -396,7 +435,7 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
                             </select>
                         </div>
 
-                        {/* ⭐ CHECKBOX: ¿Esta venta incluye un celular? */}
+                        {/* CHECKBOX: ¿Esta venta incluye un celular? */}
                         <div className="form-group checkbox-group" style={{
                             backgroundColor: '#fef3c7',
                             padding: '12px',
@@ -416,9 +455,12 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
                             <p style={{ fontSize: '12px', color: '#92400e', marginTop: '4px', marginLeft: '24px' }}>
                                 Marcar SOLO si vendes un teléfono. No marcar para accesorios, fundas, audífonos, chips, etc.
                             </p>
+                            <p style={{ fontSize: '12px', color: '#991b1b', marginTop: '6px', marginLeft: '24px', fontWeight: 'bold' }}>
+                                ⚠️ El celular DEBE estar pre-enrolado en Zoho MDM. Si no, el sistema rechazará la venta.
+                            </p>
                         </div>
 
-                        {/* ⭐ Campos IMEI: solo aparecen si se marca el checkbox */}
+                        {/* Campos IMEI: solo aparecen si se marca el checkbox */}
                         {includesPhone && (
                             <div className="form-group" style={{
                                 borderTop: '2px solid #7c3aed',
@@ -474,40 +516,22 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
                                         color: imeiBadge?.fg || '#374151'
                                     }}>
                                         {imeiMessage}
-                                        {imeiExisting && imeiExisting.clientName && (
+                                        {imeiZohoInfo && (
                                             <span style={{ display: 'block', marginTop: '4px', fontWeight: 'bold' }}>
-                                                Cliente actual: {imeiExisting.clientName}
-                                                {imeiExisting.brand && ` — ${imeiExisting.brand} ${imeiExisting.model || ''}`}
+                                                {imeiZohoInfo.deviceName && `📱 ${imeiZohoInfo.deviceName}`}
+                                                {imeiZohoInfo.model && ` — ${imeiZohoInfo.model}`}
+                                                {imeiZohoInfo.isLostMode === 'true' && (
+                                                    <span style={{ color: '#dc2626', display: 'block' }}>
+                                                        ⚠️ Este dispositivo está actualmente bloqueado en Zoho
+                                                    </span>
+                                                )}
                                             </span>
                                         )}
                                     </p>
                                 )}
 
-                                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                                    <div style={{ flex: 1 }}>
-                                        <label style={{ fontSize: '12px', color: '#6b7280' }}>Marca (opcional):</label>
-                                        <input
-                                            type="text"
-                                            value={deviceBrand}
-                                            onChange={(e) => setDeviceBrand(e.target.value)}
-                                            placeholder="Samsung, Motorola..."
-                                            style={{ width: '100%', padding: '8px', fontSize: '14px', border: '1px solid #d1d5db', borderRadius: '4px' }}
-                                        />
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <label style={{ fontSize: '12px', color: '#6b7280' }}>Modelo (opcional):</label>
-                                        <input
-                                            type="text"
-                                            value={deviceModel}
-                                            onChange={(e) => setDeviceModel(e.target.value)}
-                                            placeholder="A14, G24..."
-                                            style={{ width: '100%', padding: '8px', fontSize: '14px', border: '1px solid #d1d5db', borderRadius: '4px' }}
-                                        />
-                                    </div>
-                                </div>
-
                                 <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '8px', fontStyle: 'italic' }}>
-                                    💡 El IMEI se valida automáticamente y queda vinculado al cliente para el bloqueo MDM si cae en mora.
+                                    💡 El sistema busca el IMEI en TODAS tus cuentas Zoho y vincula automáticamente al cliente para el bloqueo en caso de mora.
                                 </p>
                             </div>
                         )}
