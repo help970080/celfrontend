@@ -12,7 +12,15 @@ const TIMEZONE = "America/Mexico_City";
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function ReportsDashboard({ authenticatedFetch }) {
+function ReportsDashboard({ authenticatedFetch, userRole, userTiendaId }) {
+    // ⭐ Helper: agrega tiendaId al query string si NO es super_admin
+    const buildTiendaQuery = (separator = '&') => {
+        if (userRole !== 'super_admin' && userTiendaId) {
+            return `${separator}tiendaId=${userTiendaId}`;
+        }
+        return '';
+    };
+
     const [summary, setSummary] = useState(null);
     const [pendingCredits, setPendingCredits] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -54,11 +62,12 @@ function ReportsDashboard({ authenticatedFetch }) {
         setLoading(true);
         setError(null);
         try {
-            const summaryResponse = await authenticatedFetch(`${API_BASE_URL}/api/reports/summary`);
+            const tiendaQ = buildTiendaQuery('?');
+            const summaryResponse = await authenticatedFetch(`${API_BASE_URL}/api/reports/summary${tiendaQ}`);
             if (!summaryResponse.ok) throw new Error('Error al cargar resumen');
             setSummary(await summaryResponse.json());
 
-            const pendingCreditsResponse = await authenticatedFetch(`${API_BASE_URL}/api/reports/pending-credits`);
+            const pendingCreditsResponse = await authenticatedFetch(`${API_BASE_URL}/api/reports/pending-credits${tiendaQ}`);
             if (!pendingCreditsResponse.ok) throw new Error('Error al cargar créditos pendientes');
             setPendingCredits(await pendingCreditsResponse.json());
 
@@ -67,14 +76,15 @@ function ReportsDashboard({ authenticatedFetch }) {
         } finally {
             setLoading(false);
         }
-    }, [authenticatedFetch]);
+    }, [authenticatedFetch, userRole, userTiendaId]);
 
     const fetchDailyReports = useCallback(async () => {
         setLoadingDaily(true);
         setErrorDaily(null);
         try {
-            const salesUrl = `${API_BASE_URL}/api/reports/sales-by-date-range?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
-            const paymentsUrl = `${API_BASE_URL}/api/reports/payments-by-date-range?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
+            const tiendaQ = buildTiendaQuery();
+            const salesUrl = `${API_BASE_URL}/api/reports/sales-by-date-range?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}${tiendaQ}`;
+            const paymentsUrl = `${API_BASE_URL}/api/reports/payments-by-date-range?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}${tiendaQ}`;
 
             const salesResponse = await authenticatedFetch(salesUrl);
             if (!salesResponse.ok) {
@@ -98,14 +108,15 @@ function ReportsDashboard({ authenticatedFetch }) {
         } finally {
             setLoadingDaily(false);
         }
-    }, [authenticatedFetch, startDate, endDate]);
+    }, [authenticatedFetch, startDate, endDate, userRole, userTiendaId]);
 
     const fetchAccumulatedReports = useCallback(async () => {
         setLoadingAccumulated(true);
         setErrorAccumulated(null);
         try {
-            let salesUrl = `${API_BASE_URL}/api/reports/sales-accumulated?period=${encodeURIComponent(accumulatedPeriod)}`;
-            let paymentsUrl = `${API_BASE_URL}/api/reports/payments-accumulated?period=${encodeURIComponent(accumulatedPeriod)}`;
+            const tiendaQ = buildTiendaQuery();
+            let salesUrl = `${API_BASE_URL}/api/reports/sales-accumulated?period=${encodeURIComponent(accumulatedPeriod)}${tiendaQ}`;
+            let paymentsUrl = `${API_BASE_URL}/api/reports/payments-accumulated?period=${encodeURIComponent(accumulatedPeriod)}${tiendaQ}`;
 
             if (accStartDate && accEndDate) {
                 salesUrl += `&startDate=${encodeURIComponent(accStartDate)}&endDate=${encodeURIComponent(accEndDate)}`;
@@ -134,13 +145,14 @@ function ReportsDashboard({ authenticatedFetch }) {
         } finally {
             setLoadingAccumulated(false);
         }
-    }, [authenticatedFetch, accumulatedPeriod, accStartDate, accEndDate]);
+    }, [authenticatedFetch, accumulatedPeriod, accStartDate, accEndDate, userRole, userTiendaId]);
 
     const fetchClientStatusDashboard = useCallback(async () => {
         setLoadingClientStatus(true);
         setErrorClientStatus(null);
         try {
-            const response = await authenticatedFetch(`${API_BASE_URL}/api/reports/client-status-dashboard`);
+            const tiendaQ = buildTiendaQuery('?');
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/reports/client-status-dashboard${tiendaQ}`);
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `Error HTTP: ${response.status}`);
@@ -153,13 +165,14 @@ function ReportsDashboard({ authenticatedFetch }) {
         } finally {
             setLoadingClientStatus(false);
         }
-    }, [authenticatedFetch]);
+    }, [authenticatedFetch, userRole, userTiendaId]);
 
     const fetchAgentCollections = useCallback(async () => {
         setLoadingAgentCollections(true);
         setErrorAgentCollections(null);
         try {
-            let url = `${API_BASE_URL}/api/reports/collections-by-agent?period=${encodeURIComponent(accumulatedPeriod)}`;
+            const tiendaQ = buildTiendaQuery();
+            let url = `${API_BASE_URL}/api/reports/collections-by-agent?period=${encodeURIComponent(accumulatedPeriod)}${tiendaQ}`;
             if (accStartDate && accEndDate) {
                 url += `&startDate=${encodeURIComponent(accStartDate)}&endDate=${encodeURIComponent(accEndDate)}`;
             }
@@ -171,14 +184,15 @@ function ReportsDashboard({ authenticatedFetch }) {
         } finally {
             setLoadingAgentCollections(false);
         }
-    }, [authenticatedFetch, accumulatedPeriod, accStartDate, accEndDate]);
+    }, [authenticatedFetch, accumulatedPeriod, accStartDate, accEndDate, userRole, userTiendaId]);
 
     // --- FUNCIÓN CORREGIDA: Obtener reporte de ingresos proyectados ---
     const fetchProjectedIncomeReport = useCallback(async () => {
         setLoadingProjectedIncome(true);
         setErrorProjectedIncome(null);
         try {
-            let url = `${API_BASE_URL}/api/reports/projected-vs-real-income?period=${projPeriod}`;
+            const tiendaQ = buildTiendaQuery();
+            let url = `${API_BASE_URL}/api/reports/projected-vs-real-income?period=${projPeriod}${tiendaQ}`;
             
             let finalStartDate = projStartDate;
             let finalEndDate = projEndDate;
@@ -220,7 +234,7 @@ function ReportsDashboard({ authenticatedFetch }) {
         } finally {
             setLoadingProjectedIncome(false);
         }
-    }, [authenticatedFetch, projPeriod, projStartDate, projEndDate]);
+    }, [authenticatedFetch, projPeriod, projStartDate, projEndDate, userRole, userTiendaId]);
 
     useEffect(() => {
         fetchSummaryAndPendingCredits();
