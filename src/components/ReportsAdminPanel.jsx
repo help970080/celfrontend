@@ -1,11 +1,15 @@
 import React from 'react';
 import ReportsDashboard from './ReportsDashboard';
 
-function ReportsAdminPanel({ authenticatedFetch }) {
+function ReportsAdminPanel({ authenticatedFetch, userRole, userTiendaId }) {
     return (
         <section className="reports-section">
             <h2>Dashboard y Reportes</h2>
-            <ReportsDashboard authenticatedFetch={authenticatedFetch} />
+            <ReportsDashboard 
+                authenticatedFetch={authenticatedFetch}
+                userRole={userRole}
+                userTiendaId={userTiendaId}
+            />
         </section>
     );
 }
