@@ -212,7 +212,11 @@ function App() {
             
             <Route path="/admin/reports" element={
               <PrivateRoute isAuthenticated={!!token}>
-                <ReportsAdminPanel authenticatedFetch={authenticatedFetch} />
+                <ReportsAdminPanel 
+                  authenticatedFetch={authenticatedFetch}
+                  userRole={userRole}
+                  userTiendaId={tiendaId}
+                />
               </PrivateRoute>
             } />
             
