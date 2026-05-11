@@ -1,11 +1,11 @@
-// SaleForm.jsx - CON CAMPO IMEI PARA MDM
+// SaleForm.jsx - IMEI OPCIONAL VÍA CHECKBOX (solo si la venta incluye celular)
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
 const API_BASE_URL = import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:5000';
 
-function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFetch }) {
+function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFetch, userTiendaId }) {
     const [clientId, setClientId] = useState('');
     const [selectedProducts, setSelectedProducts] = useState([]);
     const [totalAmount, setTotalAmount] = useState(0);
@@ -19,10 +19,16 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
     const [paymentFrequency, setPaymentFrequency] = useState('weekly');
     const [numberOfPayments, setNumberOfPayments] = useState('');
 
-    // ⭐ NUEVO: Campo IMEI para MDM
+    // ⭐ Checkbox: ¿esta venta incluye un celular que requiere IMEI/MDM?
+    const [includesPhone, setIncludesPhone] = useState(false);
+
+    // Campos IMEI / dispositivo (solo si includesPhone)
     const [imei, setImei] = useState('');
-    const [imeiStatus, setImeiStatus] = useState(null); // null, 'checking', 'valid', 'invalid'
-    const [imeiDevice, setImeiDevice] = useState(null);
+    const [imeiStatus, setImeiStatus] = useState(null); // null | 'checking' | 'valid' | 'invalid' | 'ocupado'
+    const [imeiMessage, setImeiMessage] = useState('');
+    const [imeiExisting, setImeiExisting] = useState(null);
+    const [deviceBrand, setDeviceBrand] = useState('');
+    const [deviceModel, setDeviceModel] = useState('');
 
     useEffect(() => {
         const newTotal = selectedProducts.reduce((sum, item) => {
@@ -32,33 +38,62 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
         setTotalAmount(parseFloat(newTotal.toFixed(2)));
     }, [selectedProducts, products]);
 
-    // ⭐ NUEVO: Verificar IMEI en MDM
-    const verifyImei = async () => {
-        if (!imei || imei.length < 15) {
-            toast.warn('El IMEI debe tener 15 dígitos');
+    // Si destildan el checkbox o cambian a contado, limpiar IMEI
+    useEffect(() => {
+        if (!isCredit || !includesPhone) {
+            setImei('');
+            setImeiStatus(null);
+            setImeiMessage('');
+            setImeiExisting(null);
+            setDeviceBrand('');
+            setDeviceModel('');
+        }
+    }, [isCredit, includesPhone]);
+
+    // Si pasa a contado, destildar el checkbox también
+    useEffect(() => {
+        if (!isCredit) setIncludesPhone(false);
+    }, [isCredit]);
+
+    // ⭐ Verificación automática del IMEI al alcanzar 14+ dígitos (debounce)
+    useEffect(() => {
+        if (!includesPhone || !imei || imei.length < 14) {
+            setImeiStatus(null);
+            setImeiMessage('');
+            setImeiExisting(null);
             return;
         }
 
-        setImeiStatus('checking');
-        setImeiDevice(null);
+        const timer = setTimeout(async () => {
+            setImeiStatus('checking');
+            setImeiMessage('Verificando IMEI...');
+            try {
+                const response = await authenticatedFetch(`${API_BASE_URL}/api/imei/check/${imei}`);
+                const data = await response.json();
 
-        try {
-            const response = await authenticatedFetch(`${API_BASE_URL}/api/mdm/devices/search/${imei}`);
-            const data = await response.json();
+                if (!response.ok) {
+                    setImeiStatus('invalid');
+                    setImeiMessage(data.message || 'IMEI inválido');
+                    return;
+                }
 
-            if (response.ok && data.success) {
-                setImeiStatus('valid');
-                setImeiDevice(data.device);
-                toast.success(`✅ Dispositivo encontrado: ${data.device.model || data.device.deviceName}`);
-            } else {
+                if (data.available) {
+                    setImeiStatus('valid');
+                    setImeiMessage('✓ IMEI disponible');
+                    setImeiExisting(null);
+                } else {
+                    setImeiStatus('ocupado');
+                    setImeiMessage(data.message || 'IMEI ya vendido a otro cliente');
+                    setImeiExisting(data.existing);
+                }
+            } catch (err) {
                 setImeiStatus('invalid');
-                toast.error('❌ IMEI no encontrado en MDM. Asegúrate de que el dispositivo esté enrollado.');
+                setImeiMessage('Error de red al verificar');
             }
-        } catch (err) {
-            setImeiStatus('invalid');
-            toast.error('Error al verificar IMEI');
-        }
-    };
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [imei, includesPhone, authenticatedFetch]);
 
     const resetForm = () => {
         setClientId('');
@@ -68,9 +103,13 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
         setAssignedCollectorId('');
         setPaymentFrequency('weekly');
         setNumberOfPayments('');
+        setIncludesPhone(false);
         setImei('');
         setImeiStatus(null);
-        setImeiDevice(null);
+        setImeiMessage('');
+        setImeiExisting(null);
+        setDeviceBrand('');
+        setDeviceModel('');
         setError(null);
     };
 
@@ -109,51 +148,86 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
             return;
         }
 
-        // ⭐ Validar IMEI si es crédito y se ingresó
-        if (isCredit && imei && imeiStatus !== 'valid') {
-            toast.error('Verifica el IMEI antes de continuar');
-            setLoading(false);
-            return;
+        // ⭐ Solo validar IMEI si se marcó el checkbox
+        if (isCredit && includesPhone) {
+            if (!imei || imei.length < 14) {
+                toast.error('IMEI es obligatorio cuando la venta incluye un celular');
+                setLoading(false);
+                return;
+            }
+            if (imeiStatus !== 'valid') {
+                toast.error('El IMEI no está disponible. Verifica antes de continuar.');
+                setLoading(false);
+                return;
+            }
         }
         
-        const saleData = {
-            clientId: parseInt(clientId),
-            saleItems: selectedProducts,
-            isCredit,
-            downPayment: isCredit ? parseFloat(downPayment || 0) : totalAmount, 
-            assignedCollectorId: isCredit && assignedCollectorId ? parseInt(assignedCollectorId, 10) : null,
-            paymentFrequency: isCredit ? paymentFrequency : null,
-            numberOfPayments: isCredit ? parseInt(numberOfPayments, 10) : null,
-            imei: isCredit && imei ? imei : null, // ⭐ NUEVO
-        };
+        const numPayments = parseInt(numberOfPayments, 10);
+        const remainingForCalc = totalAmount - parseFloat(downPayment || 0);
+        const installment = isCredit && remainingForCalc > 0 && numPayments > 0
+            ? parseFloat((remainingForCalc / numPayments).toFixed(2))
+            : 0;
+
+        // ⭐ Decisión de endpoint: SOLO usa el endpoint con IMEI si hay celular
+        const usaImeiEndpoint = isCredit && includesPhone && imei && imei.length >= 14;
 
         try {
-            const response = await authenticatedFetch(`${API_BASE_URL}/api/sales`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(saleData),
-            });
-            
-            const responseData = await response.json();
-            if (!response.ok) {
-                throw new Error(responseData.message || "Error al registrar la venta.");
-            }
+            let response, responseData;
 
-            // ⭐ NUEVO: Vincular dispositivo MDM a la venta
-            if (isCredit && imei && imeiStatus === 'valid' && responseData.sale?.id) {
-                try {
-                    await authenticatedFetch(`${API_BASE_URL}/api/mdm/sales/${responseData.sale.id}/link-device`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ imei }),
-                    });
-                    toast.success("📱 Dispositivo vinculado a la venta para bloqueo automático");
-                } catch (mdmErr) {
-                    toast.warn("Venta creada pero no se pudo vincular el dispositivo MDM");
+            if (usaImeiEndpoint) {
+                // POST atómico: crea venta + vincula IMEI en una transacción
+                const payload = {
+                    clientId: parseInt(clientId),
+                    saleItems: selectedProducts,
+                    totalAmount,
+                    isCredit: true,
+                    downPayment: parseFloat(downPayment || 0),
+                    interestRate: 0,
+                    paymentFrequency,
+                    numberOfPayments: numPayments,
+                    weeklyPaymentAmount: installment,
+                    balanceDue: remainingForCalc,
+                    assignedCollectorId: assignedCollectorId ? parseInt(assignedCollectorId, 10) : null,
+                    status: 'pending',
+                    imei,
+                    deviceBrand: deviceBrand || null,
+                    deviceModel: deviceModel || null
+                };
+
+                response = await authenticatedFetch(`${API_BASE_URL}/api/sales/create-with-imei`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                responseData = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(responseData.message || responseData.error || "Error al registrar venta con IMEI.");
                 }
+
+                toast.success(`¡Venta #${responseData.sale.id} registrada! 📱 Dispositivo ${responseData.action === 'created' ? 'enrolado' : 'vinculado'}.`);
+            } else {
+                // Endpoint clásico: contado, o crédito sin celular (accesorios, fundas, audífonos, chips, etc.)
+                const saleData = {
+                    clientId: parseInt(clientId),
+                    saleItems: selectedProducts,
+                    isCredit,
+                    downPayment: isCredit ? parseFloat(downPayment || 0) : totalAmount,
+                    assignedCollectorId: isCredit && assignedCollectorId ? parseInt(assignedCollectorId, 10) : null,
+                    paymentFrequency: isCredit ? paymentFrequency : null,
+                    numberOfPayments: isCredit ? numPayments : null,
+                };
+
+                response = await authenticatedFetch(`${API_BASE_URL}/api/sales`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(saleData)
+                });
+                responseData = await response.json();
+                if (!response.ok) throw new Error(responseData.message || "Error al registrar la venta.");
+                toast.success(isCredit ? "¡Venta a crédito registrada!" : "¡Venta de contado registrada!");
             }
 
-            toast.success("¡Venta registrada con éxito!");
             onSaleAdded();
             resetForm();
         } catch (err) {
@@ -176,11 +250,27 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
             if (downPayment === '' || parseFloat(downPayment) < 0 || parseFloat(downPayment) > totalAmount) return false;
             if (!numberOfPayments || parseInt(numberOfPayments, 10) <= 0) return false;
             if (!assignedCollectorId) return false;
-            // IMEI es opcional, pero si se ingresa debe ser válido
-            if (imei && imeiStatus !== 'valid') return false;
+            // ⭐ IMEI solo se exige si se marcó el checkbox
+            if (includesPhone) {
+                if (!imei || imei.length < 14 || imeiStatus !== 'valid') return false;
+            }
         }
         return true;
     };
+
+    const imeiBorderColor =
+        imeiStatus === 'valid' ? '#10b981' :
+        imeiStatus === 'invalid' ? '#ef4444' :
+        imeiStatus === 'ocupado' ? '#ef4444' :
+        imeiStatus === 'checking' ? '#f59e0b' :
+        '#d1d5db';
+
+    const imeiBadge =
+        imeiStatus === 'valid' ? { bg: '#d1fae5', fg: '#065f46', txt: '✓ Disponible' } :
+        imeiStatus === 'ocupado' ? { bg: '#fee2e2', fg: '#991b1b', txt: '✗ Ya vendido' } :
+        imeiStatus === 'invalid' ? { bg: '#fee2e2', fg: '#991b1b', txt: '✗ Inválido' } :
+        imeiStatus === 'checking' ? { bg: '#fef3c7', fg: '#92400e', txt: 'Verificando...' } :
+        null;
 
     return (
         <div className="sale-form-container">
@@ -306,74 +396,121 @@ function SaleForm({ onSaleAdded, clients, products, collectors, authenticatedFet
                             </select>
                         </div>
 
-                        {/* ⭐ NUEVO: Campo IMEI para MDM */}
-                        <div className="form-group" style={{ borderTop: '1px dashed #ccc', paddingTop: '15px', marginTop: '15px' }}>
-                            <label>
-                                📱 IMEI del Dispositivo (para bloqueo automático):
-                                {imeiStatus === 'valid' && (
-                                    <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', marginLeft: '10px', fontWeight: 'bold', backgroundColor: '#d1fae5', color: '#065f46' }}>
-                                        ✓ Verificado
-                                    </span>
-                                )}
-                                {imeiStatus === 'invalid' && (
-                                    <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', marginLeft: '10px', fontWeight: 'bold', backgroundColor: '#fee2e2', color: '#991b1b' }}>
-                                        ✗ No encontrado
-                                    </span>
-                                )}
-                                {imeiStatus === 'checking' && (
-                                    <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', marginLeft: '10px', fontWeight: 'bold', backgroundColor: '#fef3c7', color: '#92400e' }}>
-                                        Verificando...
-                                    </span>
-                                )}
+                        {/* ⭐ CHECKBOX: ¿Esta venta incluye un celular? */}
+                        <div className="form-group checkbox-group" style={{
+                            backgroundColor: '#fef3c7',
+                            padding: '12px',
+                            borderRadius: '6px',
+                            borderLeft: '4px solid #f59e0b',
+                            marginTop: '15px'
+                        }}>
+                            <input 
+                                type="checkbox" 
+                                id="includesPhone" 
+                                checked={includesPhone}
+                                onChange={(e) => setIncludesPhone(e.target.checked)}
+                            />
+                            <label htmlFor="includesPhone" style={{ marginLeft: '8px', fontWeight: 'bold' }}>
+                                📱 Esta venta incluye un celular (requiere IMEI para bloqueo MDM)
                             </label>
-                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '8px' }}>
-                                <input 
-                                    type="text" 
-                                    value={imei} 
-                                    onChange={(e) => {
-                                        const val = e.target.value.replace(/\D/g, '').slice(0, 15);
-                                        setImei(val);
-                                        setImeiStatus(null);
-                                        setImeiDevice(null);
-                                    }}
-                                    placeholder="Ej: 860734072994372"
-                                    maxLength={15}
-                                    style={{ 
-                                        flex: 1,
-                                        padding: '10px',
-                                        fontSize: '16px',
-                                        border: imeiStatus === 'valid' ? '2px solid #10b981' : imeiStatus === 'invalid' ? '2px solid #ef4444' : '2px solid #d1d5db',
-                                        borderRadius: '5px',
-                                        minWidth: '200px'
-                                    }}
-                                />
-                                <button 
-                                    type="button" 
-                                    onClick={verifyImei}
-                                    disabled={imei.length < 15 || imeiStatus === 'checking'}
-                                    style={{
-                                        padding: '10px 20px',
-                                        backgroundColor: imei.length < 15 ? '#9ca3af' : '#7c3aed',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '5px',
-                                        cursor: imei.length < 15 ? 'not-allowed' : 'pointer',
-                                        fontSize: '14px',
-                                        fontWeight: '500'
-                                    }}
-                                >
-                                    {imeiStatus === 'checking' ? '...' : 'Verificar'}
-                                </button>
-                            </div>
-                            {imeiDevice && (
-                                <p style={{ fontSize: '12px', color: '#059669', marginTop: '8px' }}>
-                                    📱 {imeiDevice.deviceName || imeiDevice.model} - {imeiDevice.platform}
-                                </p>
-                            )}
-                            <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '5px' }}>
-                                El dispositivo debe estar enrollado en ManageEngine antes de registrar la venta.
+                            <p style={{ fontSize: '12px', color: '#92400e', marginTop: '4px', marginLeft: '24px' }}>
+                                Marcar SOLO si vendes un teléfono. No marcar para accesorios, fundas, audífonos, chips, etc.
                             </p>
                         </div>
+
+                        {/* ⭐ Campos IMEI: solo aparecen si se marca el checkbox */}
+                        {includesPhone && (
+                            <div className="form-group" style={{
+                                borderTop: '2px solid #7c3aed',
+                                paddingTop: '15px',
+                                marginTop: '15px',
+                                backgroundColor: '#faf5ff',
+                                padding: '15px',
+                                borderRadius: '8px'
+                            }}>
+                                <label style={{ fontWeight: 'bold', fontSize: '15px' }}>
+                                    IMEI del Dispositivo <span style={{ color: '#dc2626' }}>*</span>
+                                    {imeiBadge && (
+                                        <span style={{
+                                            padding: '4px 8px', borderRadius: '4px', fontSize: '12px',
+                                            marginLeft: '10px', fontWeight: 'bold',
+                                            backgroundColor: imeiBadge.bg, color: imeiBadge.fg
+                                        }}>
+                                            {imeiBadge.txt}
+                                        </span>
+                                    )}
+                                </label>
+
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={imei}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 17);
+                                        setImei(val);
+                                    }}
+                                    placeholder="15 dígitos — marca *#06# en el celular"
+                                    maxLength={17}
+                                    required
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px',
+                                        fontSize: '16px',
+                                        fontFamily: 'monospace',
+                                        letterSpacing: '1px',
+                                        border: `2px solid ${imeiBorderColor}`,
+                                        borderRadius: '5px',
+                                        marginTop: '8px'
+                                    }}
+                                />
+
+                                {imeiMessage && (
+                                    <p style={{
+                                        fontSize: '13px',
+                                        marginTop: '6px',
+                                        padding: '8px',
+                                        borderRadius: '4px',
+                                        backgroundColor: imeiBadge?.bg || '#f3f4f6',
+                                        color: imeiBadge?.fg || '#374151'
+                                    }}>
+                                        {imeiMessage}
+                                        {imeiExisting && imeiExisting.clientName && (
+                                            <span style={{ display: 'block', marginTop: '4px', fontWeight: 'bold' }}>
+                                                Cliente actual: {imeiExisting.clientName}
+                                                {imeiExisting.brand && ` — ${imeiExisting.brand} ${imeiExisting.model || ''}`}
+                                            </span>
+                                        )}
+                                    </p>
+                                )}
+
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ fontSize: '12px', color: '#6b7280' }}>Marca (opcional):</label>
+                                        <input
+                                            type="text"
+                                            value={deviceBrand}
+                                            onChange={(e) => setDeviceBrand(e.target.value)}
+                                            placeholder="Samsung, Motorola..."
+                                            style={{ width: '100%', padding: '8px', fontSize: '14px', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                                        />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ fontSize: '12px', color: '#6b7280' }}>Modelo (opcional):</label>
+                                        <input
+                                            type="text"
+                                            value={deviceModel}
+                                            onChange={(e) => setDeviceModel(e.target.value)}
+                                            placeholder="A14, G24..."
+                                            style={{ width: '100%', padding: '8px', fontSize: '14px', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '8px', fontStyle: 'italic' }}>
+                                    💡 El IMEI se valida automáticamente y queda vinculado al cliente para el bloqueo MDM si cae en mora.
+                                </p>
+                            </div>
+                        )}
                         
                         {calculatedInstallment > 0 && (
                             <p className="calculated-payment">
