@@ -34,6 +34,15 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
     const [clientQuery, setClientQuery] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
+    // alta rápida
+    const [showNewClient, setShowNewClient] = useState(false);
+    const [nc, setNc] = useState({ name: '', lastName: '', phone: '', address: '' });
+    const [savingClient, setSavingClient] = useState(false);
+    const [showNewProduct, setShowNewProduct] = useState(false);
+    const [np, setNp] = useState({ name: '', price: '', stock: '', category: '', brand: '' });
+    const [savingProduct, setSavingProduct] = useState(false);
+    const canCreateProduct = ['super_admin', 'regular_admin', 'inventory_admin'].includes(userRole);
+
     const load = useCallback(async () => {
         setLoading(true);
         try {
@@ -184,6 +193,67 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
         }
     };
 
+    const createClient = async () => {
+        if (!nc.name.trim() || !nc.lastName.trim() || !nc.phone.trim()) {
+            toast.warn('Nombre, apellido y teléfono son obligatorios.');
+            return;
+        }
+        setSavingClient(true);
+        try {
+            const r = await authenticatedFetch(`${API_BASE_URL}/api/clients`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: nc.name.trim(), lastName: nc.lastName.trim(),
+                    phone: nc.phone.trim(), address: nc.address.trim()
+                })
+            });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.message || 'No se pudo crear el cliente.');
+            setClients(prev => [data, ...prev]);
+            setClientId(String(data.id));
+            setClientQuery(`${data.name} ${data.lastName || ''}`.trim());
+            setShowNewClient(false);
+            setNc({ name: '', lastName: '', phone: '', address: '' });
+            toast.success('Cliente creado y seleccionado.');
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setSavingClient(false);
+        }
+    };
+
+    const createProduct = async () => {
+        const price = parseFloat(np.price);
+        const stock = parseInt(np.stock, 10);
+        if (!np.name.trim() || isNaN(price) || price <= 0 || isNaN(stock) || stock < 0) {
+            toast.warn('Nombre, precio y stock son obligatorios.');
+            return;
+        }
+        setSavingProduct(true);
+        try {
+            const r = await authenticatedFetch(`${API_BASE_URL}/api/products`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: np.name.trim(), price, stock,
+                    category: np.category.trim() || null,
+                    brand: np.brand.trim() || null,
+                    description: '', imageUrls: []
+                })
+            });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.message || 'No se pudo crear el artículo.');
+            setProducts(prev => [data, ...prev]);
+            if (data.stock > 0) setCart(prev => ({ ...prev, [data.id]: 1 }));
+            setShowNewProduct(false);
+            setNp({ name: '', price: '', stock: '', category: '', brand: '' });
+            toast.success('Artículo creado y agregado al carrito.');
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setSavingProduct(false);
+        }
+    };
+
     return (
         <div className="pos-root">
             <style>{POS_CSS}</style>
@@ -194,6 +264,7 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
                     <small>{loading ? 'Cargando…' : `${products.length} artículos disponibles`}</small>
                 </div>
                 <input className="pos-search" placeholder="Buscar artículo…" value={q} onChange={e => setQ(e.target.value)} />
+                {canCreateProduct && <button className="pos-newbtn" onClick={() => setShowNewProduct(true)}>+ Artículo</button>}
             </div>
 
             <div className="pos-chips">
@@ -258,6 +329,24 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
                                 </div>
                             )}
                             {clientId && <div className="pos-clientok">✓ Cliente seleccionado</div>}
+
+                            {!clientId && !showNewClient && (
+                                <button className="pos-newclient" onClick={() => { setShowNewClient(true); setNc(v => ({ ...v, name: clientQuery.trim() })); }}>
+                                    + Nuevo cliente
+                                </button>
+                            )}
+                            {showNewClient && (
+                                <div className="pos-ncbox">
+                                    <input className="pos-input" placeholder="Nombre *" value={nc.name} onChange={e => setNc(v => ({ ...v, name: e.target.value }))} />
+                                    <input className="pos-input" placeholder="Apellido *" value={nc.lastName} onChange={e => setNc(v => ({ ...v, lastName: e.target.value }))} />
+                                    <input className="pos-input" placeholder="Teléfono *" inputMode="tel" value={nc.phone} onChange={e => setNc(v => ({ ...v, phone: e.target.value }))} />
+                                    <input className="pos-input" placeholder="Dirección" value={nc.address} onChange={e => setNc(v => ({ ...v, address: e.target.value }))} />
+                                    <div className="pos-ncrow">
+                                        <button className="pos-nccancel" onClick={() => setShowNewClient(false)}>Cancelar</button>
+                                        <button className="pos-ncsave" disabled={savingClient} onClick={createClient}>{savingClient ? 'Guardando…' : 'Guardar y usar'}</button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="pos-modes">
@@ -343,6 +432,43 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
                     </div>
                 </div>
             )}
+
+            {showNewProduct && (
+                <div className="pos-backdrop" onClick={() => setShowNewProduct(false)}>
+                    <div className="pos-sheet" onClick={e => e.stopPropagation()}>
+                        <div className="pos-grab" />
+                        <h3>Nuevo artículo</h3>
+                        <p className="pos-sub">Se agrega al catálogo y al carrito.</p>
+                        <div className="pos-field">
+                            <label>Nombre *</label>
+                            <input className="pos-input" value={np.name} onChange={e => setNp(v => ({ ...v, name: e.target.value }))} />
+                        </div>
+                        <div className="pos-ncrow">
+                            <div className="pos-field" style={{ flex: 1, margin: 0 }}>
+                                <label>Precio *</label>
+                                <input className="pos-input" inputMode="decimal" value={np.price} onChange={e => setNp(v => ({ ...v, price: e.target.value }))} />
+                            </div>
+                            <div className="pos-field" style={{ flex: 1, margin: 0 }}>
+                                <label>Stock *</label>
+                                <input className="pos-input" inputMode="numeric" value={np.stock} onChange={e => setNp(v => ({ ...v, stock: e.target.value }))} />
+                            </div>
+                        </div>
+                        <div className="pos-ncrow">
+                            <div className="pos-field" style={{ flex: 1, margin: 0 }}>
+                                <label>Categoría</label>
+                                <input className="pos-input" value={np.category} onChange={e => setNp(v => ({ ...v, category: e.target.value }))} />
+                            </div>
+                            <div className="pos-field" style={{ flex: 1, margin: 0 }}>
+                                <label>Marca</label>
+                                <input className="pos-input" value={np.brand} onChange={e => setNp(v => ({ ...v, brand: e.target.value }))} />
+                            </div>
+                        </div>
+                        <button className="pos-go cash" disabled={savingProduct} onClick={createProduct}>
+                            {savingProduct ? 'Guardando…' : 'Crear y agregar al carrito'}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -353,6 +479,13 @@ const POS_CSS = `
 .pos-title b{font-size:20px;color:var(--ink)}.pos-title small{display:block;color:var(--ink3);font-size:12px}
 .pos-search{flex:1;min-width:200px;border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;font-size:14px;outline:none}
 .pos-search:focus{border-color:var(--pink)}
+.pos-newbtn{flex:0 0 auto;border:none;border-radius:12px;padding:11px 16px;background:var(--pink);color:#fff;font-size:14px;font-weight:800;cursor:pointer}
+.pos-newclient{width:100%;margin-top:8px;border:1.5px dashed var(--line);background:#fff;border-radius:12px;padding:11px;font-size:14px;font-weight:700;color:var(--pink);cursor:pointer}
+.pos-ncbox{margin-top:10px;display:flex;flex-direction:column;gap:8px;background:var(--bg);padding:12px;border-radius:12px}
+.pos-ncrow{display:flex;gap:10px;margin-top:2px}
+.pos-nccancel{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:11px;font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer}
+.pos-ncsave{flex:2;border:none;background:var(--money);color:#fff;border-radius:10px;padding:11px;font-size:14px;font-weight:800;cursor:pointer}
+.pos-ncsave:disabled{opacity:.5}
 .pos-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px}
 .pos-chip{flex:0 0 auto;border:1px solid var(--line);background:#fff;color:var(--ink2);font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;cursor:pointer}
 .pos-chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
