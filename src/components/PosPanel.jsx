@@ -14,6 +14,19 @@ const money = n => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 const initials = s => (s || '?').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
 const isMostrador = c => /mostrador|p[uú]blico|general/i.test(`${c.name || ''} ${c.lastName || ''}`);
 
+// Devuelve una URL de imagen mostrable: imagen directa o thumbnail de YouTube. Si no, null.
+function mediaThumb(url) {
+    if (!url || typeof url !== 'string') return null;
+    const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+    if (yt) return `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg`;
+    if (/\.(jpe?g|png|webp|gif|avif)(\?|$)/i.test(url)) return url;
+    if (/^https?:\/\/.*(cloudinary|media-amazon|imgur|googleusercontent)/i.test(url)) return url;
+    return null;
+}
+function isVideoUrl(url) {
+    return typeof url === 'string' && /(youtube\.com|youtu\.be|vimeo\.com|\.mp4)/i.test(url);
+}
+
 function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
     const [products, setProducts] = useState([]);
     const [clients, setClients] = useState([]);
@@ -39,7 +52,7 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
     const [nc, setNc] = useState({ name: '', lastName: '', phone: '', address: '' });
     const [savingClient, setSavingClient] = useState(false);
     const [showNewProduct, setShowNewProduct] = useState(false);
-    const [np, setNp] = useState({ name: '', price: '', stock: '', category: '', brand: '' });
+    const [np, setNp] = useState({ name: '', price: '', stock: '', category: '', brand: '', url: '' });
     const [savingProduct, setSavingProduct] = useState(false);
     const canCreateProduct = ['super_admin', 'regular_admin', 'inventory_admin'].includes(userRole);
 
@@ -237,7 +250,7 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
                     name: np.name.trim(), price, stock,
                     category: np.category.trim() || null,
                     brand: np.brand.trim() || null,
-                    description: '', imageUrls: []
+                    description: '', imageUrls: np.url.trim() ? [np.url.trim()] : []
                 })
             });
             const data = await r.json();
@@ -245,7 +258,7 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
             setProducts(prev => [data, ...prev]);
             if (data.stock > 0) setCart(prev => ({ ...prev, [data.id]: 1 }));
             setShowNewProduct(false);
-            setNp({ name: '', price: '', stock: '', category: '', brand: '' });
+            setNp({ name: '', price: '', stock: '', category: '', brand: '', url: '' });
             toast.success('Artículo creado y agregado al carrito.');
         } catch (err) {
             toast.error(err.message);
@@ -276,12 +289,17 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
             <div className="pos-grid">
                 {visible.map(p => {
                     const qty = cart[p.id] || 0;
+                    const rawUrl = Array.isArray(p.imageUrls) ? p.imageUrls[0] : null;
+                    const thumb = mediaThumb(rawUrl);
                     return (
                         <div key={p.id} className="pos-card" onClick={() => add(p)}>
                             {qty > 0 && <div className="pos-qtybadge">{qty}</div>}
                             <button className="pos-add" onClick={e => { e.stopPropagation(); add(p); }}>＋</button>
-                            {(Array.isArray(p.imageUrls) && p.imageUrls[0])
-                                ? <div className="pos-thumb pos-thumb-img"><img src={p.imageUrls[0]} alt={p.name} loading="lazy" onError={e => { e.currentTarget.style.display = 'none'; }} /></div>
+                            {thumb
+                                ? <div className="pos-thumb pos-thumb-img">
+                                    <img src={thumb} alt={p.name} loading="lazy" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                                    {isVideoUrl(rawUrl) && <span className="pos-play">▶</span>}
+                                  </div>
                                 : <div className="pos-thumb">{initials(p.name)}</div>}
                             <div className="pos-cbody">
                                 <h4>{p.name}</h4>
@@ -463,6 +481,10 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
                                 <input className="pos-input" value={np.brand} onChange={e => setNp(v => ({ ...v, brand: e.target.value }))} />
                             </div>
                         </div>
+                        <div className="pos-field">
+                            <label>URL de foto o video (opcional)</label>
+                            <input className="pos-input" placeholder="https://…  (imagen o YouTube)" value={np.url} onChange={e => setNp(v => ({ ...v, url: e.target.value }))} />
+                        </div>
                         <button className="pos-go cash" disabled={savingProduct} onClick={createProduct}>
                             {savingProduct ? 'Guardando…' : 'Crear y agregar al carrito'}
                         </button>
@@ -493,8 +515,9 @@ const POS_CSS = `
 .pos-card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative;cursor:pointer;transition:transform .1s}
 .pos-card:active{transform:scale(.97)}
 .pos-thumb{height:88px;display:grid;place-items:center;font-size:26px;font-weight:800;color:#fff;background:linear-gradient(135deg,#5B3DF5,#8A63FF)}
-.pos-thumb-img{padding:0;background:#fff}
+.pos-thumb-img{padding:0;background:#fff;position:relative}
 .pos-thumb-img img{width:100%;height:100%;object-fit:cover;display:block}
+.pos-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:13px;display:grid;place-items:center;padding-left:2px}
 .pos-cbody{padding:9px 10px 11px}
 .pos-cbody h4{margin:0;font-size:13px;line-height:1.25;color:var(--ink);min-height:32px}
 .pos-price{margin-top:5px;font-size:14px;font-weight:800;color:var(--ink)}.pos-price small{font-size:11px;font-weight:600;color:var(--ink3)}
