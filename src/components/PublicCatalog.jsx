@@ -243,6 +243,21 @@ const PC_CSS = `
 .pc-vbox{position:relative;width:min(900px,100%);aspect-ratio:16/9;background:#000;border-radius:14px;overflow:hidden}
 .pc-vbox iframe{width:100%;height:100%;border:0}
 .pc-vclose{position:absolute;top:10px;right:10px;z-index:2;width:38px;height:38px;border:none;border-radius:50%;background:rgba(255,255,255,.9);font-size:16px;font-weight:800;cursor:pointer}
+@media(max-width:560px){
+.pc-root{padding:0 8px 30px}
+.pc-top{padding:14px 2px 10px;gap:10px}
+.pc-titlebox h1{font-size:19px}
+.pc-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding:4px 0 14px;-webkit-overflow-scrolling:touch}
+.pc-grid::-webkit-scrollbar{display:none}
+.pc-card{flex:0 0 47%;scroll-snap-align:start}
+.pc-thumb{height:130px}
+.pc-body{padding:11px;gap:7px}
+.pc-body h3{font-size:14px}
+.pc-brand{font-size:11px}
+.pc-price{font-size:17px}
+.pc-credit{padding:9px}.pc-crow{font-size:12px}
+.pc-wa{padding:10px;font-size:12px}
+}
 `;
 
 export default PublicCatalog;
