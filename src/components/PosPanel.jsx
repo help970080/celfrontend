@@ -563,7 +563,7 @@ const POS_CSS = `
 .pos-top{padding:10px 2px 8px;gap:8px}
 .pos-search{min-width:120px;padding:10px 12px}
 .pos-newbtn{padding:10px 12px;font-size:13px}
-.pos-grid{grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 2px 120px}
+.pos-grid{grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 8px 120px}
 .pos-thumb{height:58px;font-size:15px}
 .pos-cbody{padding:6px 6px 8px}
 .pos-cbody h4{font-size:10px;min-height:26px;line-height:1.15}
