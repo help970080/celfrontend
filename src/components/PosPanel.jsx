@@ -559,6 +559,19 @@ const POS_CSS = `
 .pos-quote .side{text-align:right;font-size:12px;line-height:1.5}.pos-quote .side b{font-size:15px}
 .pos-go{width:100%;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:800;color:#fff;background:var(--ink);cursor:pointer;margin-top:10px}
 .pos-go:disabled{opacity:.4;cursor:not-allowed}.pos-go.credit{background:var(--credit)}.pos-go.cash{background:var(--money)}
+@media(max-width:560px){
+.pos-top{padding:10px 2px 8px;gap:8px}
+.pos-search{min-width:120px;padding:10px 12px}
+.pos-newbtn{padding:10px 12px;font-size:13px}
+.pos-grid{grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 2px 120px}
+.pos-thumb{height:58px;font-size:15px}
+.pos-cbody{padding:6px 6px 8px}
+.pos-cbody h4{font-size:10px;min-height:26px;line-height:1.15}
+.pos-price{font-size:11px}.pos-price small{display:none}
+.pos-add{width:22px;height:22px;font-size:14px;top:4px;right:4px;border-radius:7px}
+.pos-qtybadge{width:17px;height:17px;font-size:9px;top:4px;left:4px}
+.pos-play{width:24px;height:24px;font-size:10px}
+}
 `;
 
 export default PosPanel;
