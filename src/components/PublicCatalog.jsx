@@ -244,13 +244,15 @@ const PC_CSS = `
 .pc-vbox iframe{width:100%;height:100%;border:0}
 .pc-vclose{position:absolute;top:10px;right:10px;z-index:2;width:38px;height:38px;border:none;border-radius:50%;background:rgba(255,255,255,.9);font-size:16px;font-weight:800;cursor:pointer}
 @media(max-width:560px){
-.pc-root{padding:0 8px 30px}
-.pc-top{padding:14px 2px 10px;gap:10px}
+.pc-root{padding:0}
+.pc-top{padding:14px 10px 10px;gap:10px}
 .pc-titlebox h1{font-size:19px}
-.pc-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding:4px 0 14px;-webkit-overflow-scrolling:touch}
+.pc-store{margin:0 10px 12px}
+.pc-chips{padding:0 10px 14px}
+.pc-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding:4px 10px 14px;-webkit-overflow-scrolling:touch}
 .pc-grid::-webkit-scrollbar{display:none}
-.pc-card{flex:0 0 47%;scroll-snap-align:start}
-.pc-thumb{height:130px}
+.pc-card{flex:0 0 52%;scroll-snap-align:start}
+.pc-thumb{height:140px}
 .pc-body{padding:11px;gap:7px}
 .pc-body h3{font-size:14px}
 .pc-brand{font-size:11px}
