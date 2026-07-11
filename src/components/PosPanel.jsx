@@ -112,6 +112,12 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
         });
     };
     const removeLine = (id) => setCart(prev => { const n = { ...prev }; delete n[id]; return n; });
+    const decrement = (id) => setCart(prev => {
+        const cur = prev[id] || 0;
+        if (cur <= 1) { const n = { ...prev }; delete n[id]; return n; }
+        return { ...prev, [id]: cur - 1 };
+    });
+    const clearCart = () => setCart({});
 
     const openCheckout = () => {
         const initPlan = {};
@@ -293,8 +299,13 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
                     const thumb = mediaThumb(rawUrl);
                     return (
                         <div key={p.id} className="pos-card" onClick={() => add(p)}>
-                            {qty > 0 && <div className="pos-qtybadge">{qty}</div>}
-                            <button className="pos-add" onClick={e => { e.stopPropagation(); add(p); }}>＋</button>
+                            {qty > 0
+                                ? <div className="pos-qtyctrl" onClick={e => e.stopPropagation()}>
+                                    <button onClick={() => decrement(p.id)}>−</button>
+                                    <span>{qty}</span>
+                                    <button onClick={() => add(p)}>+</button>
+                                  </div>
+                                : <button className="pos-add" onClick={e => { e.stopPropagation(); add(p); }}>＋</button>}
                             {thumb
                                 ? <div className="pos-thumb pos-thumb-img">
                                     <img src={thumb} alt={p.name} loading="lazy" onError={e => { e.currentTarget.style.display = 'none'; }} />
@@ -313,6 +324,7 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
 
             {cartUnits > 0 && (
                 <div className="pos-cartbar">
+                    <button className="pos-clear" onClick={clearCart} title="Vaciar carrito">🗑</button>
                     <div className="pos-cartmeta">
                         <small>{cartUnits} {cartUnits === 1 ? 'artículo' : 'artículos'}</small>
                         <b>{mx(cartTotal)}</b>
@@ -523,10 +535,15 @@ const POS_CSS = `
 .pos-price{margin-top:5px;font-size:14px;font-weight:800;color:var(--ink)}.pos-price small{font-size:11px;font-weight:600;color:var(--ink3)}
 .pos-add{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:9px;border:none;background:#fff;color:var(--pink);font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,.15)}
 .pos-qtybadge{position:absolute;top:8px;left:8px;background:var(--money);color:#fff;font-size:12px;font-weight:800;min-width:22px;height:22px;border-radius:999px;display:grid;place-items:center;z-index:1}
+.pos-qtyctrl{position:absolute;top:8px;right:8px;z-index:2;display:flex;align-items:center;gap:4px;background:#fff;border-radius:10px;padding:3px;box-shadow:0 4px 12px rgba(15,23,42,.18)}
+.pos-qtyctrl button{width:26px;height:26px;border:none;border-radius:7px;background:var(--money);color:#fff;font-size:16px;font-weight:800;cursor:pointer;line-height:1;display:grid;place-items:center}
+.pos-qtyctrl span{min-width:20px;text-align:center;font-size:13px;font-weight:800;color:var(--ink)}
 .pos-empty{grid-column:1/-1;text-align:center;color:var(--ink3);padding:40px}
 .pos-cartbar{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;width:min(560px,92vw);z-index:30;background:var(--ink);color:#fff;border-radius:16px;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 20px 50px rgba(15,23,42,.3)}
 .pos-cartmeta{flex:1}.pos-cartmeta small{display:block;font-size:11px;opacity:.7;font-weight:600}.pos-cartmeta b{font-size:19px}
 .pos-cobrar{background:var(--money);border:none;color:#fff;font-size:15px;font-weight:800;padding:11px 18px;border-radius:12px;cursor:pointer}
+.pos-clear{flex:0 0 auto;width:40px;height:40px;border:none;border-radius:11px;background:rgba(255,255,255,.15);color:#fff;font-size:17px;cursor:pointer}
+.pos-clear:hover{background:rgba(255,255,255,.28)}
 .pos-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .pos-sheet{background:#fff;border-radius:20px 20px 0 0;width:min(560px,100vw);max-height:92vh;overflow-y:auto;padding:10px 20px 26px}
 @media(min-width:640px){.pos-backdrop{align-items:center}.pos-sheet{border-radius:20px}}
@@ -570,6 +587,9 @@ const POS_CSS = `
 .pos-price{font-size:12px;margin-top:4px}.pos-price small{display:none}
 .pos-add{width:22px;height:22px;font-size:14px;top:4px;right:4px;border-radius:7px}
 .pos-qtybadge{width:17px;height:17px;font-size:9px;top:4px;left:4px}
+.pos-qtyctrl{top:4px;right:4px;gap:2px;padding:2px;border-radius:8px}
+.pos-qtyctrl button{width:20px;height:20px;font-size:13px;border-radius:6px}
+.pos-qtyctrl span{min-width:14px;font-size:11px}
 .pos-play{width:24px;height:24px;font-size:10px}
 }
 `;
