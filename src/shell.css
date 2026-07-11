@@ -64,3 +64,12 @@
 
 /* el header viejo queda oculto por si algo lo referencia */
 .app-header{display:none}
+
+/* ----- móvil: aprovechar el ancho ----- */
+@media(max-width:560px){
+  #root{padding:6px !important}
+  .App{border-radius:0}
+  .lx-topbar{border-radius:0;padding:10px 12px}
+  .lx-brand b{font-size:15px}
+  .lx-brand small{font-size:10px}
+}
