@@ -23,6 +23,7 @@ import UserManager from './components/UserManager';
 import MdmAdminPanel from './components/MdmAdminPanel';
 import TandasAdminPanel from './components/TandasAdminPanel';
 import LlamadasPanel from './components/LlamadasPanel';
+import PosPanel from './components/PosPanel'; // ⭐ POS unificado
 import WhatsAppWidget from './components/WhatsAppWidget'; // ⭐ NUEVO
 
 import './App.css';
@@ -127,6 +128,9 @@ function App() {
                   <Link to="/admin/visual-dashboard" className="nav-button">Dashboard Visual</Link>
                 )}
                 {hasRole(['super_admin', 'regular_admin', 'sales_admin']) && (
+                  <Link to="/admin/pos" className="nav-button">🛒 Punto de venta</Link>
+                )}
+                {hasRole(['super_admin', 'regular_admin', 'sales_admin']) && (
                   <Link to="/admin/sales" className="nav-button">Gestión Ventas</Link>
                 )}
                 {hasRole(['super_admin', 'regular_admin', 'inventory_admin']) && (
@@ -186,6 +190,16 @@ function App() {
               <ClientPrivateRoute isAuthenticated={!!clientToken}>
                 <ClientPortalDashboard />
               </ClientPrivateRoute>
+            } />
+
+            <Route path="/admin/pos" element={
+              <PrivateRoute isAuthenticated={!!token}>
+                <PosPanel
+                  authenticatedFetch={authenticatedFetch}
+                  userRole={userRole}
+                  userTiendaId={tiendaId}
+                />
+              </PrivateRoute>
             } />
 
             <Route path="/admin/sales" element={
