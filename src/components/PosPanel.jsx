@@ -515,7 +515,7 @@ const POS_CSS = `
 .pos-card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative;cursor:pointer;transition:transform .1s}
 .pos-card:active{transform:scale(.97)}
 .pos-thumb{height:88px;display:grid;place-items:center;font-size:26px;font-weight:800;color:#fff;background:linear-gradient(135deg,#5B3DF5,#8A63FF)}
-.pos-thumb-img{padding:0;background:#fff;position:relative}
+.pos-thumb-img{padding:0;background:#fff;position:relative;display:block !important;overflow:hidden}
 .pos-thumb-img img{width:100%;height:100%;object-fit:cover;display:block}
 .pos-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:13px;display:grid;place-items:center;padding-left:2px}
 .pos-cbody{padding:9px 10px 11px}
@@ -564,10 +564,10 @@ const POS_CSS = `
 .pos-search{min-width:120px;padding:10px 12px}
 .pos-newbtn{padding:10px 12px;font-size:13px}
 .pos-grid{grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 8px 120px}
-.pos-thumb{height:58px;font-size:15px}
-.pos-cbody{padding:6px 6px 8px}
-.pos-cbody h4{font-size:10px;min-height:26px;line-height:1.15}
-.pos-price{font-size:11px}.pos-price small{display:none}
+.pos-thumb{height:72px;font-size:15px}
+.pos-cbody{padding:7px 7px 9px}
+.pos-cbody h4{font-size:11px;line-height:1.2;min-height:27px;max-height:27px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pos-price{font-size:12px;margin-top:4px}.pos-price small{display:none}
 .pos-add{width:22px;height:22px;font-size:14px;top:4px;right:4px;border-radius:7px}
 .pos-qtybadge{width:17px;height:17px;font-size:9px;top:4px;left:4px}
 .pos-play{width:24px;height:24px;font-size:10px}
