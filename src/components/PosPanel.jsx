@@ -209,7 +209,9 @@ function PosPanel({ authenticatedFetch, userRole, userTiendaId }) {
                         <div key={p.id} className="pos-card" onClick={() => add(p)}>
                             {qty > 0 && <div className="pos-qtybadge">{qty}</div>}
                             <button className="pos-add" onClick={e => { e.stopPropagation(); add(p); }}>＋</button>
-                            <div className="pos-thumb">{initials(p.name)}</div>
+                            {(Array.isArray(p.imageUrls) && p.imageUrls[0])
+                                ? <div className="pos-thumb pos-thumb-img"><img src={p.imageUrls[0]} alt={p.name} loading="lazy" onError={e => { e.currentTarget.style.display = 'none'; }} /></div>
+                                : <div className="pos-thumb">{initials(p.name)}</div>}
                             <div className="pos-cbody">
                                 <h4>{p.name}</h4>
                                 <div className="pos-price">{mx(p.price)} <small>· stock {p.stock}</small></div>
@@ -358,6 +360,8 @@ const POS_CSS = `
 .pos-card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative;cursor:pointer;transition:transform .1s}
 .pos-card:active{transform:scale(.97)}
 .pos-thumb{height:88px;display:grid;place-items:center;font-size:26px;font-weight:800;color:#fff;background:linear-gradient(135deg,#5B3DF5,#8A63FF)}
+.pos-thumb-img{padding:0;background:#fff}
+.pos-thumb-img img{width:100%;height:100%;object-fit:cover;display:block}
 .pos-cbody{padding:9px 10px 11px}
 .pos-cbody h4{margin:0;font-size:13px;line-height:1.25;color:var(--ink);min-height:32px}
 .pos-price{margin-top:5px;font-size:14px;font-weight:800;color:var(--ink)}.pos-price small{font-size:11px;font-weight:600;color:var(--ink3)}
